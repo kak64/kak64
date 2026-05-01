@@ -1,0 +1,11 @@
+<aside class="sidebar">
+  <h4>אזור אישי</h4>
+  <ul>
+    <li><a href="/dashboard" class="<%= path === '/dashboard' ? 'active' : '' %>">סקירה כללית</a></li>
+    <li><a href="/dashboard/servers" class="<%= path.startsWith('/dashboard/servers') ? 'active' : '' %>">השרתים שלי</a></li>
+    <li><a href="/dashboard/servers/order" class="<%= path === '/dashboard/servers/order' ? 'active' : '' %>">הזמנת שרת</a></li>
+    <li><a href="/dashboard/billing" class="<%= path.startsWith('/dashboard/billing') ? 'active' : '' %>">חשבוניות</a></li>
+    <li><a href="/dashboard/tickets" class="<%= path.startsWith('/dashboard/tickets') ? 'active' : '' %>">פניות תמיכה</a></li>
+    <li><a href="/dashboard/profile" class="<%= path === '/dashboard/profile' ? 'active' : '' %>">הפרטים שלי</a></li>
+  </ul>
+</aside>

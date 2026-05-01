@@ -1,0 +1,23 @@
+<section class="page-header">
+  <h1>חבילות אחסון</h1>
+  <p>בחר את החבילה המתאימה לצרכים שלך. ניתן לשדרג בכל עת.</p>
+</section>
+
+<div class="plans-grid">
+  <% plans.forEach(function(plan) { %>
+    <div class="plan-card">
+      <h3><%= plan.name %></h3>
+      <% if (plan.description) { %><p class="muted"><%= plan.description %></p><% } %>
+      <div class="price"><span><%= plan.price_monthly %></span> ₪/חודש</div>
+      <ul>
+        <li><strong><%= plan.cpu %></strong> ליבות CPU</li>
+        <li><strong><%= plan.ram_gb %> GB</strong> זיכרון RAM</li>
+        <li><strong><%= plan.disk_gb %> GB</strong> אחסון SSD</li>
+        <li><strong><%= plan.bandwidth_tb %> TB</strong> תעבורת נתונים</li>
+        <li>IPv4 ייעודי</li>
+        <li>גישת KVM ל-VM</li>
+      </ul>
+      <a href="/dashboard/servers/order?plan=<%= plan.id %>" class="btn btn-primary">בחירת חבילה</a>
+    </div>
+  <% }) %>
+</div>

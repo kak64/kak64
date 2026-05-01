@@ -1,0 +1,27 @@
+<div class="dashboard-layout">
+  <%- include('../partials/admin-sidebar') %>
+  <section class="dashboard-main">
+    <h1>פניות תמיכה</h1>
+    <div class="card">
+      <% if (tickets.length === 0) { %>
+        <p class="muted">אין פניות.</p>
+      <% } else { %>
+        <table>
+          <thead><tr><th>#</th><th>נושא</th><th>לקוח</th><th>עדיפות</th><th>סטטוס</th><th>תאריך</th></tr></thead>
+          <tbody>
+            <% tickets.forEach(function(t) { %>
+              <tr>
+                <td>#<%= t.id %></td>
+                <td><a href="/admin/tickets/<%= t.id %>"><%= t.subject %></a></td>
+                <td><%= t.user_name %><br><small dir="ltr"><%= t.user_email %></small></td>
+                <td><%= t.priority %></td>
+                <td><span class="status status-<%= t.status %>"><%= t.status %></span></td>
+                <td><%= t.created_at.split(' ')[0] %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+  </section>
+</div>

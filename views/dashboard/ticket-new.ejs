@@ -1,0 +1,20 @@
+<div class="dashboard-layout">
+  <%- include('../partials/sidebar') %>
+  <section class="dashboard-main">
+    <h1>פתיחת פנייה חדשה</h1>
+    <form method="post" action="/dashboard/tickets/new" class="card">
+      <label><span>נושא</span><input type="text" name="subject" required></label>
+      <label>
+        <span>עדיפות</span>
+        <select name="priority">
+          <option value="low">נמוכה</option>
+          <option value="normal" selected>רגילה</option>
+          <option value="high">גבוהה</option>
+          <option value="urgent">דחופה</option>
+        </select>
+      </label>
+      <label><span>תיאור הבעיה</span><textarea name="body" rows="8" required></textarea></label>
+      <button class="btn btn-primary">שליחה</button>
+    </form>
+  </section>
+</div>

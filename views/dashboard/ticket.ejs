@@ -1,0 +1,33 @@
+<div class="dashboard-layout">
+  <%- include('../partials/sidebar') %>
+  <section class="dashboard-main">
+    <div class="page-header-row">
+      <h1>#<%= ticket.id %> - <%= ticket.subject %></h1>
+      <span class="status status-<%= ticket.status %>"><%= ticket.status %></span>
+    </div>
+
+    <div class="ticket-thread">
+      <% messages.forEach(function(m) { %>
+        <div class="message <%= m.author_role === 'admin' ? 'message-staff' : 'message-user' %>">
+          <div class="message-head">
+            <strong><%= m.author_name %></strong>
+            <% if (m.author_role === 'admin') { %><span class="badge">צוות תמיכה</span><% } %>
+            <span class="muted"><%= m.created_at %></span>
+          </div>
+          <div class="message-body"><%= m.body %></div>
+        </div>
+      <% }) %>
+    </div>
+
+    <% if (ticket.status !== 'closed') { %>
+      <form method="post" action="/dashboard/tickets/<%= ticket.id %>/reply" class="card">
+        <h3>תגובה</h3>
+        <textarea name="body" rows="5" required></textarea>
+        <button class="btn btn-primary">שליחה</button>
+      </form>
+      <form method="post" action="/dashboard/tickets/<%= ticket.id %>/close" class="inline-form">
+        <button class="btn">סגירת פנייה</button>
+      </form>
+    <% } %>
+  </section>
+</div>

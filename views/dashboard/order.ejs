@@ -1,0 +1,46 @@
+<div class="dashboard-layout">
+  <%- include('../partials/sidebar') %>
+  <section class="dashboard-main">
+    <h1>הזמנת שרת חדש</h1>
+
+    <form method="post" action="/dashboard/servers/order" class="card">
+      <h3>1. בחירת חבילה</h3>
+      <div class="plan-radio-grid">
+        <% plans.forEach(function(p) { %>
+          <label class="plan-radio">
+            <input type="radio" name="plan_id" value="<%= p.id %>" <%= String(selectedPlanId) === String(p.id) ? 'checked' : '' %> required>
+            <div class="plan-radio-content">
+              <strong><%= p.name %></strong>
+              <div class="price"><%= p.price_monthly %> ₪/חודש</div>
+              <div class="muted"><%= p.cpu %> CPU · <%= p.ram_gb %>GB RAM · <%= p.disk_gb %>GB SSD</div>
+            </div>
+          </label>
+        <% }) %>
+      </div>
+
+      <h3>2. הגדרות שרת</h3>
+      <label>
+        <span>שם שרת (hostname) <span class="req">*</span></span>
+        <input type="text" name="hostname" pattern="[a-zA-Z0-9.\-]{2,63}" required dir="ltr" placeholder="my-server-01">
+      </label>
+
+      <label>
+        <span>מערכת הפעלה <span class="req">*</span></span>
+        <select name="os" required>
+          <option value="Ubuntu 22.04">Ubuntu 22.04 LTS</option>
+          <option value="Debian 12">Debian 12</option>
+          <option value="CentOS Stream 9">CentOS Stream 9</option>
+          <option value="Rocky Linux 9">Rocky Linux 9</option>
+          <option value="Windows Server 2022">Windows Server 2022</option>
+        </select>
+      </label>
+
+      <label>
+        <span>סיסמת root <span class="req">*</span></span>
+        <input type="text" name="root_password" minlength="8" required dir="ltr">
+      </label>
+
+      <button type="submit" class="btn btn-primary btn-block">אישור הזמנה</button>
+    </form>
+  </section>
+</div>

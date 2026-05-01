@@ -1,0 +1,53 @@
+<div class="auth-card auth-card-wide">
+  <h1>הרשמה</h1>
+  <p class="muted">פתיחת חשבון חינמית. החיוב מתבצע רק עם הזמנת שרת.</p>
+  <form method="post" action="/register">
+    <div class="form-row">
+      <label>
+        <span>שם מלא <span class="req">*</span></span>
+        <input type="text" name="full_name" value="<%= form.full_name || '' %>" required>
+      </label>
+      <label>
+        <span>טלפון</span>
+        <input type="tel" name="phone" value="<%= form.phone || '' %>">
+      </label>
+    </div>
+    <label>
+      <span>כתובת מייל <span class="req">*</span></span>
+      <input type="email" name="email" value="<%= form.email || '' %>" required>
+    </label>
+    <div class="form-row">
+      <label>
+        <span>סיסמה <span class="req">*</span></span>
+        <input type="password" name="password" required minlength="8">
+      </label>
+      <label>
+        <span>אימות סיסמה <span class="req">*</span></span>
+        <input type="password" name="password2" required minlength="8">
+      </label>
+    </div>
+    <h3>פרטי חיוב (אופציונלי)</h3>
+    <div class="form-row">
+      <label>
+        <span>שם חברה</span>
+        <input type="text" name="company" value="<%= form.company || '' %>">
+      </label>
+      <label>
+        <span>ח.פ / ע.מ</span>
+        <input type="text" name="tax_id" value="<%= form.tax_id || '' %>">
+      </label>
+    </div>
+    <div class="form-row">
+      <label>
+        <span>כתובת</span>
+        <input type="text" name="address" value="<%= form.address || '' %>">
+      </label>
+      <label>
+        <span>עיר</span>
+        <input type="text" name="city" value="<%= form.city || '' %>">
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">צור חשבון</button>
+  </form>
+  <p class="auth-link">כבר רשום? <a href="/login">להתחברות</a></p>
+</div>

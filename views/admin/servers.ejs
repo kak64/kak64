@@ -1,0 +1,29 @@
+<div class="dashboard-layout">
+  <%- include('../partials/admin-sidebar') %>
+  <section class="dashboard-main">
+    <h1>ניהול שרתים</h1>
+    <div class="card">
+      <% if (servers.length === 0) { %>
+        <p class="muted">אין שרתים במערכת.</p>
+      <% } else { %>
+        <table>
+          <thead><tr><th>#</th><th>שם</th><th>לקוח</th><th>חבילה</th><th>סטטוס</th><th>IP</th><th>VM ID</th><th>תאריך</th></tr></thead>
+          <tbody>
+            <% servers.forEach(function(s) { %>
+              <tr>
+                <td><%= s.id %></td>
+                <td><strong><%= s.hostname %></strong></td>
+                <td><%= s.user_name %><br><small dir="ltr"><%= s.user_email %></small></td>
+                <td><%= s.plan_name %></td>
+                <td><span class="status status-<%= s.status %>"><%= s.status %></span></td>
+                <td><code><%= s.ip_address || '—' %></code></td>
+                <td><code><%= s.esxi_vm_id || '—' %></code></td>
+                <td><%= s.created_at.split(' ')[0] %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,50 @@
+<div class="dashboard-layout">
+  <%- include('../partials/admin-sidebar') %>
+  <section class="dashboard-main">
+    <h1>ניהול חבילות</h1>
+
+    <div class="card">
+      <h3>חבילות קיימות</h3>
+      <% plans.forEach(function(p) { %>
+        <form method="post" action="/admin/plans/<%= p.id %>/update" class="plan-edit-form">
+          <div class="form-row">
+            <label><span>שם</span><input type="text" name="name" value="<%= p.name %>" required></label>
+            <label><span>מחיר חודשי (₪)</span><input type="number" step="0.01" name="price_monthly" value="<%= p.price_monthly %>" required></label>
+          </div>
+          <label><span>תיאור</span><input type="text" name="description" value="<%= p.description || '' %>"></label>
+          <div class="form-row">
+            <label><span>CPU</span><input type="number" name="cpu" value="<%= p.cpu %>" required></label>
+            <label><span>RAM (GB)</span><input type="number" name="ram_gb" value="<%= p.ram_gb %>" required></label>
+            <label><span>דיסק (GB)</span><input type="number" name="disk_gb" value="<%= p.disk_gb %>" required></label>
+            <label><span>תעבורה (TB)</span><input type="number" name="bandwidth_tb" value="<%= p.bandwidth_tb %>" required></label>
+          </div>
+          <label><span>מערכות הפעלה (מופרדות בפסיק)</span><input type="text" name="os_options" value="<%= p.os_options %>"></label>
+          <label class="checkbox"><input type="checkbox" name="active" <%= p.active ? 'checked' : '' %>> חבילה פעילה</label>
+          <div class="action-buttons">
+            <button class="btn btn-primary">שמירה</button>
+            <button formaction="/admin/plans/<%= p.id %>/delete" formmethod="post" class="btn btn-danger" onclick="return confirm('למחוק חבילה?')">מחיקה</button>
+          </div>
+        </form>
+      <% }) %>
+    </div>
+
+    <div class="card">
+      <h3>הוספת חבילה חדשה</h3>
+      <form method="post" action="/admin/plans">
+        <div class="form-row">
+          <label><span>שם</span><input type="text" name="name" required></label>
+          <label><span>מחיר חודשי (₪)</span><input type="number" step="0.01" name="price_monthly" required></label>
+        </div>
+        <label><span>תיאור</span><input type="text" name="description"></label>
+        <div class="form-row">
+          <label><span>CPU</span><input type="number" name="cpu" value="1" required></label>
+          <label><span>RAM (GB)</span><input type="number" name="ram_gb" value="2" required></label>
+          <label><span>דיסק (GB)</span><input type="number" name="disk_gb" value="40" required></label>
+          <label><span>תעבורה (TB)</span><input type="number" name="bandwidth_tb" value="1" required></label>
+        </div>
+        <label><span>מערכות הפעלה</span><input type="text" name="os_options" value="Ubuntu 22.04,Debian 12,CentOS Stream 9,Windows Server 2022"></label>
+        <button class="btn btn-primary">הוספה</button>
+      </form>
+    </div>
+  </section>
+</div>

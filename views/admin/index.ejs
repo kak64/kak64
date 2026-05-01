@@ -1,0 +1,13 @@
+<div class="dashboard-layout">
+  <%- include('../partials/admin-sidebar') %>
+  <section class="dashboard-main">
+    <h1>לוח בקרה - מנהל</h1>
+    <div class="stats-grid">
+      <div class="stat"><div class="num"><%= stats.users %></div><div>משתמשים</div></div>
+      <div class="stat"><div class="num"><%= stats.servers %></div><div>שרתים</div></div>
+      <div class="stat"><div class="num"><%= stats.open_tickets %></div><div>פניות פתוחות</div></div>
+      <div class="stat"><div class="num"><%= stats.revenue.toFixed(0) %> ₪</div><div>הכנסות (שולם)</div></div>
+      <div class="stat"><div class="num"><%= stats.pending_revenue.toFixed(0) %> ₪</div><div>בהמתנה לתשלום</div></div>
+    </div>
+  </section>
+</div>

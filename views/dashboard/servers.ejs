@@ -1,0 +1,35 @@
+<div class="dashboard-layout">
+  <%- include('../partials/sidebar') %>
+  <section class="dashboard-main">
+    <div class="page-header-row">
+      <h1>השרתים שלי</h1>
+      <a href="/dashboard/servers/order" class="btn btn-primary">הזמנת שרת חדש</a>
+    </div>
+    <% if (servers.length === 0) { %>
+      <div class="card empty">
+        <p>אין לך עדיין שרתים פעילים.</p>
+        <a href="/dashboard/servers/order" class="btn btn-primary">הזמנת שרת ראשון</a>
+      </div>
+    <% } else { %>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>שם שרת</th><th>חבילה</th><th>משאבים</th><th>סטטוס</th><th>IP</th><th>פעולות</th></tr>
+          </thead>
+          <tbody>
+            <% servers.forEach(function(s) { %>
+              <tr>
+                <td><strong><%= s.hostname %></strong></td>
+                <td><%= s.plan_name %></td>
+                <td><%= s.cpu %> CPU / <%= s.ram_gb %>GB / <%= s.disk_gb %>GB</td>
+                <td><span class="status status-<%= s.status %>"><%= s.status %></span></td>
+                <td><code><%= s.ip_address || '—' %></code></td>
+                <td><a href="/dashboard/servers/<%= s.id %>" class="btn btn-sm">ניהול</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</div>

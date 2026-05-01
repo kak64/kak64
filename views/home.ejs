@@ -1,0 +1,46 @@
+<section class="hero">
+  <h1>שרתים וירטואליים מהירים, אמינים, בישראל</h1>
+  <p>תשתית VMware ESXi ארגונית, פריסה תוך דקות, ותמיכה בעברית 24/7.</p>
+  <div class="hero-actions">
+    <a href="/plans" class="btn btn-primary btn-lg">לחבילות שלנו</a>
+    <a href="/register" class="btn btn-outline btn-lg">פתיחת חשבון</a>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feature">
+    <h3>פריסה מיידית</h3>
+    <p>השרת שלך עולה לאוויר תוך דקות מרגע ההזמנה.</p>
+  </div>
+  <div class="feature">
+    <h3>תשתית ארגונית</h3>
+    <p>חומרת Dell PowerEdge, ESXi 7.0, רשת יציבה ומאובטחת.</p>
+  </div>
+  <div class="feature">
+    <h3>שליטה מלאה</h3>
+    <p>הפעלה, כיבוי, אתחול וניהול שרתים מהאזור האישי.</p>
+  </div>
+  <div class="feature">
+    <h3>תמיכה בעברית</h3>
+    <p>צוות התמיכה שלנו זמין בעברית בכל שעות היממה.</p>
+  </div>
+</section>
+
+<section class="plans-preview">
+  <h2>החבילות הפופולריות</h2>
+  <div class="plans-grid">
+    <% plans.slice(0, 4).forEach(function(plan) { %>
+      <div class="plan-card">
+        <h3><%= plan.name %></h3>
+        <div class="price"><span><%= plan.price_monthly %></span> ₪/חודש</div>
+        <ul>
+          <li><%= plan.cpu %> ליבות CPU</li>
+          <li><%= plan.ram_gb %> GB זיכרון</li>
+          <li><%= plan.disk_gb %> GB SSD</li>
+          <li><%= plan.bandwidth_tb %> TB תעבורה</li>
+        </ul>
+        <a href="/dashboard/servers/order?plan=<%= plan.id %>" class="btn btn-primary">בחירת חבילה</a>
+      </div>
+    <% }) %>
+  </div>
+</section>

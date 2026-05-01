@@ -1,0 +1,36 @@
+<div class="dashboard-layout">
+  <%- include('../partials/sidebar') %>
+  <section class="dashboard-main">
+    <h1>הפרטים שלי</h1>
+
+    <form method="post" action="/dashboard/profile" class="card">
+      <h3>פרטים אישיים</h3>
+      <div class="form-row">
+        <label><span>שם מלא</span><input type="text" name="full_name" value="<%= user.full_name %>" required></label>
+        <label><span>טלפון</span><input type="tel" name="phone" value="<%= user.phone || '' %>"></label>
+      </div>
+      <label><span>מייל</span><input type="email" value="<%= user.email %>" disabled></label>
+      <h3>פרטי חיוב</h3>
+      <div class="form-row">
+        <label><span>חברה</span><input type="text" name="company" value="<%= user.company || '' %>"></label>
+        <label><span>ח.פ / ע.מ</span><input type="text" name="tax_id" value="<%= user.tax_id || '' %>"></label>
+      </div>
+      <div class="form-row">
+        <label><span>כתובת</span><input type="text" name="address" value="<%= user.address || '' %>"></label>
+        <label><span>עיר</span><input type="text" name="city" value="<%= user.city || '' %>"></label>
+      </div>
+      <label><span>מדינה</span><input type="text" name="country" value="<%= user.country || 'ישראל' %>"></label>
+      <button class="btn btn-primary">שמירה</button>
+    </form>
+
+    <form method="post" action="/dashboard/profile/password" class="card">
+      <h3>שינוי סיסמה</h3>
+      <label><span>סיסמה נוכחית</span><input type="password" name="current_password" required></label>
+      <div class="form-row">
+        <label><span>סיסמה חדשה</span><input type="password" name="new_password" minlength="8" required></label>
+        <label><span>אימות</span><input type="password" name="new_password2" minlength="8" required></label>
+      </div>
+      <button class="btn btn-primary">עדכון סיסמה</button>
+    </form>
+  </section>
+</div>

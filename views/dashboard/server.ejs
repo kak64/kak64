@@ -1,0 +1,54 @@
+<div class="dashboard-layout">
+  <%- include('../partials/sidebar') %>
+  <section class="dashboard-main">
+    <div class="page-header-row">
+      <h1>שרת: <%= server.hostname %></h1>
+      <span class="status status-<%= server.status %>"><%= server.status %></span>
+    </div>
+
+    <div class="card">
+      <h3>פרטי השרת</h3>
+      <table class="kv">
+        <tr><th>חבילה</th><td><%= server.plan_name %></td></tr>
+        <tr><th>מערכת הפעלה</th><td><%= server.os %></td></tr>
+        <tr><th>CPU</th><td><%= server.cpu %> ליבות</td></tr>
+        <tr><th>RAM</th><td><%= server.ram_gb %> GB</td></tr>
+        <tr><th>אחסון</th><td><%= server.disk_gb %> GB SSD</td></tr>
+        <tr><th>תעבורה</th><td><%= server.bandwidth_tb %> TB/חודש</td></tr>
+        <tr><th>כתובת IP</th><td><code><%= server.ip_address || 'מוקצית בקרוב' %></code></td></tr>
+        <tr><th>מזהה VM ב-ESXi</th><td><code><%= server.esxi_vm_id || '—' %></code></td></tr>
+        <tr><th>סיסמת root</th><td><code><%= server.root_password %></code></td></tr>
+        <tr><th>תאריך יצירה</th><td><%= server.created_at %></td></tr>
+        <tr><th>תוקף עד</th><td><%= server.expires_at ? server.expires_at.split('T')[0] : '—' %></td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>פעולות</h3>
+      <div class="action-buttons">
+        <form method="post" action="/dashboard/servers/<%= server.id %>/action" class="inline-form">
+          <input type="hidden" name="action" value="start">
+          <button class="btn btn-success">הפעלה</button>
+        </form>
+        <form method="post" action="/dashboard/servers/<%= server.id %>/action" class="inline-form">
+          <input type="hidden" name="action" value="stop">
+          <button class="btn btn-warning">כיבוי</button>
+        </form>
+        <form method="post" action="/dashboard/servers/<%= server.id %>/action" class="inline-form">
+          <input type="hidden" name="action" value="reboot">
+          <button class="btn">אתחול</button>
+        </form>
+        <form method="post" action="/dashboard/servers/<%= server.id %>/delete" class="inline-form" onsubmit="return confirm('למחוק את השרת? פעולה זו אינה הפיכה!')">
+          <button class="btn btn-danger">מחיקה</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>מסוף KVM / SSH</h3>
+      <p class="muted">להתחברות לשרת:</p>
+      <pre dir="ltr">ssh root@<%= server.ip_address || 'YOUR_IP' %></pre>
+      <p class="muted">לקונסולה גרפית - השתמש בלקוח VMware Remote Console או ESXi Web Console.</p>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,35 @@
+<div class="dashboard-layout">
+  <%- include('../partials/sidebar') %>
+  <section class="dashboard-main">
+    <h1>חשבונית #<%= invoice.id %></h1>
+    <div class="card invoice">
+      <div class="invoice-header">
+        <div>
+          <h3>KAK64 Hosting</h3>
+          <p class="muted">ח.פ 000000000</p>
+        </div>
+        <div>
+          <p><strong>תאריך:</strong> <%= invoice.created_at.split(' ')[0] %></p>
+          <p><strong>סטטוס:</strong> <span class="status status-<%= invoice.status %>"><%= invoice.status === 'paid' ? 'שולם' : 'ממתין' %></span></p>
+        </div>
+      </div>
+      <table class="invoice-items">
+        <thead><tr><th>תיאור</th><th>סכום</th></tr></thead>
+        <tbody>
+          <tr><td><%= invoice.description %></td><td><%= invoice.amount.toFixed(2) %> ₪</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><th>סה"כ לתשלום</th><th><%= invoice.amount.toFixed(2) %> ₪</th></tr>
+        </tfoot>
+      </table>
+      <% if (invoice.status !== 'paid') { %>
+        <form method="post" action="/dashboard/billing/<%= invoice.id %>/pay">
+          <button class="btn btn-primary btn-lg">תשלום עכשיו</button>
+        </form>
+        <p class="muted">סליקה: יש לחבר ספק סליקה (Tranzila / iCount / Stripe).</p>
+      <% } else { %>
+        <p>שולם בתאריך <%= invoice.paid_at %></p>
+      <% } %>
+    </div>
+  </section>
+</div>

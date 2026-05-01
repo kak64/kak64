@@ -1,0 +1,27 @@
+<div class="dashboard-layout">
+  <%- include('../partials/sidebar') %>
+  <section class="dashboard-main">
+    <h1>חשבוניות ותשלומים</h1>
+    <% if (invoices.length === 0) { %>
+      <div class="card empty"><p>אין חשבוניות.</p></div>
+    <% } else { %>
+      <div class="card">
+        <table>
+          <thead><tr><th>#</th><th>תיאור</th><th>סכום</th><th>סטטוס</th><th>תאריך</th><th></th></tr></thead>
+          <tbody>
+            <% invoices.forEach(function(i) { %>
+              <tr>
+                <td>#<%= i.id %></td>
+                <td><%= i.description %></td>
+                <td><%= i.amount.toFixed(2) %> ₪</td>
+                <td><span class="status status-<%= i.status %>"><%= i.status === 'paid' ? 'שולם' : 'ממתין לתשלום' %></span></td>
+                <td><%= i.created_at.split(' ')[0] %></td>
+                <td><a href="/dashboard/billing/<%= i.id %>">פרטים</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</div>

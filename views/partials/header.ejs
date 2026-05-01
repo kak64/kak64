@@ -1,0 +1,25 @@
+<header class="site-header">
+  <div class="container nav">
+    <a href="/" class="brand">KAK64 <span>Hosting</span></a>
+    <nav class="main-nav">
+      <a href="/" class="<%= path === '/' ? 'active' : '' %>">דף הבית</a>
+      <a href="/plans" class="<%= path.startsWith('/plans') ? 'active' : '' %>">חבילות</a>
+      <a href="/about" class="<%= path === '/about' ? 'active' : '' %>">אודות</a>
+      <a href="/contact" class="<%= path === '/contact' ? 'active' : '' %>">צור קשר</a>
+    </nav>
+    <div class="user-nav">
+      <% if (user) { %>
+        <% if (user.role === 'admin') { %>
+          <a href="/admin" class="btn btn-ghost">ניהול</a>
+        <% } %>
+        <a href="/dashboard" class="btn btn-ghost">אזור אישי</a>
+        <form method="post" action="/logout" class="inline-form">
+          <button type="submit" class="btn btn-ghost">התנתקות</button>
+        </form>
+      <% } else { %>
+        <a href="/login" class="btn btn-ghost">התחברות</a>
+        <a href="/register" class="btn btn-primary">הרשמה</a>
+      <% } %>
+    </div>
+  </div>
+</header>
