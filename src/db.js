@@ -2,6 +2,9 @@ const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
+const cryptoMod = require('./crypto');
+
+const BCRYPT_COST = 12;
 
 const DB_DIR = path.join(__dirname, '..', 'db');
 const DB_FILE = path.join(DB_DIR, 'data.sqlite');
@@ -103,6 +106,38 @@ function initDb() {
       reason TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS ssh_keys (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      label TEXT NOT NULL,
+      public_key TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS api_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      label TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      token_prefix TEXT NOT NULL,
+      last_used_at TEXT,
+      revoked_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      ip TEXT,
+      success INTEGER NOT NULL,
+      user_agent TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time
+      ON login_attempts(email, created_at);
   `);
 
   addColumnIfMissing('servers', 'cancelled_at', 'TEXT');
@@ -137,7 +172,7 @@ function seedDefaults() {
 
   const email = (process.env.ADMIN_EMAIL || 'admin@example.com').toLowerCase().trim();
   const password = (process.env.ADMIN_PASSWORD || 'admin1234').trim();
-  const hash = bcrypt.hashSync(password, 10);
+  const hash = bcrypt.hashSync(password, BCRYPT_COST);
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) {
     db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE id = ?')
@@ -150,4 +185,23 @@ function seedDefaults() {
   }
 }
 
-module.exports = { db, initDb };
+function getServerWithDecryptedPassword(server) {
+  if (!server) return server;
+  return { ...server, root_password: cryptoMod.decrypt(server.root_password) };
+}
+
+function encryptForStorage(value) {
+  return cryptoMod.encrypt(value);
+}
+
+function purgeOldLoginAttempts() {
+  db.prepare(`DELETE FROM login_attempts WHERE created_at < datetime('now', '-30 days')`).run();
+}
+
+module.exports = {
+  db, initDb,
+  BCRYPT_COST,
+  getServerWithDecryptedPassword,
+  encryptForStorage,
+  purgeOldLoginAttempts
+};

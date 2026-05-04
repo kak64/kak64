@@ -1,10 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const { db } = require('../db');
+const { db, BCRYPT_COST, getServerWithDecryptedPassword, encryptForStorage } = require('../db');
 const { requireAdmin } = require('../middleware');
 const esxi = require('../esxi');
 const { connectionInfo, isWindows, defaultUsername } = require('../connection');
+const { generateRootPassword } = require('../crypto');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -15,7 +15,7 @@ function logAction(serverId, adminId, action, details) {
 }
 
 function generatePassword() {
-  return crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, '').slice(0, 12);
+  return generateRootPassword(16);
 }
 
 router.get('/', (req, res) => {
@@ -88,7 +88,7 @@ router.post('/users/:id/reset-password', (req, res) => {
     req.flash('error', 'סיסמה חייבת להיות לפחות 8 תווים');
     return res.redirect('/admin/users/' + req.params.id);
   }
-  const hash = bcrypt.hashSync(pw, 10);
+  const hash = bcrypt.hashSync(pw, BCRYPT_COST);
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.params.id);
   req.flash('success', `הסיסמה אופסה: ${pw}`);
   res.redirect('/admin/users/' + req.params.id);
@@ -226,7 +226,7 @@ router.post('/servers/new', async (req, res) => {
   const result = db.prepare(`INSERT INTO servers
     (user_id, plan_id, hostname, os, root_password, status, esxi_vm_id, ip_address, expires_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      user.id, plan.id, hostname, os, pw,
+      user.id, plan.id, hostname, os, encryptForStorage(pw),
       prov.mocked ? 'pending_setup' : 'running',
       prov.esxi_vm_id, prov.ip_address, expires.toISOString()
     );
@@ -245,13 +245,14 @@ router.post('/servers/new', async (req, res) => {
 });
 
 router.get('/servers/:id', (req, res) => {
-  const server = db.prepare(`SELECT s.*, u.email AS user_email, u.full_name AS user_name, u.id AS owner_id,
+  let server = db.prepare(`SELECT s.*, u.email AS user_email, u.full_name AS user_name, u.id AS owner_id,
       p.name AS plan_name, p.cpu, p.ram_gb, p.disk_gb, p.bandwidth_tb, p.price_monthly
     FROM servers s
     JOIN users u ON u.id = s.user_id
     JOIN plans p ON p.id = s.plan_id
     WHERE s.id = ?`).get(req.params.id);
   if (!server) return res.redirect('/admin/servers');
+  server = getServerWithDecryptedPassword(server);
   const actions = db.prepare(`SELECT a.*, u.full_name AS admin_name FROM server_actions a
     LEFT JOIN users u ON u.id = a.admin_id
     WHERE server_id = ? ORDER BY a.created_at DESC LIMIT 50`).all(server.id);
@@ -318,7 +319,7 @@ router.post('/servers/:id/change-root-password', (req, res) => {
     req.flash('error', 'סיסמה חייבת להיות לפחות 8 תווים');
     return res.redirect('/admin/servers/' + server.id);
   }
-  db.prepare('UPDATE servers SET root_password = ? WHERE id = ?').run(pw, server.id);
+  db.prepare('UPDATE servers SET root_password = ? WHERE id = ?').run(encryptForStorage(pw), server.id);
   logAction(server.id, req.user.id, 'change_root_password', 'New password set');
   req.flash('success', `סיסמת root עודכנה: ${pw}`);
   res.redirect('/admin/servers/' + server.id);

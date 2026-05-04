@@ -1,0 +1,47 @@
+<div class="page-header-row">
+  <h1>מפתחות SSH</h1>
+  <span class="badge-count"><%= keys.length %></span>
+</div>
+
+<div class="card-modern">
+  <h3>הוספת מפתח חדש</h3>
+  <p class="muted">הדבק כאן את המפתח הציבורי שלך (תוכן הקובץ <code>~/.ssh/id_ed25519.pub</code> או <code>~/.ssh/id_rsa.pub</code>).</p>
+  <form method="post" action="/dashboard/ssh-keys">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>
+      <span>שם תיאורי</span>
+      <input type="text" name="label" required placeholder="המחשב שלי / Work laptop">
+    </label>
+    <label>
+      <span>מפתח ציבורי</span>
+      <textarea name="public_key" rows="4" required dir="ltr" placeholder="ssh-ed25519 AAAA... user@host"></textarea>
+    </label>
+    <button class="btn btn-primary">הוסף מפתח</button>
+  </form>
+</div>
+
+<div class="card-modern">
+  <h3>המפתחות שלי</h3>
+  <% if (keys.length === 0) { %>
+    <p class="muted">אין עדיין מפתחות.</p>
+  <% } else { %>
+    <table class="table-modern">
+      <thead><tr><th>שם</th><th>טביעת אצבע</th><th>נוסף</th><th></th></tr></thead>
+      <tbody>
+        <% keys.forEach(function(k) { %>
+          <tr>
+            <td><strong><%= k.label %></strong></td>
+            <td><code dir="ltr"><%= k.fingerprint %></code></td>
+            <td class="muted"><%= k.created_at.split(' ')[0] %></td>
+            <td>
+              <form method="post" action="/dashboard/ssh-keys/<%= k.id %>/delete" class="inline-form" onsubmit="return confirm('למחוק את המפתח?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

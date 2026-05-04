@@ -1,0 +1,72 @@
+<div class="page-header-row">
+  <h1>API Credentials</h1>
+</div>
+
+<% if (newToken) { %>
+  <div class="card-modern token-reveal">
+    <h3>⚠ הטוקן שלך - שמור אותו עכשיו</h3>
+    <p>זוהי הפעם היחידה שתראה את הטוקן המלא. שמור אותו במקום בטוח (1Password, .env). אם איבדת אותו, תצטרך לבטל ולייצר חדש.</p>
+    <div class="token-display">
+      <code id="new-token" dir="ltr"><%= newToken %></code>
+      <button class="btn btn-primary btn-copy" data-copy="new-token">📋 העתק</button>
+    </div>
+  </div>
+<% } %>
+
+<div class="card-modern">
+  <h3>יצירת טוקן חדש</h3>
+  <p class="muted">טוקן API מאפשר אינטגרציה תוכניתית עם החשבון שלך. השתמש בו רק במערכות אמינות.</p>
+  <form method="post" action="/dashboard/api">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>
+      <span>שם תיאורי</span>
+      <input type="text" name="label" required placeholder="לדוגמה: סקריפט גיבוי, CI/CD">
+    </label>
+    <button class="btn btn-primary">צור טוקן</button>
+  </form>
+</div>
+
+<div class="card-modern">
+  <h3>הטוקנים שלי</h3>
+  <% if (tokens.length === 0) { %>
+    <p class="muted">אין טוקנים עדיין.</p>
+  <% } else { %>
+    <table class="table-modern">
+      <thead><tr><th>שם</th><th>קידומת</th><th>נוצר</th><th>שימוש אחרון</th><th>סטטוס</th><th></th></tr></thead>
+      <tbody>
+        <% tokens.forEach(function(t) { %>
+          <tr>
+            <td><strong><%= t.label %></strong></td>
+            <td><code dir="ltr"><%= t.token_prefix %>...</code></td>
+            <td class="muted"><%= t.created_at.split(' ')[0] %></td>
+            <td class="muted"><%= t.last_used_at ? t.last_used_at.split(' ')[0] : 'מעולם לא' %></td>
+            <td>
+              <% if (t.revoked_at) { %><span class="status status-cancelled">מבוטל</span>
+              <% } else { %><span class="status status-running">פעיל</span><% } %>
+            </td>
+            <td>
+              <% if (!t.revoked_at) { %>
+                <form method="post" action="/dashboard/api/<%= t.id %>/revoke" class="inline-form" onsubmit="return confirm('לבטל טוקן? לא ניתן להחזיר.')">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn btn-sm btn-warning">בטל</button>
+                </form>
+              <% } else { %>
+                <form method="post" action="/dashboard/api/<%= t.id %>/delete" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn btn-sm">מחק</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card-modern">
+  <h3>איך משתמשים</h3>
+  <p>הוסף את הטוקן ל-header בכל בקשה:</p>
+  <pre dir="ltr">curl -H "Authorization: Bearer YOUR_TOKEN" \
+     https://your-panel.example.com/api/servers</pre>
+</div>

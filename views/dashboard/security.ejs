@@ -1,0 +1,63 @@
+<div class="page-header-row">
+  <h1>אבטחת חשבון</h1>
+</div>
+
+<div class="card-modern">
+  <h3>20 ניסיונות התחברות אחרונים לחשבון שלך</h3>
+  <% if (attempts.length === 0) { %>
+    <p class="muted">אין רשומות.</p>
+  <% } else { %>
+    <table class="table-modern">
+      <thead><tr><th>זמן</th><th>תוצאה</th><th>IP</th><th>דפדפן</th></tr></thead>
+      <tbody>
+        <% attempts.forEach(function(a) { %>
+          <tr>
+            <td class="muted"><%= a.created_at %></td>
+            <td>
+              <% if (a.success) { %><span class="status status-running">הצליח</span>
+              <% } else { %><span class="status status-cancelled">נכשל</span><% } %>
+            </td>
+            <td><code dir="ltr"><%= a.ip || '—' %></code></td>
+            <td class="muted truncate"><%= a.user_agent || '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card-modern">
+  <h3>טוקני API</h3>
+  <p class="muted">סטטוס טוקני ה-API שלך</p>
+  <% if (tokens.length === 0) { %>
+    <p class="muted">אין טוקנים. <a href="/dashboard/api">צור אחד</a></p>
+  <% } else { %>
+    <table class="table-modern">
+      <thead><tr><th>שם</th><th>קידומת</th><th>שימוש אחרון</th><th>סטטוס</th></tr></thead>
+      <tbody>
+        <% tokens.forEach(function(t) { %>
+          <tr>
+            <td><%= t.label %></td>
+            <td><code dir="ltr"><%= t.token_prefix %>...</code></td>
+            <td class="muted"><%= t.last_used_at || 'מעולם לא' %></td>
+            <td>
+              <% if (t.revoked_at) { %><span class="status status-cancelled">מבוטל</span>
+              <% } else { %><span class="status status-running">פעיל</span><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+  <a href="/dashboard/api" class="btn">ניהול טוקנים</a>
+</div>
+
+<div class="card-modern info-card">
+  <h3>טיפים לאבטחה</h3>
+  <ul>
+    <li>השתמש בסיסמה ייחודית באורך 12+ תווים</li>
+    <li>אל תשתף טוקני API ואל תכלול אותם בקוד שמועלה ל-Git</li>
+    <li>בדוק מדי פעם את היסטוריית ההתחברויות. אם תראה IP חשוד — שנה סיסמה ובטל את כל הטוקנים</li>
+    <li>השתמש ב-SSH keys במקום סיסמה לחיבור לשרת ב-Linux</li>
+  </ul>
+</div>

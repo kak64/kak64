@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { db } = require('../db');
+const { db, BCRYPT_COST } = require('../db');
 const { requireAuth } = require('../middleware');
 
 const router = express.Router();
@@ -43,7 +43,11 @@ router.post('/profile/password', (req, res) => {
     req.flash('error', 'הסיסמאות אינן תואמות');
     return res.redirect('/dashboard/profile');
   }
-  const hash = bcrypt.hashSync(new_password, 10);
+  if (!/[A-Za-z]/.test(new_password) || !/[0-9]/.test(new_password)) {
+    req.flash('error', 'הסיסמה חייבת להכיל לפחות אות אחת ומספר אחד');
+    return res.redirect('/dashboard/profile');
+  }
+  const hash = bcrypt.hashSync(new_password, BCRYPT_COST);
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.user.id);
   req.flash('success', 'הסיסמה עודכנה בהצלחה');
   res.redirect('/dashboard/profile');

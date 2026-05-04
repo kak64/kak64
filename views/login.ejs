@@ -1,15 +1,79 @@
-<div class="auth-card">
-  <h1>התחברות</h1>
-  <form method="post" action="/login">
-    <label>
-      <span>כתובת מייל</span>
-      <input type="email" name="email" required autofocus>
-    </label>
-    <label>
-      <span>סיסמה</span>
-      <input type="password" name="password" required>
-    </label>
-    <button type="submit" class="btn btn-primary btn-block">כניסה</button>
-  </form>
-  <p class="auth-link">אין לך חשבון? <a href="/register">להרשמה</a></p>
+<div class="auth-shell">
+  <div class="auth-bg-pattern auth-bg-tl"></div>
+  <div class="auth-bg-pattern auth-bg-br"></div>
+  <div class="auth-content">
+    <div class="auth-card-modern">
+      <h1>התחברות</h1>
+      <form method="post" action="/login" autocomplete="off">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>
+          <span>כתובת מייל</span>
+          <div class="input-with-icon">
+            <input type="email" name="email" required autofocus dir="ltr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+        </label>
+        <label>
+          <span>סיסמה</span>
+          <div class="input-with-icon">
+            <input type="password" name="password" required dir="ltr" id="login-password">
+            <button type="button" class="reveal-toggle" aria-label="הצג סיסמה" onclick="
+              var i=document.getElementById('login-password');
+              i.type = i.type==='password' ? 'text' : 'password';
+            ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </label>
+        <div class="auth-meta">
+          <a href="#" class="link-muted">שכחת סיסמה?</a>
+        </div>
+        <button type="submit" class="btn-auth">כניסה</button>
+      </form>
+      <p class="auth-link">אין לך חשבון? <a href="/register">להרשמה</a></p>
+    </div>
+
+    <div class="auth-illustration" aria-hidden="true">
+      <svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cloudGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#60a5fa"/>
+            <stop offset="1" stop-color="#2563eb"/>
+          </linearGradient>
+          <linearGradient id="srvGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#dbeafe"/>
+            <stop offset="1" stop-color="#93c5fd"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#cloudGrad)" d="M310 130c0-39-32-70-70-70-30 0-55 18-66 44-7-3-15-4-22-4-31 0-56 25-56 56 0 4 0 7 1 11-19 6-32 23-32 43 0 25 20 45 45 45h200c33 0 60-27 60-60 0-31-25-57-60-65z"/>
+        <g transform="translate(120, 165)">
+          <rect x="0" y="0" width="50" height="80" rx="4" fill="url(#srvGrad)"/>
+          <rect x="6" y="10" width="38" height="6" fill="#1e40af" opacity=".6"/>
+          <rect x="6" y="22" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <rect x="6" y="34" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <rect x="6" y="46" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <circle cx="42" cy="68" r="3" fill="#10b981"/>
+        </g>
+        <g transform="translate(180, 145)">
+          <rect x="0" y="0" width="50" height="100" rx="4" fill="url(#srvGrad)"/>
+          <rect x="6" y="10" width="38" height="6" fill="#1e40af" opacity=".6"/>
+          <rect x="6" y="22" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <rect x="6" y="34" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <rect x="6" y="46" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <rect x="6" y="58" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <rect x="6" y="70" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <circle cx="42" cy="88" r="3" fill="#10b981"/>
+        </g>
+        <g transform="translate(240, 165)">
+          <rect x="0" y="0" width="50" height="80" rx="4" fill="url(#srvGrad)"/>
+          <rect x="6" y="10" width="38" height="6" fill="#1e40af" opacity=".6"/>
+          <rect x="6" y="22" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <rect x="6" y="34" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <rect x="6" y="46" width="38" height="6" fill="#1e40af" opacity=".4"/>
+          <circle cx="42" cy="68" r="3" fill="#10b981"/>
+        </g>
+        <ellipse cx="200" cy="280" rx="160" ry="12" fill="#1e293b" opacity=".5"/>
+      </svg>
+    </div>
+  </div>
 </div>

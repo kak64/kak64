@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title><%= title %> | <%= brand %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="body-auth">
+  <main>
+    <% if (flash.success && flash.success.length) { %>
+      <div class="alert alert-success alert-floating"><%= flash.success.join(' ') %></div>
+    <% } %>
+    <% if (flash.error && flash.error.length) { %>
+      <div class="alert alert-error alert-floating"><%= flash.error.join(' ') %></div>
+    <% } %>
+    <%- body %>
+  </main>
+  <script src="/js/app.js"></script>
+</body>
+</html>

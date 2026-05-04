@@ -1,6 +1,5 @@
 const express = require('express');
-const crypto = require('crypto');
-const { db } = require('../db');
+const { db, getServerWithDecryptedPassword, encryptForStorage } = require('../db');
 const { requireAuth } = require('../middleware');
 const esxi = require('../esxi');
 const { connectionInfo, isWindows, defaultUsername } = require('../connection');
@@ -57,7 +56,7 @@ router.post('/order', async (req, res) => {
   const result = db.prepare(`INSERT INTO servers
     (user_id, plan_id, hostname, os, root_password, status, esxi_vm_id, ip_address, expires_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      req.user.id, plan.id, hostname, os, root_password,
+      req.user.id, plan.id, hostname, os, encryptForStorage(root_password),
       provisioning.mocked ? 'pending_setup' : 'running',
       provisioning.esxi_vm_id, provisioning.ip_address,
       expires.toISOString()
@@ -74,9 +73,10 @@ router.post('/order', async (req, res) => {
 });
 
 function getOwnedServer(req) {
-  return db.prepare(`SELECT s.*, p.name AS plan_name, p.cpu, p.ram_gb, p.disk_gb, p.bandwidth_tb, p.price_monthly
+  const row = db.prepare(`SELECT s.*, p.name AS plan_name, p.cpu, p.ram_gb, p.disk_gb, p.bandwidth_tb, p.price_monthly
     FROM servers s JOIN plans p ON p.id = s.plan_id
     WHERE s.id = ? AND s.user_id = ?`).get(req.params.id, req.user.id);
+  return getServerWithDecryptedPassword(row);
 }
 
 router.get('/:id', (req, res) => {

@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> | KAK64 Hosting</title>
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title><%= title %> | <%= brand %></title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -11,26 +12,55 @@
     <div class="impersonation-banner">
       <span>אתה מתחזה כעת ל-<strong><%= user.full_name %></strong></span>
       <form method="post" action="/stop-impersonating" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-sm">חזרה לחשבון מנהל</button>
       </form>
     </div>
   <% } %>
-  <%- include('partials/header') %>
-  <main class="container">
-    <% if (flash.success && flash.success.length) { %>
-      <div class="alert alert-success"><%= flash.success.join(' ') %></div>
-    <% } %>
-    <% if (flash.error && flash.error.length) { %>
-      <div class="alert alert-error"><%= flash.error.join(' ') %></div>
-    <% } %>
-    <% if (flash.info && flash.info.length) { %>
-      <div class="alert alert-info"><%= flash.info.join(' ') %></div>
-    <% } %>
-    <%- body %>
-  </main>
-  <%- include('partials/footer') %>
-  <% if (user) { %>
+
+  <% var isAuthArea = path.startsWith('/dashboard') || path.startsWith('/admin'); %>
+
+  <% if (isAuthArea && user) { %>
+    <%- include('partials/sidebar-app') %>
+    <div class="app-shell">
+      <%- include('partials/topbar') %>
+      <main class="app-main">
+        <% if (flash.success && flash.success.length) { %>
+          <div class="alert alert-success"><%= flash.success.join(' ') %></div>
+        <% } %>
+        <% if (flash.error && flash.error.length) { %>
+          <div class="alert alert-error"><%= flash.error.join(' ') %></div>
+        <% } %>
+        <% if (flash.info && flash.info.length) { %>
+          <div class="alert alert-info"><%= flash.info.join(' ') %></div>
+        <% } %>
+        <%- body %>
+      </main>
+      <footer class="app-footer">
+        <p>All times are in Asia/Jerusalem · The time now is <span id="clock"></span></p>
+        <p>All rights reserved to <%= brand %> ©</p>
+      </footer>
+    </div>
+  <% } else { %>
+    <%- include('partials/header') %>
+    <main class="container">
+      <% if (flash.success && flash.success.length) { %>
+        <div class="alert alert-success"><%= flash.success.join(' ') %></div>
+      <% } %>
+      <% if (flash.error && flash.error.length) { %>
+        <div class="alert alert-error"><%= flash.error.join(' ') %></div>
+      <% } %>
+      <% if (flash.info && flash.info.length) { %>
+        <div class="alert alert-info"><%= flash.info.join(' ') %></div>
+      <% } %>
+      <%- body %>
+    </main>
+    <%- include('partials/footer') %>
+  <% } %>
+
+  <% if (user && isAuthArea) { %>
     <%- include('partials/help-widget') %>
   <% } %>
+  <script src="/js/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,88 @@
+<aside class="app-sidebar">
+  <div class="brand-block">
+    <a href="/" class="brand-logo">
+      <svg viewBox="0 0 32 32" fill="none">
+        <path d="M22 16c0-3.3-2.7-6-6-6s-6 2.7-6 6c-2.8 0-5 2.2-5 5s2.2 5 5 5h12c2.8 0 5-2.2 5-5s-2.2-5-5-5z" fill="#3b82f6"/>
+        <path d="M16 22l-3-3h2v-3h2v3h2l-3 3z" fill="#fff"/>
+      </svg>
+      <span><%= brand %></span>
+    </a>
+  </div>
+
+  <% if (user.role === 'admin' && path.startsWith('/admin')) { %>
+    <nav class="side-nav">
+      <a href="/admin" class="<%= path === '/admin' ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>סקירה</span>
+      </a>
+      <a href="/admin/users" class="<%= path.startsWith('/admin/users') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <span>משתמשים</span>
+      </a>
+      <a href="/admin/servers" class="<%= path === '/admin/servers' ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        <span>שרתים</span>
+      </a>
+      <a href="/admin/servers/new" class="<%= path === '/admin/servers/new' ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>פתיחת שרת</span>
+      </a>
+      <a href="/admin/plans" class="<%= path.startsWith('/admin/plans') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        <span>חבילות</span>
+      </a>
+      <a href="/admin/tickets" class="<%= path.startsWith('/admin/tickets') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>פניות תמיכה</span>
+      </a>
+    </nav>
+    <div class="side-nav-footer">
+      <a href="/dashboard" class="side-link-muted">לאזור אישי ←</a>
+    </div>
+  <% } else { %>
+    <nav class="side-nav">
+      <a href="/dashboard" class="<%= path === '/dashboard' ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        <span>סקירה</span>
+      </a>
+      <a href="/dashboard/servers" class="<%= path.startsWith('/dashboard/servers') && !path.includes('order') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        <span>List VPS</span>
+      </a>
+      <a href="/dashboard/tasks" class="<%= path === '/dashboard/tasks' ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span>Tasks</span>
+      </a>
+      <a href="/dashboard/ssh-keys" class="<%= path.startsWith('/dashboard/ssh-keys') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M11 10l8.5-8.5L22 4l-1.5 1.5L22 7l-2 2-1.5-1.5L17 9l-1.5-1.5"/></svg>
+        <span>SSH Keys</span>
+      </a>
+      <a href="/dashboard/firewall" class="<%= path.startsWith('/dashboard/firewall') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Firewall</span>
+      </a>
+      <a href="/dashboard/backup" class="<%= path.startsWith('/dashboard/backup') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Backup</span>
+      </a>
+      <div class="side-divider"></div>
+      <a href="/dashboard/billing" class="<%= path.startsWith('/dashboard/billing') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <span>חשבוניות</span>
+      </a>
+      <a href="/dashboard/tickets" class="<%= path.startsWith('/dashboard/tickets') ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>פניות תמיכה</span>
+      </a>
+      <a href="/dashboard/security" class="<%= path === '/dashboard/security' ? 'active' : '' %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <span>אבטחה</span>
+      </a>
+    </nav>
+    <% if (user.role === 'admin') { %>
+      <div class="side-nav-footer">
+        <a href="/admin" class="side-link-muted">→ לוח ניהול</a>
+      </div>
+    <% } %>
+  <% } %>
+</aside>

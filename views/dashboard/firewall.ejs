@@ -1,0 +1,30 @@
+<div class="page-header-row">
+  <h1>Firewall</h1>
+</div>
+<div class="card-modern">
+  <h3>חוקי חומת אש לכל שרת</h3>
+  <p class="muted">בקרוב — ניהול חוקי iptables/Windows Firewall ישירות מהפנל.</p>
+  <% if (servers.length === 0) { %>
+    <p class="muted">אין לך עדיין שרתים פעילים.</p>
+  <% } else { %>
+    <table class="table-modern">
+      <thead><tr><th>שרת</th><th>IP</th><th>OS</th><th>חוקים פעילים</th><th></th></tr></thead>
+      <tbody>
+        <% servers.forEach(function(s) { %>
+          <tr>
+            <td><strong><%= s.hostname %></strong></td>
+            <td><code dir="ltr"><%= s.ip_address || '—' %></code></td>
+            <td><%= s.os %></td>
+            <td class="muted">ברירות מחדל</td>
+            <td><a href="/dashboard/servers/<%= s.id %>" class="btn btn-sm">נהל שרת</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <div class="info-box">
+    <strong>בינתיים</strong>: ניתן להגדיר חוקי firewall מתוך השרת עצמו ב-SSH או ב-Remote Desktop.
+    בעתיד — ממשק גרפי לחוקים פר-פורט, פר-IP, ופר-פרוטוקול.
+  </div>
+</div>

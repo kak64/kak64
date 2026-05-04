@@ -1,0 +1,22 @@
+<div class="page-header-row">
+  <h1>היסטוריית פעולות</h1>
+</div>
+<div class="card-modern">
+  <% if (tasks.length === 0) { %>
+    <p class="muted">אין פעולות עדיין.</p>
+  <% } else { %>
+    <table class="table-modern">
+      <thead><tr><th>תאריך</th><th>פעולה</th><th>שרת</th><th>פרטים</th></tr></thead>
+      <tbody>
+        <% tasks.forEach(function(t) { %>
+          <tr>
+            <td class="muted"><%= t.created_at %></td>
+            <td><code><%= t.action %></code></td>
+            <td><%= t.hostname %></td>
+            <td><%= t.details || '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
