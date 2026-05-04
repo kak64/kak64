@@ -1,8 +1,11 @@
 <footer class="site-footer">
   <div class="container footer-grid">
     <div>
-      <h4>KAK64 Hosting</h4>
-      <p>שירותי אחסון שרתים וירטואליים מבוססי VMware ESXi בישראל.</p>
+      <div class="footer-brand">
+        <span class="brand-evo">Evo</span><span class="brand-host">Host</span>
+        <span class="footer-tagline"><%= brandTagline %></span>
+      </div>
+      <p>שירותי אחסון שרתים וירטואליים ומשחקים בישראל. תשתית VMware ESXi ארגונית.</p>
     </div>
     <div>
       <h4>קישורים</h4>
@@ -16,13 +19,13 @@
     <div>
       <h4>תמיכה</h4>
       <ul>
-        <li>טלפון: 03-0000000</li>
-        <li>מייל: support@example.com</li>
+        <li>טלפון: <%= supportPhone %></li>
+        <li>מייל: <%= supportEmail %></li>
         <li>שעות פעילות: 24/7</li>
       </ul>
     </div>
   </div>
   <div class="container copyright">
-    &copy; <%= new Date().getFullYear() %> KAK64 Hosting. כל הזכויות שמורות.
+    &copy; <%= new Date().getFullYear() %> <%= brand %> · <%= brandDomain %> · כל הזכויות שמורות
   </div>
 </footer>

@@ -3,7 +3,32 @@
   <div class="auth-bg-pattern auth-bg-br"></div>
   <div class="auth-content">
     <div class="auth-card-modern">
-      <h1>התחברות</h1>
+      <div class="auth-brand">
+        <svg viewBox="0 0 80 80" fill="none" class="brand-mark brand-mark-lg">
+          <defs>
+            <linearGradient id="evoLoginG" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#0284c7"/>
+              <stop offset="50%" stop-color="#06b6d4"/>
+              <stop offset="100%" stop-color="#22d3ee"/>
+            </linearGradient>
+          </defs>
+          <g stroke="url(#evoLoginG)" stroke-width="3.2" stroke-linecap="round" fill="none">
+            <path d="M 40 18 A 22 22 0 0 1 62 40" stroke-dasharray="3 4"/>
+            <path d="M 62 40 A 22 22 0 0 1 40 62" stroke-dasharray="3 4"/>
+            <path d="M 40 62 A 22 22 0 0 1 18 40" stroke-dasharray="3 4"/>
+            <path d="M 18 40 A 22 22 0 0 1 30 21" stroke-dasharray="3 4"/>
+          </g>
+          <path d="M 40 64 L 40 40 L 62 18" stroke="url(#evoLoginG)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M 50 18 L 62 18 L 62 30" stroke="url(#evoLoginG)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="40" cy="40" r="4.2" fill="url(#evoLoginG)"/>
+          <circle cx="40" cy="64" r="3" fill="url(#evoLoginG)"/>
+        </svg>
+        <div class="auth-brand-name">
+          <span class="brand-evo">Evo</span><span class="brand-host">Host</span>
+        </div>
+        <div class="auth-brand-tagline"><%= brandTagline %></div>
+      </div>
+      <h1>Sign in</h1>
       <form method="post" action="/login" autocomplete="off">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <label>

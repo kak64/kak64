@@ -1,6 +1,27 @@
 <header class="site-header">
   <div class="container nav">
-    <a href="/" class="brand">KAK64 <span>Hosting</span></a>
+    <a href="/" class="brand brand-logo">
+      <svg viewBox="0 0 80 80" fill="none" class="brand-mark">
+        <defs>
+          <linearGradient id="evoHeaderG" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0284c7"/>
+            <stop offset="50%" stop-color="#06b6d4"/>
+            <stop offset="100%" stop-color="#22d3ee"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#evoHeaderG)" stroke-width="3.2" stroke-linecap="round" fill="none">
+          <path d="M 40 18 A 22 22 0 0 1 62 40" stroke-dasharray="3 4"/>
+          <path d="M 62 40 A 22 22 0 0 1 40 62" stroke-dasharray="3 4"/>
+          <path d="M 40 62 A 22 22 0 0 1 18 40" stroke-dasharray="3 4"/>
+          <path d="M 18 40 A 22 22 0 0 1 30 21" stroke-dasharray="3 4"/>
+        </g>
+        <path d="M 40 64 L 40 40 L 62 18" stroke="url(#evoHeaderG)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M 50 18 L 62 18 L 62 30" stroke="url(#evoHeaderG)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="40" cy="40" r="4.2" fill="url(#evoHeaderG)"/>
+        <circle cx="40" cy="64" r="3" fill="url(#evoHeaderG)"/>
+      </svg>
+      <span class="brand-text"><span class="brand-evo">Evo</span><span class="brand-host">Host</span></span>
+    </a>
     <nav class="main-nav">
       <a href="/" class="<%= path === '/' ? 'active' : '' %>">דף הבית</a>
       <a href="/plans" class="<%= path.startsWith('/plans') ? 'active' : '' %>">חבילות</a>
@@ -14,6 +35,7 @@
         <% } %>
         <a href="/dashboard" class="btn btn-ghost">אזור אישי</a>
         <form method="post" action="/logout" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <button type="submit" class="btn btn-ghost">התנתקות</button>
         </form>
       <% } else { %>

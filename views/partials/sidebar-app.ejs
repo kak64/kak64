@@ -1,11 +1,26 @@
 <aside class="app-sidebar">
   <div class="brand-block">
     <a href="/" class="brand-logo">
-      <svg viewBox="0 0 32 32" fill="none">
-        <path d="M22 16c0-3.3-2.7-6-6-6s-6 2.7-6 6c-2.8 0-5 2.2-5 5s2.2 5 5 5h12c2.8 0 5-2.2 5-5s-2.2-5-5-5z" fill="#3b82f6"/>
-        <path d="M16 22l-3-3h2v-3h2v3h2l-3 3z" fill="#fff"/>
+      <svg viewBox="0 0 80 80" fill="none" class="brand-mark">
+        <defs>
+          <linearGradient id="evoSidebarG" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0284c7"/>
+            <stop offset="50%" stop-color="#06b6d4"/>
+            <stop offset="100%" stop-color="#22d3ee"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#evoSidebarG)" stroke-width="3.2" stroke-linecap="round" fill="none">
+          <path d="M 40 18 A 22 22 0 0 1 62 40" stroke-dasharray="3 4"/>
+          <path d="M 62 40 A 22 22 0 0 1 40 62" stroke-dasharray="3 4"/>
+          <path d="M 40 62 A 22 22 0 0 1 18 40" stroke-dasharray="3 4"/>
+          <path d="M 18 40 A 22 22 0 0 1 30 21" stroke-dasharray="3 4"/>
+        </g>
+        <path d="M 40 64 L 40 40 L 62 18" stroke="url(#evoSidebarG)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M 50 18 L 62 18 L 62 30" stroke="url(#evoSidebarG)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="40" cy="40" r="4.2" fill="url(#evoSidebarG)"/>
+        <circle cx="40" cy="64" r="3" fill="url(#evoSidebarG)"/>
       </svg>
-      <span><%= brand %></span>
+      <span class="brand-text"><span class="brand-evo">Evo</span><span class="brand-host">Host</span></span>
     </a>
   </div>
 

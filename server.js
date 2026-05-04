@@ -122,8 +122,10 @@ app.use((req, res, next) => {
     info: req.flash('info')
   };
   res.locals.path = req.path;
-  res.locals.brand = process.env.BRAND_NAME || 'FutureIL Hosting';
-  res.locals.supportEmail = process.env.SUPPORT_EMAIL || 'support@example.com';
+  res.locals.brand = process.env.BRAND_NAME || 'EvoHost';
+  res.locals.brandTagline = process.env.BRAND_TAGLINE || 'Evolutionary Game Hosting';
+  res.locals.brandDomain = process.env.BRAND_DOMAIN || 'evohost.org';
+  res.locals.supportEmail = process.env.SUPPORT_EMAIL || 'support@evohost.org';
   res.locals.supportPhone = process.env.SUPPORT_PHONE || '03-0000000';
   next();
 });
@@ -150,6 +152,6 @@ app.use((err, req, res, _next) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`${process.env.BRAND_NAME || 'Hosting panel'} listening on http://localhost:${port}`);
+  console.log(`${process.env.BRAND_NAME || 'EvoHost'} listening on http://localhost:${port}`);
   if (!isProd) console.log('NODE_ENV != production: secure cookies disabled (dev mode)');
 });
