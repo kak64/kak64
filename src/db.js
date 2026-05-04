@@ -101,14 +101,18 @@ function seedDefaults() {
     insert.run('Enterprise', 'שרת חזק לארגונים וצרכים מיוחדים', 8, 16, 320, 10, 399);
   }
 
-  const userCount = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
-  if (userCount === 0) {
-    const email = process.env.ADMIN_EMAIL || 'admin@example.com';
-    const password = process.env.ADMIN_PASSWORD || 'admin1234';
-    const hash = bcrypt.hashSync(password, 10);
+  const email = (process.env.ADMIN_EMAIL || 'admin@example.com').toLowerCase().trim();
+  const password = (process.env.ADMIN_PASSWORD || 'admin1234').trim();
+  const hash = bcrypt.hashSync(password, 10);
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (existing) {
+    db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE id = ?')
+      .run(hash, 'admin', existing.id);
+    console.log(`[seed] Admin user synced: ${email}`);
+  } else {
     db.prepare(`INSERT INTO users (email, password_hash, full_name, role)
       VALUES (?, ?, ?, 'admin')`).run(email, hash, 'מנהל מערכת');
-    console.log(`[seed] Admin user created: ${email} / ${password}`);
+    console.log(`[seed] Admin user created: ${email}`);
   }
 }
 
