@@ -1,0 +1,111 @@
+<div class="page-header-row">
+  <h1>ניהול ESXi</h1>
+  <div class="action-buttons">
+    <form method="post" action="/admin/esxi/test" class="inline-form">
+      <button class="btn">בדיקת חיבור</button>
+    </form>
+    <% if (status === 'connected') { %>
+      <form method="post" action="/admin/esxi/sync-all" class="inline-form">
+        <button class="btn btn-primary">סנכרון מלא</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<div class="card-modern">
+  <h3>סטטוס חיבור</h3>
+  <div class="esxi-status">
+    <% if (status === 'unconfigured') { %>
+      <span class="status status-cancelled">לא מוגדר</span>
+      <p class="muted">הגדר את ESXI_HOST ו-ESXI_PASS ב-.env והפעל מחדש את השרת.</p>
+    <% } else if (status === 'connected') { %>
+      <span class="status status-running">מחובר</span>
+      <p class="muted"><strong>Host:</strong> <code dir="ltr"><%= host %></code></p>
+      <% if (info) { %><p class="muted"><strong>גרסה:</strong> <code><%= info %></code></p><% } %>
+    <% } else { %>
+      <span class="status status-cancelled">שגיאה</span>
+      <p class="muted">Host: <code dir="ltr"><%= host %></code></p>
+      <pre dir="ltr" style="color: #fca5a5; background: rgba(239, 68, 68, .1); padding: 12px; border-radius: 6px;"><%= error %></pre>
+      <h4>בדיקות שכדאי לעשות:</h4>
+      <ol>
+        <li>SSH מופעל ב-ESXi: Manage → Services → TSM-SSH → Start</li>
+        <li>הסיסמה ב-.env תואמת לסיסמת root של ESXi</li>
+        <li>פורט 22 פתוח לכתובת ה-IP של השרת שמריץ את האתר</li>
+        <li>אין הגבלת lockdown mode ב-ESXi</li>
+      </ol>
+    <% } %>
+  </div>
+</div>
+
+<% if (status === 'connected') { %>
+  <div class="card-modern">
+    <h3>VMs ב-ESXi (<%= vms.length %>)</h3>
+    <p class="muted">לחץ "ייבא" כדי לקשר VM קיים ללקוח באתר.</p>
+    <% if (vms.length === 0) { %>
+      <p class="muted">אין VMs ב-ESXi.</p>
+    <% } else { %>
+      <table class="table-modern">
+        <thead><tr><th>VM ID</th><th>שם</th><th>OS</th><th>גרסה</th><th>קישור</th><th></th></tr></thead>
+        <tbody>
+          <% vms.forEach(function(v) { %>
+            <tr>
+              <td><code><%= v.vmid %></code></td>
+              <td><strong><%= v.name %></strong></td>
+              <td><%= v.guest %></td>
+              <td><%= v.version %></td>
+              <td>
+                <% if (v.linked_to) { %>
+                  <span class="status status-running">מקושר ל-<%= v.linked_to %></span>
+                <% } else { %>
+                  <span class="muted">לא מקושר</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (!v.linked_to) { %>
+                  <a href="/admin/esxi/import/<%= v.vmid %>" class="btn btn-sm btn-primary">ייבא</a>
+                <% } else { %>
+                  <form method="post" action="/admin/esxi/refresh-state/<%= v.vmid %>" class="inline-form">
+                    <button class="btn btn-sm">רענן סטטוס</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+<% } %>
+
+<div class="card-modern info-card">
+  <h3>📘 מדריך התקנה ב-ESXi</h3>
+  <ol>
+    <li><strong>הפעל SSH</strong>: ב-ESXi → Manage → Services → "TSM-SSH" → Start. שנה Policy ל-"Start and stop with host".</li>
+    <li><strong>הגדר .env</strong> בקובץ של האתר:
+      <pre dir="ltr">ESXI_HOST=<%= host || '195.154.171.166' %>
+ESXI_USER=root
+ESXI_PASS=<סיסמת root של ESXi></pre>
+    </li>
+    <li><strong>הפעל מחדש</strong> את האתר (npm start) כדי לטעון את משתני הסביבה.</li>
+    <li><strong>בדוק חיבור</strong> בדף הזה — הכפתור "בדיקת חיבור".</li>
+    <li><strong>ייבוא VMs קיימים</strong>: כל VM שכבר יצרת ידנית ב-ESXi (כמו win2022, botim) יופיע בטבלה למעלה. ייבא וקשר אותו ללקוח.</li>
+    <li><strong>יצירת VMs חדשים</strong>: יצירה אוטומטית של VM חדש מאפס דרך SSH מורכבת. הזרימה המומלצת:
+      <ul>
+        <li>צור VM template ב-ESXi (התקנה ידנית של OS, התקנת VMware Tools, ניקוי, snapshot)</li>
+        <li>כשאתה רוצה לפתוח שרת ללקוח חדש - שכפל את ה-template ב-ESXi</li>
+        <li>ייבא את ה-VM החדש כאן ושייך ללקוח</li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<div class="card-modern">
+  <h3>מה האתר יכול לעשות עכשיו?</h3>
+  <ul>
+    <li>✅ <strong>הפעלה / כיבוי / אתחול / איפוס</strong> — של כל VM מקושר</li>
+    <li>✅ <strong>סטטוס חי</strong> (running/stopped/suspended) ו-IP אוטומטי דרך VMware Tools</li>
+    <li>✅ <strong>הריסת VM</strong> דרך הכפתור "ביטול ומחיקה"</li>
+    <li>✅ <strong>סנכרון מצב</strong> של כל ה-VMs בלחיצה אחת</li>
+    <li>⏳ <strong>פתיחת VM חדש מאפס</strong> — דורש template + הגדרה נוספת</li>
+  </ul>
+</div>

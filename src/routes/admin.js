@@ -499,4 +499,142 @@ router.post('/tickets/:id/reopen', (req, res) => {
   res.redirect('/admin/tickets/' + req.params.id);
 });
 
+// === ESXi MANAGEMENT ===
+router.get('/esxi', async (req, res) => {
+  let status = 'unconfigured';
+  let info = null;
+  let vms = [];
+  let error = null;
+
+  if (esxi.isConfigured()) {
+    try {
+      const ver = await esxi.ping();
+      info = ver;
+      status = 'connected';
+      vms = await esxi.listVms();
+      // Annotate which VMs are already linked
+      const linked = db.prepare('SELECT esxi_vm_id, hostname FROM servers WHERE esxi_vm_id IS NOT NULL').all();
+      const linkedMap = new Map(linked.map(s => [String(s.esxi_vm_id), s.hostname]));
+      vms = vms.map(v => ({
+        ...v,
+        linked_to: linkedMap.get(String(v.vmid)) || null
+      }));
+    } catch (e) {
+      status = 'error';
+      error = e.message;
+    }
+  }
+
+  const users = db.prepare('SELECT id, email, full_name FROM users WHERE role = ? ORDER BY full_name').all('user');
+  const plans = db.prepare('SELECT * FROM plans WHERE active = 1 ORDER BY price_monthly').all();
+  res.render('admin/esxi', { title: 'ניהול ESXi', status, info, vms, error, users, plans, host: process.env.ESXI_HOST });
+});
+
+router.post('/esxi/test', async (req, res) => {
+  try {
+    const ver = await esxi.ping();
+    req.flash('success', 'חיבור הצליח: ' + ver);
+  } catch (e) {
+    req.flash('error', 'חיבור נכשל: ' + e.message);
+  }
+  res.redirect('/admin/esxi');
+});
+
+router.post('/esxi/refresh-state/:vmid', async (req, res) => {
+  try {
+    const state = await esxi.getPowerState(req.params.vmid);
+    const guest = await esxi.getGuestInfo(req.params.vmid);
+    db.prepare(`UPDATE servers SET status = ?, ip_address = COALESCE(?, ip_address)
+      WHERE esxi_vm_id = ?`).run(state, guest.ip, String(req.params.vmid));
+    req.flash('success', `סטטוס: ${state}, IP: ${guest.ip || 'לא זמין'}`);
+  } catch (e) {
+    req.flash('error', 'נכשל: ' + e.message);
+  }
+  res.redirect('back');
+});
+
+router.get('/esxi/import/:vmid', async (req, res) => {
+  const vmid = req.params.vmid;
+  let vmInfo = null;
+  let guest = null;
+  if (esxi.isConfigured()) {
+    try {
+      const all = await esxi.listVms();
+      vmInfo = all.find(v => String(v.vmid) === String(vmid));
+      guest = await esxi.getGuestInfo(vmid);
+    } catch (e) { /* ignore */ }
+  }
+  if (!vmInfo) {
+    req.flash('error', 'VM לא נמצא ב-ESXi');
+    return res.redirect('/admin/esxi');
+  }
+  const users = db.prepare('SELECT id, email, full_name FROM users WHERE role = ? ORDER BY full_name').all('user');
+  const plans = db.prepare('SELECT * FROM plans WHERE active = 1 ORDER BY price_monthly').all();
+  res.render('admin/esxi-import', {
+    title: 'ייבוא VM קיים',
+    vm: vmInfo, guest, users, plans
+  });
+});
+
+router.post('/esxi/import', async (req, res) => {
+  const { vmid, user_id, plan_id, hostname, os, root_password } = req.body;
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(user_id);
+  const plan = db.prepare('SELECT * FROM plans WHERE id = ?').get(plan_id);
+  if (!user || !plan || !vmid) {
+    req.flash('error', 'נתונים חסרים');
+    return res.redirect('/admin/esxi');
+  }
+  const existing = db.prepare('SELECT id FROM servers WHERE esxi_vm_id = ?').get(String(vmid));
+  if (existing) {
+    req.flash('error', `VM זה כבר משויך לשרת #${existing.id}`);
+    return res.redirect('/admin/esxi');
+  }
+
+  let state = 'unknown';
+  let ip = null;
+  try {
+    state = await esxi.getPowerState(vmid);
+    const guest = await esxi.getGuestInfo(vmid);
+    ip = guest.ip;
+  } catch (e) { /* live data unavailable, proceed */ }
+
+  const expires = new Date();
+  expires.setMonth(expires.getMonth() + 1);
+
+  const result = db.prepare(`INSERT INTO servers
+    (user_id, plan_id, hostname, os, root_password, status, esxi_vm_id, ip_address, expires_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      user.id, plan.id, hostname, os || 'Unknown',
+      encryptForStorage(root_password || ''),
+      state, String(vmid), ip,
+      expires.toISOString()
+    );
+  logAction(result.lastInsertRowid, req.user.id, 'imported_from_esxi', `VM ID ${vmid}`);
+  req.flash('success', `VM ${vmid} יובא בהצלחה ושויך ל-${user.full_name}`);
+  res.redirect('/admin/servers/' + result.lastInsertRowid);
+});
+
+router.post('/esxi/sync-all', async (req, res) => {
+  if (!esxi.isConfigured()) {
+    req.flash('error', 'ESXi לא מוגדר');
+    return res.redirect('/admin/esxi');
+  }
+  let updated = 0;
+  let failed = 0;
+  const servers = db.prepare('SELECT id, esxi_vm_id FROM servers WHERE esxi_vm_id IS NOT NULL').all();
+  for (const s of servers) {
+    try {
+      const state = await esxi.getPowerState(s.esxi_vm_id);
+      const guest = await esxi.getGuestInfo(s.esxi_vm_id);
+      db.prepare(`UPDATE servers SET status = ?, ip_address = COALESCE(?, ip_address)
+        WHERE id = ?`).run(state, guest.ip, s.id);
+      updated++;
+    } catch (e) {
+      failed++;
+    }
+  }
+  req.flash('success', `סונכרנו ${updated} שרתים${failed ? `, ${failed} נכשלו` : ''}`);
+  res.redirect('/admin/esxi');
+});
+
 module.exports = router;

@@ -1,0 +1,59 @@
+<div class="page-header-row">
+  <h1>ייבוא VM קיים מ-ESXi</h1>
+</div>
+
+<div class="card-modern">
+  <h3>פרטי ה-VM ב-ESXi</h3>
+  <table class="kv">
+    <tr><th>VM ID</th><td><code><%= vm.vmid %></code></td></tr>
+    <tr><th>שם ב-ESXi</th><td><strong><%= vm.name %></strong></td></tr>
+    <tr><th>OS</th><td><%= vm.guest %></td></tr>
+    <tr><th>גרסה</th><td><%= vm.version %></td></tr>
+    <% if (guest && guest.ip) { %><tr><th>IP זוהה</th><td><code dir="ltr"><%= guest.ip %></code></td></tr><% } %>
+  </table>
+</div>
+
+<form method="post" action="/admin/esxi/import" class="card-modern">
+  <h3>קישור ללקוח</h3>
+
+  <input type="hidden" name="vmid" value="<%= vm.vmid %>">
+
+  <label>
+    <span>לקוח <span class="req">*</span></span>
+    <select name="user_id" required>
+      <option value="">-- בחר לקוח --</option>
+      <% users.forEach(function(u) { %>
+        <option value="<%= u.id %>"><%= u.full_name %> (<%= u.email %>)</option>
+      <% }) %>
+    </select>
+  </label>
+
+  <label>
+    <span>חבילה <span class="req">*</span></span>
+    <select name="plan_id" required>
+      <option value="">-- בחר חבילה --</option>
+      <% plans.forEach(function(p) { %>
+        <option value="<%= p.id %>"><%= p.name %> (<%= p.price_monthly %> ₪/חודש)</option>
+      <% }) %>
+    </select>
+  </label>
+
+  <div class="form-row">
+    <label>
+      <span>שם תצוגה (hostname באתר)</span>
+      <input type="text" name="hostname" value="<%= vm.name %>" required dir="ltr">
+    </label>
+    <label>
+      <span>OS (לתצוגה ללקוח)</span>
+      <input type="text" name="os" value="<%= vm.guest %>" dir="ltr">
+    </label>
+  </div>
+
+  <label>
+    <span>סיסמת root של ה-VM</span>
+    <input type="text" name="root_password" required dir="ltr" placeholder="הסיסמה שהגדרת בעת התקנת ה-OS">
+  </label>
+  <p class="muted">הסיסמה תוצפן ב-AES-256 לפני שמירה ב-DB. תוצג ללקוח באזור האישי שלו.</p>
+
+  <button class="btn btn-primary btn-block">ייבא ושייך</button>
+</form>
