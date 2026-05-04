@@ -1,46 +1,251 @@
-<section class="hero">
-  <h1>שרתים וירטואליים מהירים, אמינים, בישראל</h1>
-  <p>תשתית VMware ESXi ארגונית, פריסה תוך דקות, ותמיכה בעברית 24/7.</p>
-  <div class="hero-actions">
-    <a href="/plans" class="btn btn-primary btn-lg">לחבילות שלנו</a>
-    <a href="/register" class="btn btn-outline btn-lg">פתיחת חשבון</a>
+<section class="hero hero-modern">
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-orb hero-orb-3"></div>
+  <div class="hero-grid-bg"></div>
+
+  <div class="hero-inner">
+    <div class="hero-text">
+      <span class="hero-pill">
+        <span class="dot dot-pulse"></span>
+        תשתית VMware ESXi · ארגונית · בישראל
+      </span>
+      <h1 class="hero-title">
+        שרתים <span class="text-grad">חזקים מהירים יציבים</span><br>
+        לכל פרויקט שלך
+      </h1>
+      <p class="hero-sub">
+        VPS, שרתי משחק (Minecraft, Rust, CS, FiveM), אחסון אתרים, ושירותי ענן —
+        עם פריסה תוך דקות, מחירים שקופים, ותמיכה בעברית 24/7.
+      </p>
+      <div class="hero-actions">
+        <a href="/plans" class="btn-cta">
+          לחבילות שלנו
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <a href="/register" class="btn-outline-cta">פתיחת חשבון חינם</a>
+      </div>
+      <div class="hero-trust">
+        <span>✓ ללא התחייבות</span>
+        <span>✓ הפעלה תוך 60 שניות</span>
+        <span>✓ תמיכה בעברית</span>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <%- include('partials/hero-rack') %>
+    </div>
   </div>
 </section>
 
-<section class="features">
-  <div class="feature">
-    <h3>פריסה מיידית</h3>
-    <p>השרת שלך עולה לאוויר תוך דקות מרגע ההזמנה.</p>
-  </div>
-  <div class="feature">
-    <h3>תשתית ארגונית</h3>
-    <p>חומרת Dell PowerEdge, ESXi 7.0, רשת יציבה ומאובטחת.</p>
-  </div>
-  <div class="feature">
-    <h3>שליטה מלאה</h3>
-    <p>הפעלה, כיבוי, אתחול וניהול שרתים מהאזור האישי.</p>
-  </div>
-  <div class="feature">
-    <h3>תמיכה בעברית</h3>
-    <p>צוות התמיכה שלנו זמין בעברית בכל שעות היממה.</p>
+<section class="stats-section">
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-num" data-count="99.9" data-suffix="%">0%</div>
+      <div class="stat-label">זמן עבודה</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" data-count="2400" data-suffix="+">0</div>
+      <div class="stat-label">שרתים פעילים</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" data-count="60" data-suffix=" שניות">0</div>
+      <div class="stat-label">פריסה ממוצעת</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" data-count="24" data-suffix="/7">0</div>
+      <div class="stat-label">תמיכה בעברית</div>
+    </div>
   </div>
 </section>
 
-<section class="plans-preview">
-  <h2>החבילות הפופולריות</h2>
-  <div class="plans-grid">
-    <% plans.slice(0, 4).forEach(function(plan) { %>
-      <div class="plan-card">
+<section class="features-section">
+  <div class="section-head">
+    <span class="section-eyebrow">למה EvoHost</span>
+    <h2>כל מה שצריך כדי להתחיל ולגדול</h2>
+    <p>מהאתר הראשון שלך ועד תשתית עסקית רצינית — אנחנו תופרים את הפתרון בדיוק עליך.</p>
+  </div>
+
+  <div class="features-grid">
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+      <h3>פריסה מיידית</h3>
+      <p>השרת שלך עולה לאוויר תוך 60 שניות מרגע התשלום. ללא המתנה.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+      <h3>חומרת Enterprise</h3>
+      <p>שרתי Dell PowerEdge, Intel Xeon, NVMe SSD, רשת 1Gbps אנלימיטד.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <h3>אבטחה מתקדמת</h3>
+      <p>הצפנה ב-AES-256, הגנת DDoS, חומת אש מנוהלת, גיבויים אוטומטיים.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+      <h3>ביצועים שמרגישים</h3>
+      <p>NVMe + מעבדים מהדור החדש = אתרים זריזים פי 5 ושרתי משחק חלקים.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+      <h3>שרתים בישראל</h3>
+      <p>תשתית פיזית בישראל — latency של מילישניות בודדות לצופים מקומיים.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+      <h3>תמיכה אנושית 24/7</h3>
+      <p>צוות בעברית, זמין בצ'אט, מייל וטלפון. תגובה ראשונה תוך דקות.</p>
+    </div>
+  </div>
+</section>
+
+<section class="usecases-section">
+  <div class="section-head">
+    <span class="section-eyebrow">פתרונות</span>
+    <h2>אחד הפתרונות שלנו בדיוק לך</h2>
+  </div>
+  <div class="usecase-grid">
+    <a href="/plans" class="usecase-card uc-game">
+      <div class="uc-icon">🎮</div>
+      <h3>שרתי משחק</h3>
+      <p>Minecraft, FiveM, Rust, CS2, ARK ועוד. one-click install ו-DDoS protection.</p>
+      <span class="uc-cta">לחבילות משחק ←</span>
+    </a>
+    <a href="/plans" class="usecase-card uc-vps">
+      <div class="uc-icon">⚡</div>
+      <h3>VPS וירטואלי</h3>
+      <p>Linux או Windows, root access מלא, מתאים למפתחים, סוכנויות ועסקים.</p>
+      <span class="uc-cta">לחבילות VPS ←</span>
+    </a>
+    <a href="/plans" class="usecase-card uc-web">
+      <div class="uc-icon">🌐</div>
+      <h3>אחסון אתרים</h3>
+      <p>WordPress, Laravel, Node.js. SSL חינם, גיבוי יומי ו-CDN מובנה.</p>
+      <span class="uc-cta">לחבילות אחסון ←</span>
+    </a>
+    <a href="/contact" class="usecase-card uc-enterprise">
+      <div class="uc-icon">🏢</div>
+      <h3>פתרון Enterprise</h3>
+      <p>צריך משהו ייחודי? קלאסטרים, רישוי VMware, SLA מותאם — דבר איתנו.</p>
+      <span class="uc-cta">צור קשר עם מכירות ←</span>
+    </a>
+  </div>
+</section>
+
+<section class="plans-section">
+  <div class="section-head">
+    <span class="section-eyebrow">תמחור</span>
+    <h2>חבילות פשוטות, ללא הפתעות</h2>
+    <p>בחר חבילה ושלם רק על מה שאתה צורך. שדרוג בכל עת, ביטול בכל עת.</p>
+  </div>
+  <div class="plans-modern">
+    <% plans.slice(0, 4).forEach(function(plan, idx) { %>
+      <div class="plan-modern <%= idx === 1 ? 'plan-popular' : '' %>">
+        <% if (idx === 1) { %><div class="plan-badge">הכי פופולרי</div><% } %>
         <h3><%= plan.name %></h3>
-        <div class="price"><span><%= plan.price_monthly %></span> ₪/חודש</div>
-        <ul>
-          <li><%= plan.cpu %> ליבות CPU</li>
-          <li><%= plan.ram_gb %> GB זיכרון</li>
-          <li><%= plan.disk_gb %> GB SSD</li>
-          <li><%= plan.bandwidth_tb %> TB תעבורה</li>
+        <% if (plan.description) { %><p class="plan-desc muted"><%= plan.description %></p><% } %>
+        <div class="plan-price">
+          <span class="price-num"><%= plan.price_monthly %></span>
+          <span class="price-suffix">₪/חודש</span>
+        </div>
+        <ul class="plan-feats">
+          <li><span class="check">✓</span> <strong><%= plan.cpu %></strong> ליבות CPU</li>
+          <li><span class="check">✓</span> <strong><%= plan.ram_gb %> GB</strong> RAM</li>
+          <li><span class="check">✓</span> <strong><%= plan.disk_gb %> GB</strong> NVMe SSD</li>
+          <li><span class="check">✓</span> <strong><%= plan.bandwidth_tb %> TB</strong> תעבורה</li>
+          <li><span class="check">✓</span> IPv4 ייעודי</li>
+          <li><span class="check">✓</span> תמיכה 24/7 בעברית</li>
         </ul>
-        <a href="/dashboard/servers/order?plan=<%= plan.id %>" class="btn btn-primary">בחירת חבילה</a>
+        <a href="/dashboard/servers/order?plan=<%= plan.id %>" class="plan-cta <%= idx === 1 ? 'plan-cta-primary' : '' %>">בחירת חבילה</a>
       </div>
     <% }) %>
+  </div>
+</section>
+
+<section class="testimonials-section">
+  <div class="section-head">
+    <span class="section-eyebrow">לקוחות מספרים</span>
+    <h2>מה אומרים עלינו</h2>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p>"השרת עלה תוך פחות מדקה ועד היום עובד יציב. השירות לקוחות מענה מהיר ובעברית — נדיר!"</p>
+      <div class="testi-author">
+        <div class="testi-avatar">ד</div>
+        <div>
+          <strong>דניאל ל.</strong>
+          <span>בעלים, סטודיו לפיתוח</span>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p>"מריץ קהילת FiveM של 200 שחקנים. ללא lag, ללא קריסות. גם בקאמבק היומי הכבד."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">י</div>
+        <div>
+          <strong>יואב ק.</strong>
+          <span>מנהל קהילה</span>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p>"החלפתי מספק זול והבדל היה דרמטי. אתרי הלקוחות עובדים פי 4 מהר יותר."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">ר</div>
+        <div>
+          <strong>רעות מ.</strong>
+          <span>פרילנסרית, פיתוח אתרים</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faq-section">
+  <div class="section-head">
+    <span class="section-eyebrow">שאלות נפוצות</span>
+    <h2>אולי כבר ענינו על השאלה שלך</h2>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>כמה זמן לוקח לפתוח שרת?</summary>
+      <p>בדרך כלל פחות מדקה. ברגע שהתשלום מתקבל, השרת נוצר אוטומטית ב-VMware ESXi ומקבל IP ציבורי. תקבלי מייל עם פרטי הגישה (IP, root password, SSH).</p>
+    </details>
+    <details class="faq-item">
+      <summary>האם אני יכול לשדרג חבילה בהמשך?</summary>
+      <p>כן. שדרוג CPU/RAM/דיסק זמין מהאזור האישי בכל רגע, ללא תשלום נוסף מעבר להפרש המחיר. השדרוג מתבצע ברוב המקרים תוך דקה.</p>
+    </details>
+    <details class="faq-item">
+      <summary>מה ההגנה על שרתי משחק?</summary>
+      <p>כל השרתים מקבלים הגנת DDoS ברמת רשת (10Gbps+) באופן אוטומטי. בנוסף, יש אפשרות להפעיל firewall מותאם פר-משחק, וגיבויים אוטומטיים יומיים.</p>
+    </details>
+    <details class="faq-item">
+      <summary>האם אפשר לבטל מתי שרוצים?</summary>
+      <p>כן. אין התחייבות. ניתן לבטל מהאזור האישי בלחיצת כפתור. הביטול יכנס לתוקף בסוף תקופת התשלום הנוכחית — לא תחויב בחודש הבא.</p>
+    </details>
+    <details class="faq-item">
+      <summary>איזה מערכות הפעלה נתמכות?</summary>
+      <p>Ubuntu 22.04 LTS, Debian 12, CentOS Stream 9, Rocky Linux 9, Windows Server 2022. אפשר להחליף OS בלחיצת כפתור (כל הנתונים נמחקים בעת ההחלפה).</p>
+    </details>
+    <details class="faq-item">
+      <summary>איך מקבלים תמיכה?</summary>
+      <p>מהאזור האישי יש כפתור "צריך עזרה?" שפותח טופס פנייה. בנוסף — מייל ל-<%= supportEmail %> וטלפון ל-<%= supportPhone %>. זמן מענה ממוצע: 4 דקות.</p>
+    </details>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="cta-orb"></div>
+  <div class="cta-content">
+    <h2>מוכן להתחיל?</h2>
+    <p>פתיחת חשבון חינמית · השרת הראשון שלך תוך 60 שניות.</p>
+    <div class="hero-actions">
+      <a href="/register" class="btn-cta">פתיחת חשבון חינם</a>
+      <a href="/plans" class="btn-outline-cta">לראות חבילות קודם</a>
+    </div>
   </div>
 </section>
