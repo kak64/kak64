@@ -2,20 +2,29 @@
   <%- include('../partials/admin-sidebar') %>
   <section class="dashboard-main">
     <h1>פניות תמיכה</h1>
+
+    <div class="filter-tabs">
+      <a href="/admin/tickets?status=open" class="<%= filter === 'open' ? 'active' : '' %>">פתוחות</a>
+      <a href="/admin/tickets?status=answered" class="<%= filter === 'answered' ? 'active' : '' %>">נענו</a>
+      <a href="/admin/tickets?status=closed" class="<%= filter === 'closed' ? 'active' : '' %>">סגורות</a>
+      <a href="/admin/tickets?status=all" class="<%= filter === 'all' ? 'active' : '' %>">הכל</a>
+    </div>
+
     <div class="card">
       <% if (tickets.length === 0) { %>
-        <p class="muted">אין פניות.</p>
+        <p class="muted">אין פניות בקטגוריה זו.</p>
       <% } else { %>
         <table>
-          <thead><tr><th>#</th><th>נושא</th><th>לקוח</th><th>עדיפות</th><th>סטטוס</th><th>תאריך</th></tr></thead>
+          <thead><tr><th>#</th><th>נושא</th><th>לקוח</th><th>עדיפות</th><th>סטטוס</th><th>הודעות</th><th>תאריך</th></tr></thead>
           <tbody>
             <% tickets.forEach(function(t) { %>
-              <tr>
+              <tr class="priority-<%= t.priority %>">
                 <td>#<%= t.id %></td>
                 <td><a href="/admin/tickets/<%= t.id %>"><%= t.subject %></a></td>
                 <td><%= t.user_name %><br><small dir="ltr"><%= t.user_email %></small></td>
-                <td><%= t.priority %></td>
+                <td><span class="priority priority-<%= t.priority %>"><%= t.priority %></span></td>
                 <td><span class="status status-<%= t.status %>"><%= t.status %></span></td>
+                <td><%= t.msg_count %></td>
                 <td><%= t.created_at.split(' ')[0] %></td>
               </tr>
             <% }) %>

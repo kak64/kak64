@@ -1,0 +1,170 @@
+<div class="dashboard-layout">
+  <%- include('../partials/admin-sidebar') %>
+  <section class="dashboard-main">
+    <div class="page-header-row">
+      <h1><%= profile.full_name %>
+        <% if (profile.suspended) { %><span class="status status-suspended">מושעה</span><% } %>
+        <% if (profile.role === 'admin') { %><span class="badge">מנהל</span><% } %>
+      </h1>
+      <div class="action-buttons">
+        <form method="post" action="/admin/users/<%= profile.id %>/impersonate" class="inline-form">
+          <button class="btn btn-sm">התחזות למשתמש</button>
+        </form>
+        <a href="/admin/servers/new?user=<%= profile.id %>" class="btn btn-sm btn-primary">פתח שרת עבורו</a>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>פרטי לקוח</h3>
+        <table class="kv">
+          <tr><th>מייל</th><td dir="ltr"><%= profile.email %></td></tr>
+          <tr><th>טלפון</th><td><%= profile.phone || '—' %></td></tr>
+          <tr><th>חברה</th><td><%= profile.company || '—' %></td></tr>
+          <tr><th>ח.פ / ע.מ</th><td><%= profile.tax_id || '—' %></td></tr>
+          <tr><th>כתובת</th><td><%= [profile.address, profile.city, profile.country].filter(Boolean).join(', ') || '—' %></td></tr>
+          <tr><th>תפקיד</th><td>
+            <form method="post" action="/admin/users/<%= profile.id %>/role" class="inline-form">
+              <select name="role" onchange="this.form.submit()">
+                <option value="user" <%= profile.role === 'user' ? 'selected' : '' %>>לקוח</option>
+                <option value="admin" <%= profile.role === 'admin' ? 'selected' : '' %>>מנהל</option>
+              </select>
+            </form>
+          </td></tr>
+          <tr><th>נרשם</th><td><%= profile.created_at %></td></tr>
+          <tr><th>יתרת חשבון</th><td><strong><%= profile.balance.toFixed(2) %> ₪</strong></td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>פעולות מנהל</h3>
+
+        <form method="post" action="/admin/users/<%= profile.id %>/reset-password" class="mini-form">
+          <h4>איפוס סיסמה</h4>
+          <div class="form-row">
+            <input type="text" name="new_password" placeholder="סיסמה חדשה (8+ תווים)" minlength="8" required dir="ltr">
+            <button class="btn">אפס</button>
+          </div>
+        </form>
+
+        <form method="post" action="/admin/users/<%= profile.id %>/balance" class="mini-form">
+          <h4>עדכון יתרה</h4>
+          <div class="form-row">
+            <input type="number" step="0.01" name="amount" placeholder="סכום (חיובי או שלילי)" required>
+            <input type="text" name="reason" placeholder="סיבה">
+            <button class="btn">עדכן</button>
+          </div>
+        </form>
+
+        <form method="post" action="/admin/users/<%= profile.id %>/suspend" class="mini-form">
+          <h4>השעיית חשבון</h4>
+          <% if (profile.suspended) { %>
+            <input type="hidden" name="action" value="unsuspend">
+            <button class="btn btn-success">בטל השעיה</button>
+          <% } else { %>
+            <button class="btn btn-warning" onclick="return confirm('להשעות את המשתמש?')">השעה חשבון</button>
+          <% } %>
+        </form>
+
+        <form method="post" action="/admin/users/<%= profile.id %>/note" class="mini-form">
+          <h4>הערות פנימיות</h4>
+          <textarea name="notes" rows="3" placeholder="הערות פנימיות (לא נראה ללקוח)"><%= profile.admin_notes || '' %></textarea>
+          <button class="btn">שמור הערה</button>
+        </form>
+
+        <% if (Number(profile.id) !== Number(user.id)) { %>
+          <form method="post" action="/admin/users/<%= profile.id %>/delete" class="mini-form" onsubmit="return confirm('למחוק את המשתמש לצמיתות? פעולה לא הפיכה!')">
+            <button class="btn btn-danger btn-block">מחיקת משתמש</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>שרתים (<%= servers.length %>)</h3>
+        <a href="/admin/servers/new?user=<%= profile.id %>" class="btn btn-sm btn-primary">+ שרת חדש</a>
+      </div>
+      <% if (servers.length === 0) { %>
+        <p class="muted">אין שרתים</p>
+      <% } else { %>
+        <table>
+          <thead><tr><th>שם</th><th>חבילה</th><th>סטטוס</th><th>IP</th><th>פוקע</th><th></th></tr></thead>
+          <tbody>
+            <% servers.forEach(function(s) { %>
+              <tr>
+                <td><strong><%= s.hostname %></strong></td>
+                <td><%= s.plan_name %></td>
+                <td>
+                  <% if (s.cancelled_at) { %><span class="status status-cancelled">מבוטל</span>
+                  <% } else if (s.suspended_at) { %><span class="status status-suspended">מושעה</span>
+                  <% } else { %><span class="status status-<%= s.status %>"><%= s.status %></span><% } %>
+                </td>
+                <td><code><%= s.ip_address || '—' %></code></td>
+                <td><%= s.expires_at ? s.expires_at.split('T')[0] : '—' %></td>
+                <td><a href="/admin/servers/<%= s.id %>">ניהול</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>חשבוניות אחרונות</h3>
+        <% if (invoices.length === 0) { %><p class="muted">אין חשבוניות</p>
+        <% } else { %>
+          <table>
+            <thead><tr><th>#</th><th>תיאור</th><th>סכום</th><th>סטטוס</th><th>תאריך</th></tr></thead>
+            <tbody>
+              <% invoices.forEach(function(i) { %>
+                <tr>
+                  <td>#<%= i.id %></td><td><%= i.description %></td>
+                  <td><%= i.amount.toFixed(2) %> ₪</td>
+                  <td><span class="status status-<%= i.status %>"><%= i.status === 'paid' ? 'שולם' : 'ממתין' %></span></td>
+                  <td><%= i.created_at.split(' ')[0] %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+
+      <div class="card">
+        <h3>פניות תמיכה</h3>
+        <% if (tickets.length === 0) { %><p class="muted">אין פניות</p>
+        <% } else { %>
+          <ul class="ticket-list">
+            <% tickets.forEach(function(t) { %>
+              <li>
+                <a href="/admin/tickets/<%= t.id %>"><%= t.subject %></a>
+                <span class="status status-<%= t.status %>"><%= t.status %></span>
+                <small class="muted"><%= t.created_at.split(' ')[0] %></small>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (transactions.length) { %>
+      <div class="card">
+        <h3>היסטוריית יתרה</h3>
+        <table>
+          <thead><tr><th>תאריך</th><th>סכום</th><th>סיבה</th><th>בוצע ע"י</th></tr></thead>
+          <tbody>
+            <% transactions.forEach(function(t) { %>
+              <tr>
+                <td><%= t.created_at %></td>
+                <td class="<%= t.amount >= 0 ? 'positive' : 'negative' %>"><%= t.amount.toFixed(2) %> ₪</td>
+                <td><%= t.reason || '—' %></td>
+                <td><%= t.admin_name || '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</div>

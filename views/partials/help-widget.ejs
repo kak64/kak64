@@ -1,0 +1,41 @@
+<div class="help-widget" id="help-widget">
+  <button class="help-toggle" onclick="document.getElementById('help-widget').classList.toggle('open')" aria-label="פתח טופס תמיכה">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span>צריך עזרה?</span>
+  </button>
+  <div class="help-panel">
+    <div class="help-header">
+      <h3>פנייה לתמיכה</h3>
+      <button class="help-close" onclick="document.getElementById('help-widget').classList.remove('open')" aria-label="סגור">×</button>
+    </div>
+    <div class="help-body">
+      <p class="muted">צוות התמיכה זמין 24/7. נחזור אליך בדרך כלל תוך כמה דקות.</p>
+      <form method="post" action="/dashboard/tickets/quick">
+        <label>
+          <span>נושא</span>
+          <input type="text" name="subject" required placeholder="לדוגמה: השרת לא נדלק">
+        </label>
+        <label>
+          <span>עדיפות</span>
+          <select name="priority">
+            <option value="low">נמוכה</option>
+            <option value="normal" selected>רגילה</option>
+            <option value="high">גבוהה</option>
+            <option value="urgent">דחופה - השירות לא עובד</option>
+          </select>
+        </label>
+        <label>
+          <span>תיאור הבעיה</span>
+          <textarea name="body" rows="5" required placeholder="ספר לנו במה אנחנו יכולים לעזור..."></textarea>
+        </label>
+        <button class="btn btn-primary btn-block">שליחה</button>
+      </form>
+      <div class="help-shortcuts">
+        <a href="/dashboard/tickets">כל הפניות שלי →</a>
+        <a href="/contact">דרכי התקשרות →</a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -68,4 +68,13 @@ router.post('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
+router.post('/stop-impersonating', (req, res) => {
+  if (req.session.original_admin_id) {
+    req.session.userId = req.session.original_admin_id;
+    delete req.session.original_admin_id;
+    req.flash('success', 'חזרת לחשבון המנהל');
+  }
+  res.redirect('/admin');
+});
+
 module.exports = router;

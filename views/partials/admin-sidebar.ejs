@@ -3,7 +3,8 @@
   <ul>
     <li><a href="/admin" class="<%= path === '/admin' ? 'active' : '' %>">סקירה</a></li>
     <li><a href="/admin/users" class="<%= path.startsWith('/admin/users') ? 'active' : '' %>">משתמשים</a></li>
-    <li><a href="/admin/servers" class="<%= path.startsWith('/admin/servers') ? 'active' : '' %>">שרתים</a></li>
+    <li><a href="/admin/servers" class="<%= path === '/admin/servers' ? 'active' : '' %>">שרתים</a></li>
+    <li><a href="/admin/servers/new" class="<%= path === '/admin/servers/new' ? 'active' : '' %>">+ פתיחת שרת</a></li>
     <li><a href="/admin/plans" class="<%= path.startsWith('/admin/plans') ? 'active' : '' %>">חבילות</a></li>
     <li><a href="/admin/tickets" class="<%= path.startsWith('/admin/tickets') ? 'active' : '' %>">פניות תמיכה</a></li>
     <li><a href="/dashboard">לאזור אישי &rarr;</a></li>

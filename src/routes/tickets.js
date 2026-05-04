@@ -61,4 +61,20 @@ router.post('/:id/close', (req, res) => {
   res.redirect('/dashboard/tickets');
 });
 
+router.post('/quick', (req, res) => {
+  const subject = (req.body.subject || '').trim();
+  const body = (req.body.body || '').trim();
+  const priority = ['low', 'normal', 'high', 'urgent'].includes(req.body.priority) ? req.body.priority : 'normal';
+  if (!subject || !body) {
+    req.flash('error', 'יש למלא נושא ותוכן');
+    return res.redirect('back');
+  }
+  const result = db.prepare('INSERT INTO tickets (user_id, subject, priority) VALUES (?, ?, ?)')
+    .run(req.user.id, subject, priority);
+  db.prepare('INSERT INTO ticket_messages (ticket_id, author_id, body) VALUES (?, ?, ?)')
+    .run(result.lastInsertRowid, req.user.id, body);
+  req.flash('success', 'פנייתך נשלחה. נחזור אליך בהקדם.');
+  res.redirect('/dashboard/tickets/' + result.lastInsertRowid);
+});
+
 module.exports = router;

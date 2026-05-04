@@ -1,0 +1,208 @@
+<div class="dashboard-layout">
+  <%- include('../partials/admin-sidebar') %>
+  <section class="dashboard-main">
+    <div class="page-header-row">
+      <h1>שרת: <%= server.hostname %></h1>
+      <div>
+        <% if (server.cancelled_at) { %><span class="status status-cancelled">מבוטל</span><% } %>
+        <% if (server.suspended_at) { %><span class="status status-suspended">מושעה</span><% } %>
+        <span class="status status-<%= server.status %>"><%= server.status %></span>
+        <% if (!server.auto_renew) { %><span class="status status-pending">ללא חידוש</span><% } %>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>פרטי לקוח</h3>
+        <table class="kv">
+          <tr><th>שם</th><td><a href="/admin/users/<%= server.owner_id %>"><%= server.user_name %></a></td></tr>
+          <tr><th>מייל</th><td dir="ltr"><%= server.user_email %></td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>פרטי שרת</h3>
+        <table class="kv">
+          <tr><th>חבילה</th><td><%= server.plan_name %> (<%= server.price_monthly %> ₪/חודש)</td></tr>
+          <tr><th>משאבים</th><td><%= server.cpu %> CPU · <%= server.ram_gb %>GB RAM · <%= server.disk_gb %>GB SSD · <%= server.bandwidth_tb %>TB</td></tr>
+          <tr><th>OS</th><td><%= server.os %></td></tr>
+          <tr><th>IP</th><td><code dir="ltr"><%= server.ip_address || '—' %></code></td></tr>
+          <tr><th>סיסמת root</th><td><code dir="ltr"><%= server.root_password %></code></td></tr>
+          <tr><th>VM ID</th><td><code><%= server.esxi_vm_id || '—' %></code></td></tr>
+          <tr><th>נוצר</th><td><%= server.created_at %></td></tr>
+          <tr><th>פוקע</th><td><strong><%= server.expires_at ? server.expires_at.split('T')[0] : '—' %></strong></td></tr>
+          <% if (server.cancelled_at) { %>
+            <tr><th>בוטל בתאריך</th><td class="negative"><%= server.cancelled_at %></td></tr>
+          <% } %>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>הפעלת שרת</h3>
+      <div class="action-buttons">
+        <form method="post" action="/admin/servers/<%= server.id %>/power" class="inline-form">
+          <input type="hidden" name="action" value="start">
+          <button class="btn btn-success">הפעלה</button>
+        </form>
+        <form method="post" action="/admin/servers/<%= server.id %>/power" class="inline-form">
+          <input type="hidden" name="action" value="stop">
+          <button class="btn btn-warning">כיבוי</button>
+        </form>
+        <form method="post" action="/admin/servers/<%= server.id %>/power" class="inline-form">
+          <input type="hidden" name="action" value="reboot">
+          <button class="btn">אתחול (Reboot)</button>
+        </form>
+        <form method="post" action="/admin/servers/<%= server.id %>/suspend" class="inline-form">
+          <% if (server.suspended_at) { %>
+            <button class="btn btn-success">בטל השעיה</button>
+          <% } else { %>
+            <button class="btn btn-warning" onclick="return confirm('להשעות את השרת?')">השעיית שרת</button>
+          <% } %>
+        </form>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>שינוי סיסמת root</h3>
+        <form method="post" action="/admin/servers/<%= server.id %>/change-root-password">
+          <label>
+            <span>סיסמה חדשה (השאר ריק כדי לייצר אקראית)</span>
+            <input type="text" name="new_password" minlength="8" dir="ltr" placeholder="(אקראי)">
+          </label>
+          <button class="btn btn-primary">עדכן סיסמה</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>הארכת תוקף</h3>
+        <form method="post" action="/admin/servers/<%= server.id %>/extend" class="mini-form">
+          <div class="form-row">
+            <select name="months">
+              <option value="1">חודש</option>
+              <option value="3">3 חודשים</option>
+              <option value="6">6 חודשים</option>
+              <option value="12">שנה</option>
+            </select>
+            <button class="btn btn-primary">הארך (ללא חיוב)</button>
+          </div>
+        </form>
+        <form method="post" action="/admin/servers/<%= server.id %>/expiry" class="mini-form">
+          <div class="form-row">
+            <input type="date" name="expires_at" value="<%= server.expires_at ? server.expires_at.split('T')[0] : '' %>" required>
+            <button class="btn">קבע תאריך פקיעה</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>חידוש אוטומטי וביטול</h3>
+      <p class="muted">חידוש אוטומטי = הלקוח יחויב בסוף תקופת התשלום. ביטול = השרת יפסיק להתחדש.</p>
+      <div class="action-buttons">
+        <% if (server.auto_renew) { %>
+          <form method="post" action="/admin/servers/<%= server.id %>/auto-renew" class="inline-form">
+            <input type="hidden" name="enable" value="0">
+            <button class="btn btn-warning">בטל חידוש (לא יחויב חודש הבא)</button>
+          </form>
+        <% } else { %>
+          <form method="post" action="/admin/servers/<%= server.id %>/auto-renew" class="inline-form">
+            <input type="hidden" name="enable" value="1">
+            <button class="btn btn-success">הפעל חידוש אוטומטי</button>
+          </form>
+        <% } %>
+
+        <% if (server.cancelled_at) { %>
+          <form method="post" action="/admin/servers/<%= server.id %>/uncancel" class="inline-form">
+            <button class="btn btn-success">בטל ביטול</button>
+          </form>
+        <% } else { %>
+          <form method="post" action="/admin/servers/<%= server.id %>/cancel" class="inline-form" onsubmit="return confirm('לבטל את השרת בסוף תקופת התשלום?')">
+            <input type="hidden" name="mode" value="end_of_period">
+            <button class="btn btn-warning">ביטול בסוף תקופה (ללא תשלום נוסף)</button>
+          </form>
+          <form method="post" action="/admin/servers/<%= server.id %>/cancel" class="inline-form" onsubmit="return confirm('לבטל ולהשמיד את השרת מיידית? פעולה זו אינה הפיכה!')">
+            <input type="hidden" name="mode" value="immediate">
+            <button class="btn btn-danger">ביטול ומחיקה מיידית</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>חיוב</h3>
+        <form method="post" action="/admin/servers/<%= server.id %>/invoice" class="mini-form">
+          <h4>צור חשבונית ידנית</h4>
+          <label>
+            <span>סכום (ברירת מחדל: <%= server.price_monthly %> ₪)</span>
+            <input type="number" step="0.01" name="amount" placeholder="<%= server.price_monthly %>">
+          </label>
+          <label>
+            <span>תיאור</span>
+            <input type="text" name="description" placeholder="שרת <%= server.hostname %> - חידוש חודשי">
+          </label>
+          <button class="btn btn-primary">צור חשבונית</button>
+        </form>
+        <form method="post" action="/admin/servers/<%= server.id %>/mark-paid" class="mini-form">
+          <button class="btn">סמן את כל החשבוניות הפתוחות כשולמו</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>הערות פנימיות</h3>
+        <form method="post" action="/admin/servers/<%= server.id %>/note">
+          <textarea name="notes" rows="6" placeholder="הערות מנהל - לא נראה ללקוח"><%= server.admin_notes || '' %></textarea>
+          <button class="btn btn-primary">שמור הערה</button>
+        </form>
+      </div>
+    </div>
+
+    <% if (invoices.length) { %>
+      <div class="card">
+        <h3>חשבוניות של שרת זה</h3>
+        <table>
+          <thead><tr><th>#</th><th>תיאור</th><th>סכום</th><th>סטטוס</th><th>נוצר</th><th>שולם</th></tr></thead>
+          <tbody>
+            <% invoices.forEach(function(i) { %>
+              <tr>
+                <td>#<%= i.id %></td><td><%= i.description %></td>
+                <td><%= i.amount.toFixed(2) %> ₪</td>
+                <td><span class="status status-<%= i.status %>"><%= i.status === 'paid' ? 'שולם' : 'ממתין' %></span></td>
+                <td><%= i.created_at.split(' ')[0] %></td>
+                <td><%= i.paid_at ? i.paid_at.split(' ')[0] : '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+
+    <% if (actions.length) { %>
+      <div class="card">
+        <h3>היסטוריית פעולות</h3>
+        <table>
+          <thead><tr><th>זמן</th><th>פעולה</th><th>פרטים</th><th>בוצע ע"י</th></tr></thead>
+          <tbody>
+            <% actions.forEach(function(a) { %>
+              <tr>
+                <td><%= a.created_at %></td>
+                <td><code><%= a.action %></code></td>
+                <td><%= a.details || '—' %></td>
+                <td><%= a.admin_name || '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+
+    <div class="card danger-zone">
+      <h3>אזור מסוכן</h3>
+      <form method="post" action="/admin/servers/<%= server.id %>/delete" onsubmit="return confirm('למחוק את השרת מהמערכת לצמיתות? כל הנתונים יאבדו!')">
+        <button class="btn btn-danger">מחיקת שרת לצמיתות</button>
+      </form>
+    </div>
+  </section>
+</div>

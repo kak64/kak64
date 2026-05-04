@@ -2,12 +2,48 @@
   <%- include('../partials/admin-sidebar') %>
   <section class="dashboard-main">
     <h1>לוח בקרה - מנהל</h1>
+
     <div class="stats-grid">
       <div class="stat"><div class="num"><%= stats.users %></div><div>משתמשים</div></div>
-      <div class="stat"><div class="num"><%= stats.servers %></div><div>שרתים</div></div>
+      <div class="stat"><div class="num"><%= stats.active_servers %></div><div>שרתים פעילים</div></div>
+      <% if (stats.suspended_servers > 0) { %>
+        <div class="stat warn"><div class="num"><%= stats.suspended_servers %></div><div>שרתים מושעים</div></div>
+      <% } %>
+      <% if (stats.expiring_soon > 0) { %>
+        <div class="stat warn"><div class="num"><%= stats.expiring_soon %></div><div>פוקעים בשבוע הקרוב</div></div>
+      <% } %>
       <div class="stat"><div class="num"><%= stats.open_tickets %></div><div>פניות פתוחות</div></div>
-      <div class="stat"><div class="num"><%= stats.revenue.toFixed(0) %> ₪</div><div>הכנסות (שולם)</div></div>
+      <div class="stat"><div class="num"><%= stats.revenue.toFixed(0) %> ₪</div><div>הכנסות</div></div>
       <div class="stat"><div class="num"><%= stats.pending_revenue.toFixed(0) %> ₪</div><div>בהמתנה לתשלום</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>פעולות מהירות</h3>
+        <div class="action-buttons">
+          <a href="/admin/servers/new" class="btn btn-primary">פתיחת שרת חדש</a>
+          <a href="/admin/servers?status=expiring" class="btn">פוקעים בקרוב</a>
+          <a href="/admin/tickets?status=open" class="btn">פניות פתוחות</a>
+          <a href="/admin/users" class="btn">ניהול משתמשים</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>פעולות אחרונות בשרתים</h3>
+        <% if (recent_actions.length === 0) { %>
+          <p class="muted">אין פעולות לאחרונה</p>
+        <% } else { %>
+          <ul class="action-feed">
+            <% recent_actions.forEach(function(a) { %>
+              <li>
+                <code><%= a.action %></code>
+                <% if (a.hostname) { %>על <a href="/admin/servers/<%= a.server_id %>"><%= a.hostname %></a><% } %>
+                <small class="muted">ע"י <%= a.admin_name || '—' %> · <%= a.created_at %></small>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
     </div>
   </section>
 </div>

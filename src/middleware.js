@@ -2,11 +2,15 @@ const { db } = require('./db');
 
 function attachUser(req, res, next) {
   res.locals.user = null;
+  res.locals.impersonating = false;
   if (req.session && req.session.userId) {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.session.userId);
     if (user) {
       req.user = user;
       res.locals.user = user;
+      if (req.session.original_admin_id) {
+        res.locals.impersonating = true;
+      }
     }
   }
   next();

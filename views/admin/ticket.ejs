@@ -3,16 +3,33 @@
   <section class="dashboard-main">
     <div class="page-header-row">
       <h1>#<%= ticket.id %> - <%= ticket.subject %></h1>
-      <span class="status status-<%= ticket.status %>"><%= ticket.status %></span>
+      <div>
+        <span class="priority priority-<%= ticket.priority %>"><%= ticket.priority %></span>
+        <span class="status status-<%= ticket.status %>"><%= ticket.status %></span>
+      </div>
     </div>
-    <p class="muted">לקוח: <%= ticket.user_name %> (<span dir="ltr"><%= ticket.user_email %></span>)</p>
+    <p class="muted">לקוח: <a href="/admin/users/<%= ticket.user_id %>"><%= ticket.user_name %></a> (<span dir="ltr"><%= ticket.user_email %></span>)</p>
+
+    <div class="card">
+      <form method="post" action="/admin/tickets/<%= ticket.id %>/priority" class="inline-form">
+        <label><span>שינוי עדיפות:</span>
+          <select name="priority" onchange="this.form.submit()">
+            <option value="low" <%= ticket.priority === 'low' ? 'selected' : '' %>>נמוכה</option>
+            <option value="normal" <%= ticket.priority === 'normal' ? 'selected' : '' %>>רגילה</option>
+            <option value="high" <%= ticket.priority === 'high' ? 'selected' : '' %>>גבוהה</option>
+            <option value="urgent" <%= ticket.priority === 'urgent' ? 'selected' : '' %>>דחופה</option>
+          </select>
+        </label>
+      </form>
+    </div>
 
     <div class="ticket-thread">
       <% messages.forEach(function(m) { %>
-        <div class="message <%= m.author_role === 'admin' ? 'message-staff' : 'message-user' %>">
+        <div class="message <%= m.is_internal ? 'message-internal' : (m.author_role === 'admin' ? 'message-staff' : 'message-user') %>">
           <div class="message-head">
             <strong><%= m.author_name %></strong>
             <% if (m.author_role === 'admin') { %><span class="badge">צוות</span><% } %>
+            <% if (m.is_internal) { %><span class="badge badge-internal">פנימי</span><% } %>
             <span class="muted"><%= m.created_at %></span>
           </div>
           <div class="message-body"><%= m.body %></div>
@@ -22,12 +39,19 @@
 
     <% if (ticket.status !== 'closed') { %>
       <form method="post" action="/admin/tickets/<%= ticket.id %>/reply" class="card">
-        <h3>תגובת צוות</h3>
+        <h3>תגובה</h3>
         <textarea name="body" rows="5" required></textarea>
+        <label class="checkbox">
+          <input type="checkbox" name="internal"> הערה פנימית (לא נראית ללקוח)
+        </label>
         <button class="btn btn-primary">שליחה</button>
       </form>
       <form method="post" action="/admin/tickets/<%= ticket.id %>/close" class="inline-form">
         <button class="btn">סגירת פנייה</button>
+      </form>
+    <% } else { %>
+      <form method="post" action="/admin/tickets/<%= ticket.id %>/reopen" class="inline-form">
+        <button class="btn">פתיחה מחדש</button>
       </form>
     <% } %>
   </section>

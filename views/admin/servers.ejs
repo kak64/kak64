@@ -1,24 +1,41 @@
 <div class="dashboard-layout">
   <%- include('../partials/admin-sidebar') %>
   <section class="dashboard-main">
-    <h1>ניהול שרתים</h1>
+    <div class="page-header-row">
+      <h1>ניהול שרתים</h1>
+      <a href="/admin/servers/new" class="btn btn-primary">+ פתיחת שרת חדש</a>
+    </div>
+
+    <div class="filter-tabs">
+      <a href="/admin/servers?status=all" class="<%= filter === 'all' ? 'active' : '' %>">הכל</a>
+      <a href="/admin/servers?status=active" class="<%= filter === 'active' ? 'active' : '' %>">פעילים</a>
+      <a href="/admin/servers?status=suspended" class="<%= filter === 'suspended' ? 'active' : '' %>">מושעים</a>
+      <a href="/admin/servers?status=cancelled" class="<%= filter === 'cancelled' ? 'active' : '' %>">מבוטלים</a>
+      <a href="/admin/servers?status=expiring" class="<%= filter === 'expiring' ? 'active' : '' %>">פוקעים בקרוב</a>
+    </div>
+
     <div class="card">
       <% if (servers.length === 0) { %>
-        <p class="muted">אין שרתים במערכת.</p>
+        <p class="muted">אין שרתים בקטגוריה זו.</p>
       <% } else { %>
         <table>
-          <thead><tr><th>#</th><th>שם</th><th>לקוח</th><th>חבילה</th><th>סטטוס</th><th>IP</th><th>VM ID</th><th>תאריך</th></tr></thead>
+          <thead><tr><th>#</th><th>שם</th><th>לקוח</th><th>חבילה</th><th>סטטוס</th><th>IP</th><th>פוקע</th><th>חידוש</th><th></th></tr></thead>
           <tbody>
             <% servers.forEach(function(s) { %>
               <tr>
                 <td><%= s.id %></td>
                 <td><strong><%= s.hostname %></strong></td>
                 <td><%= s.user_name %><br><small dir="ltr"><%= s.user_email %></small></td>
-                <td><%= s.plan_name %></td>
-                <td><span class="status status-<%= s.status %>"><%= s.status %></span></td>
+                <td><%= s.plan_name %><br><small><%= s.price_monthly %> ₪</small></td>
+                <td>
+                  <% if (s.cancelled_at) { %><span class="status status-cancelled">מבוטל</span>
+                  <% } else if (s.suspended_at) { %><span class="status status-suspended">מושעה</span>
+                  <% } else { %><span class="status status-<%= s.status %>"><%= s.status %></span><% } %>
+                </td>
                 <td><code><%= s.ip_address || '—' %></code></td>
-                <td><code><%= s.esxi_vm_id || '—' %></code></td>
-                <td><%= s.created_at.split(' ')[0] %></td>
+                <td><%= s.expires_at ? s.expires_at.split('T')[0] : '—' %></td>
+                <td><%= s.auto_renew ? '✓' : '✗' %></td>
+                <td><a href="/admin/servers/<%= s.id %>" class="btn btn-sm">ניהול</a></td>
               </tr>
             <% }) %>
           </tbody>

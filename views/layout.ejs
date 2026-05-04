@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+  <% if (impersonating) { %>
+    <div class="impersonation-banner">
+      <span>אתה מתחזה כעת ל-<strong><%= user.full_name %></strong></span>
+      <form method="post" action="/stop-impersonating" class="inline-form">
+        <button type="submit" class="btn btn-sm">חזרה לחשבון מנהל</button>
+      </form>
+    </div>
+  <% } %>
   <%- include('partials/header') %>
   <main class="container">
     <% if (flash.success && flash.success.length) { %>
@@ -21,5 +29,8 @@
     <%- body %>
   </main>
   <%- include('partials/footer') %>
+  <% if (user) { %>
+    <%- include('partials/help-widget') %>
+  <% } %>
 </body>
 </html>

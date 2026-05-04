@@ -2,33 +2,39 @@
   <%- include('../partials/admin-sidebar') %>
   <section class="dashboard-main">
     <h1>ניהול משתמשים</h1>
+
+    <form method="get" action="/admin/users" class="search-bar">
+      <input type="text" name="q" value="<%= q || '' %>" placeholder="חיפוש לפי מייל / שם / טלפון / חברה">
+      <button class="btn btn-primary">חיפוש</button>
+      <% if (q) { %><a href="/admin/users" class="btn">נקה</a><% } %>
+    </form>
+
     <div class="card">
-      <table>
-        <thead><tr><th>#</th><th>שם</th><th>מייל</th><th>תפקיד</th><th>נרשם</th><th>פעולות</th></tr></thead>
-        <tbody>
-          <% users.forEach(function(u) { %>
-            <tr>
-              <td><%= u.id %></td>
-              <td><%= u.full_name %></td>
-              <td dir="ltr"><%= u.email %></td>
-              <td>
-                <form method="post" action="/admin/users/<%= u.id %>/role" class="inline-form">
-                  <select name="role" onchange="this.form.submit()">
-                    <option value="user" <%= u.role === 'user' ? 'selected' : '' %>>משתמש</option>
-                    <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>מנהל</option>
-                  </select>
-                </form>
-              </td>
-              <td><%= u.created_at.split(' ')[0] %></td>
-              <td>
-                <form method="post" action="/admin/users/<%= u.id %>/delete" class="inline-form" onsubmit="return confirm('למחוק משתמש?')">
-                  <button class="btn btn-sm btn-danger">מחיקה</button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+      <% if (users.length === 0) { %>
+        <p class="muted">לא נמצאו משתמשים</p>
+      <% } else { %>
+        <table>
+          <thead><tr><th>#</th><th>שם</th><th>מייל</th><th>טלפון</th><th>תפקיד</th><th>מצב</th><th>יתרה</th><th>נרשם</th><th></th></tr></thead>
+          <tbody>
+            <% users.forEach(function(u) { %>
+              <tr>
+                <td><%= u.id %></td>
+                <td><a href="/admin/users/<%= u.id %>"><%= u.full_name %></a></td>
+                <td dir="ltr"><%= u.email %></td>
+                <td><%= u.phone || '—' %></td>
+                <td><%= u.role === 'admin' ? 'מנהל' : 'לקוח' %></td>
+                <td>
+                  <% if (u.suspended) { %><span class="status status-suspended">מושעה</span>
+                  <% } else { %><span class="status status-running">פעיל</span><% } %>
+                </td>
+                <td><%= u.balance.toFixed(2) %> ₪</td>
+                <td><%= u.created_at.split(' ')[0] %></td>
+                <td><a href="/admin/users/<%= u.id %>" class="btn btn-sm">ניהול</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
     </div>
   </section>
 </div>

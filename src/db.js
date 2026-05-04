@@ -82,11 +82,45 @@ function initDb() {
       ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
       author_id INTEGER NOT NULL REFERENCES users(id),
       body TEXT NOT NULL,
+      is_internal INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS server_actions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      server_id INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+      admin_id INTEGER REFERENCES users(id),
+      action TEXT NOT NULL,
+      details TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS balance_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      admin_id INTEGER REFERENCES users(id),
+      amount REAL NOT NULL,
+      reason TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
 
+  addColumnIfMissing('servers', 'cancelled_at', 'TEXT');
+  addColumnIfMissing('servers', 'suspended_at', 'TEXT');
+  addColumnIfMissing('servers', 'auto_renew', 'INTEGER NOT NULL DEFAULT 1');
+  addColumnIfMissing('servers', 'admin_notes', 'TEXT');
+  addColumnIfMissing('users', 'suspended', 'INTEGER NOT NULL DEFAULT 0');
+  addColumnIfMissing('users', 'admin_notes', 'TEXT');
+  addColumnIfMissing('ticket_messages', 'is_internal', 'INTEGER NOT NULL DEFAULT 0');
+
   seedDefaults();
+}
+
+function addColumnIfMissing(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.find(c => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }
 
 function seedDefaults() {
