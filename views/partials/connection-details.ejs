@@ -1,0 +1,83 @@
+<div class="card connection-card">
+  <div class="connection-header">
+    <h3>פרטי חיבור לשרת</h3>
+    <span class="protocol-badge protocol-<%= conn.isWindows ? 'rdp' : 'ssh' %>"><%= conn.protocol %></span>
+  </div>
+
+  <% if (!server.ip_address) { %>
+    <div class="alert alert-info">כתובת IP טרם הוקצתה. הפרטים יופיעו כאן ברגע שהשרת יעלה לאוויר.</div>
+  <% } else { %>
+    <div class="conn-grid">
+      <div class="conn-field">
+        <label>כתובת IP</label>
+        <div class="conn-value">
+          <code dir="ltr" id="conn-ip"><%= server.ip_address %></code>
+          <button class="btn-copy" data-copy="conn-ip" title="העתק">📋</button>
+        </div>
+      </div>
+
+      <div class="conn-field">
+        <label>פורט</label>
+        <div class="conn-value">
+          <code dir="ltr"><%= conn.port %></code>
+        </div>
+      </div>
+
+      <div class="conn-field">
+        <label>שם משתמש</label>
+        <div class="conn-value">
+          <code dir="ltr" id="conn-user"><%= conn.username %></code>
+          <button class="btn-copy" data-copy="conn-user" title="העתק">📋</button>
+        </div>
+      </div>
+
+      <div class="conn-field">
+        <label>סיסמה</label>
+        <div class="conn-value">
+          <code dir="ltr" id="conn-pass" class="masked" data-secret="<%= server.root_password %>">••••••••••</code>
+          <button class="btn-copy" data-copy="conn-pass" data-secret="1" title="העתק">📋</button>
+          <button class="btn-reveal" data-reveal="conn-pass" title="הצג">👁</button>
+        </div>
+      </div>
+    </div>
+
+    <% if (conn.isWindows) { %>
+      <div class="conn-instructions">
+        <h4>איך מתחברים מ-Windows</h4>
+        <ol>
+          <li>לחץ על "<strong>הורדת קובץ RDP</strong>" למטה</li>
+          <li>פתח את הקובץ — חלון Remote Desktop ייפתח</li>
+          <li>הזן את הסיסמה שלמעלה ולחץ Connect</li>
+        </ol>
+        <div class="conn-actions">
+          <a href="<%= rdpUrl %>" class="btn btn-primary">⬇ הורדת קובץ RDP</a>
+          <span class="muted">או הקלד ידנית במקלדת:</span>
+          <code class="conn-cmd" id="conn-cmd" dir="ltr">mstsc /v:<%= server.ip_address %></code>
+          <button class="btn-copy btn-sm" data-copy="conn-cmd">📋</button>
+        </div>
+      </div>
+      <div class="conn-instructions">
+        <h4>איך מתחברים מ-Mac / iOS / Android</h4>
+        <p class="muted">הורד את אפליקציית <strong>Microsoft Remote Desktop</strong> מהחנות, הוסף PC חדש עם הכתובת והפרטים שלמעלה.</p>
+      </div>
+    <% } else { %>
+      <div class="conn-instructions">
+        <h4>איך מתחברים מ-Linux / Mac / WSL</h4>
+        <p>פתח טרמינל והקלד:</p>
+        <div class="conn-actions">
+          <code class="conn-cmd" id="conn-cmd-ssh" dir="ltr"><%= conn.sshCommand %></code>
+          <button class="btn-copy" data-copy="conn-cmd-ssh">📋</button>
+        </div>
+        <p class="muted">בחיבור הראשון תתבקש לאשר את ה-fingerprint - הקלד <code>yes</code>. ואז הזן את הסיסמה שלמעלה.</p>
+      </div>
+      <div class="conn-instructions">
+        <h4>איך מתחברים מ-Windows</h4>
+        <p class="muted">השתמש ב-<strong>PuTTY</strong> או ב-PowerShell:</p>
+        <div class="conn-actions">
+          <code class="conn-cmd" id="conn-cmd-ps" dir="ltr">ssh <%= conn.username %>@<%= server.ip_address %></code>
+          <button class="btn-copy" data-copy="conn-cmd-ps">📋</button>
+        </div>
+      </div>
+    <% } %>
+  <% } %>
+</div>

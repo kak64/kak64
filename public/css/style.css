@@ -230,6 +230,72 @@ code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: .9e
 .site-footer a:hover { color: #fff; }
 .copyright { padding: 20px 20px 0; color: #9ca3af; font-size: 13px; text-align: center; }
 
+/* Connection details card */
+.connection-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #e2e8f0;
+  border: 1px solid #334155;
+}
+.connection-card h3, .connection-card h4 { color: #fff; margin-top: 0; }
+.connection-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.protocol-badge {
+  padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 13px;
+  letter-spacing: 1px;
+}
+.protocol-ssh { background: #16a34a; color: #fff; }
+.protocol-rdp { background: #0ea5e9; color: #fff; }
+
+.conn-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px; margin-bottom: 20px;
+}
+.conn-field label {
+  display: block; font-size: 11px; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; font-weight: 600;
+}
+.conn-value {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0, 0, 0, .3); padding: 8px 12px; border-radius: 6px;
+}
+.conn-value code {
+  background: transparent; color: #e2e8f0; padding: 0;
+  font-family: 'Consolas', 'Menlo', monospace; font-size: 14px; flex: 1;
+  word-break: break-all;
+}
+.conn-value code.masked { letter-spacing: 2px; }
+
+.btn-copy, .btn-reveal {
+  background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .2);
+  color: #fff; padding: 4px 8px; border-radius: 4px; cursor: pointer;
+  font-size: 14px; transition: all .15s;
+}
+.btn-copy:hover, .btn-reveal:hover {
+  background: rgba(255, 255, 255, .2);
+}
+.btn-copy.copied { background: var(--success); border-color: var(--success); }
+
+.conn-instructions {
+  border-top: 1px solid #334155; padding-top: 16px; margin-top: 16px;
+}
+.conn-instructions p, .conn-instructions ol, .conn-instructions ul { color: #cbd5e1; }
+.conn-instructions h4 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
+.conn-instructions ol { padding-right: 20px; }
+.conn-instructions ol li { margin: 6px 0; }
+
+.conn-actions {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0;
+}
+.conn-cmd {
+  background: #000; color: #4ade80; padding: 8px 12px; border-radius: 6px;
+  font-family: 'Consolas', 'Menlo', monospace; flex: 1; min-width: 200px;
+  border: 1px solid #334155;
+}
+.connection-card .alert { background: rgba(8, 145, 178, .2); border-color: #0891b2; color: #cffafe; }
+.connection-card .muted { color: #94a3b8; }
+
 /* Help widget (floating) */
 .help-widget {
   position: fixed; bottom: 20px; left: 20px; z-index: 100;

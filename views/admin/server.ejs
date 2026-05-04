@@ -26,8 +26,6 @@
           <tr><th>חבילה</th><td><%= server.plan_name %> (<%= server.price_monthly %> ₪/חודש)</td></tr>
           <tr><th>משאבים</th><td><%= server.cpu %> CPU · <%= server.ram_gb %>GB RAM · <%= server.disk_gb %>GB SSD · <%= server.bandwidth_tb %>TB</td></tr>
           <tr><th>OS</th><td><%= server.os %></td></tr>
-          <tr><th>IP</th><td><code dir="ltr"><%= server.ip_address || '—' %></code></td></tr>
-          <tr><th>סיסמת root</th><td><code dir="ltr"><%= server.root_password %></code></td></tr>
           <tr><th>VM ID</th><td><code><%= server.esxi_vm_id || '—' %></code></td></tr>
           <tr><th>נוצר</th><td><%= server.created_at %></td></tr>
           <tr><th>פוקע</th><td><strong><%= server.expires_at ? server.expires_at.split('T')[0] : '—' %></strong></td></tr>
@@ -37,6 +35,8 @@
         </table>
       </div>
     </div>
+
+    <%- include('../partials/connection-details', { server, conn, rdpUrl: `/admin/servers/${server.id}/rdp` }) %>
 
     <div class="card">
       <h3>הפעלת שרת</h3>
@@ -206,3 +206,4 @@
     </div>
   </section>
 </div>
+<script src="/js/app.js"></script>

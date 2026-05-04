@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { db } = require('../db');
 const { requireAuth } = require('../middleware');
 const esxi = require('../esxi');
+const { connectionInfo, isWindows, defaultUsername } = require('../connection');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -84,7 +85,37 @@ router.get('/:id', (req, res) => {
     req.flash('error', 'השרת לא נמצא');
     return res.redirect('/dashboard/servers');
   }
-  res.render('dashboard/server', { title: `שרת ${server.hostname}`, server });
+  const conn = connectionInfo(server);
+  res.render('dashboard/server', { title: `שרת ${server.hostname}`, server, conn });
+});
+
+router.get('/:id/rdp', (req, res) => {
+  const server = getOwnedServer(req);
+  if (!server || !isWindows(server.os) || !server.ip_address) {
+    req.flash('error', 'קובץ RDP זמין רק לשרתי Windows');
+    return res.redirect('/dashboard/servers/' + (server ? server.id : ''));
+  }
+  const username = defaultUsername(server.os);
+  const rdp = [
+    `full address:s:${server.ip_address}:3389`,
+    `username:s:${username}`,
+    'prompt for credentials:i:0',
+    'authentication level:i:0',
+    'enablecredsspsupport:i:1',
+    'screen mode id:i:2',
+    'use multimon:i:0',
+    'desktopwidth:i:1920',
+    'desktopheight:i:1080',
+    'session bpp:i:32',
+    'compression:i:1',
+    'audiomode:i:0',
+    'redirectprinters:i:1',
+    'redirectclipboard:i:1',
+    'redirectsmartcards:i:1'
+  ].join('\r\n');
+  res.setHeader('Content-Type', 'application/rdp');
+  res.setHeader('Content-Disposition', `attachment; filename="${server.hostname}.rdp"`);
+  res.send(rdp);
 });
 
 router.post('/:id/action', async (req, res) => {

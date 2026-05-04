@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { db } = require('../db');
 const { requireAdmin } = require('../middleware');
 const esxi = require('../esxi');
+const { connectionInfo, isWindows, defaultUsername } = require('../connection');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -255,7 +256,32 @@ router.get('/servers/:id', (req, res) => {
     LEFT JOIN users u ON u.id = a.admin_id
     WHERE server_id = ? ORDER BY a.created_at DESC LIMIT 50`).all(server.id);
   const invoices = db.prepare('SELECT * FROM invoices WHERE server_id = ? ORDER BY created_at DESC').all(server.id);
-  res.render('admin/server', { title: `שרת ${server.hostname}`, server, actions, invoices });
+  const conn = connectionInfo(server);
+  res.render('admin/server', { title: `שרת ${server.hostname}`, server, actions, invoices, conn });
+});
+
+router.get('/servers/:id/rdp', (req, res) => {
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server || !isWindows(server.os) || !server.ip_address) {
+    req.flash('error', 'קובץ RDP זמין רק לשרתי Windows');
+    return res.redirect('/admin/servers/' + (server ? server.id : ''));
+  }
+  const username = defaultUsername(server.os);
+  const rdp = [
+    `full address:s:${server.ip_address}:3389`,
+    `username:s:${username}`,
+    'prompt for credentials:i:0',
+    'authentication level:i:0',
+    'enablecredsspsupport:i:1',
+    'screen mode id:i:2',
+    'desktopwidth:i:1920',
+    'desktopheight:i:1080',
+    'session bpp:i:32',
+    'redirectclipboard:i:1'
+  ].join('\r\n');
+  res.setHeader('Content-Type', 'application/rdp');
+  res.setHeader('Content-Disposition', `attachment; filename="${server.hostname}.rdp"`);
+  res.send(rdp);
 });
 
 router.post('/servers/:id/power', async (req, res) => {
