@@ -112,26 +112,6 @@
       </div>
     </section>
 
-    <% if (testimonials && testimonials.length) { %>
-      <section class="testimonials-section">
-        <h2 class="section-title">מה אומרים עלינו</h2>
-        <div class="testimonials-grid">
-          <% testimonials.forEach(function(t){ %>
-            <div class="testimonial-card">
-              <div class="t-stars">
-                <% for (var i = 1; i <= 5; i++) { %><span class="<%= i <= t.rating ? 'on' : '' %>">★</span><% } %>
-              </div>
-              <p class="t-body">"<%= t.body %>"</p>
-              <div class="t-author">
-                <% if (t.avatar_url) { %><img src="<%= t.avatar_url %>" alt=""><% } else { %><span class="user-initial"><%= t.author.slice(0,1).toUpperCase() %></span><% } %>
-                <strong><%= t.author %></strong>
-              </div>
-            </div>
-          <% }); %>
-        </div>
-      </section>
-    <% } %>
-
     <% if (faqs && faqs.length) { %>
       <section class="faq-section">
         <h2 class="section-title">שאלות נפוצות</h2>
