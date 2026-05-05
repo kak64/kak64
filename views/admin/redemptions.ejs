@@ -1,0 +1,43 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <h1 class="page-title">🎟 מימושים</h1>
+    <p class="muted">כל קודי המימוש שנוצרו לאחרונה — מי קנה, האם מומשו, ומתי.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>קוד</th>
+          <th>מוצר</th>
+          <th>כמות</th>
+          <th>קונה</th>
+          <th>הזמנה</th>
+          <th>נוצר</th>
+          <th>סטטוס</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% items.forEach(function(it){ %>
+          <tr>
+            <td><code class="receipt-code small"><%= it.receipt_code || '—' %></code></td>
+            <td><%= it.product_name %></td>
+            <td><%= it.qty %></td>
+            <td><%= it.username || '—' %></td>
+            <td><a class="btn btn-ghost btn-sm" href="/admin/orders/<%= it.order_id %>">#<%= it.order_id %></a></td>
+            <td><%= new Date(it.ordered_at).toLocaleDateString('he-IL') %></td>
+            <td>
+              <% if (it.redeemed) { %>
+                <span class="status status-paid">✓ מומש</span>
+                <% if (it.redeemed_player) { %><div class="muted small"><%= it.redeemed_player %></div><% } %>
+              <% } else { %>
+                <span class="status status-pending">ממתין</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </main>
+</div>
+<%- include('../partials/footer') %>

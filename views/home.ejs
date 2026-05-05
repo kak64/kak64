@@ -1,5 +1,7 @@
 <%- include('partials/header') %>
 
+<%- include('partials/circle-nav') %>
+
 <!-- Banner hero -->
 <section class="store-hero <%= heroImageUrl ? 'has-image' : '' %>">
   <% if (heroImageUrl) { %>
@@ -87,7 +89,7 @@
 
     <section id="products" class="products-section">
       <% Object.values(grouped).forEach(function(g){ if (!g.items.length) return; %>
-        <div class="cat-block" style="--cat-color: <%= g.cat.color || '#a855f7' %>">
+        <div id="cat-<%= g.cat.slug %>" class="cat-block" style="--cat-color: <%= g.cat.color || '#a855f7' %>">
           <div class="section-head">
             <h2><span class="sh-icon"><%= g.cat.icon || '✦' %></span><%= g.cat.name %></h2>
             <a class="cat-more" href="/category/<%= g.cat.slug %>">לכל ה<%= g.cat.name %> ←</a>

@@ -1,0 +1,14 @@
+<nav class="circle-nav" aria-label="קטגוריות">
+  <a href="/" class="circle-item all <%= currentPath === '/' ? 'active' : '' %>">
+    <span class="circle-disc"><span class="circle-icon">✦</span></span>
+    <span class="circle-label">הכל</span>
+  </a>
+  <% (categoriesAll || categories || []).forEach(function(c){ %>
+    <a href="<%= currentPath === '/' ? '#cat-' + c.slug : '/category/' + c.slug %>"
+       class="circle-item <%= currentPath === '/category/' + c.slug ? 'active' : '' %>"
+       style="--cat-color: <%= c.color || '#a855f7' %>">
+      <span class="circle-disc"><span class="circle-icon"><%= c.icon || '✦' %></span></span>
+      <span class="circle-label"><%= c.name %></span>
+    </a>
+  <% }); %>
+</nav>

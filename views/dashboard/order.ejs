@@ -10,6 +10,33 @@
   <div class="row total"><span>סכום</span><strong><%= formatCurrency(order.total) %></strong></div>
 </div>
 
+<% if (order.status === 'paid') { %>
+  <div class="card receipt-card">
+    <h3 class="receipt-title">🎟 קודי מימוש</h3>
+    <p class="muted small">בשרת FiveM כתבו: <code class="cmd-example">/redeem &lt;קוד&gt;</code></p>
+    <div class="receipt-list">
+      <% order.items.forEach(function(it){ %>
+        <div class="receipt-row">
+          <div class="receipt-info">
+            <div class="receipt-product"><%= it.product_name %> × <%= it.qty %></div>
+            <% if (it.redeemed) { %>
+              <span class="status status-paid">מומש בתאריך <%= new Date(it.redeemed_at).toLocaleString('he-IL') %></span>
+            <% } else { %>
+              <span class="status status-pending">ממתין למימוש</span>
+            <% } %>
+          </div>
+          <div class="receipt-code-wrap">
+            <code class="receipt-code" id="rc-<%= it.id %>"><%= it.receipt_code || '—' %></code>
+            <% if (!it.redeemed && it.receipt_code) { %>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="copyRC('rc-<%= it.id %>')">העתק</button>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+<% } %>
+
 <div class="card">
   <h3>פריטים</h3>
   <table class="data-table">
@@ -26,5 +53,15 @@
     </tbody>
   </table>
 </div>
+
+<script>
+function copyRC(id){
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    el.classList.add('flash-copy');
+    setTimeout(() => el.classList.remove('flash-copy'), 800);
+  });
+}
+</script>
 
 <%- include('../partials/footer') %>

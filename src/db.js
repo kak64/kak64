@@ -81,7 +81,11 @@ CREATE TABLE IF NOT EXISTS order_items (
   product_name TEXT,
   qty INTEGER DEFAULT 1,
   price REAL,
-  meta TEXT
+  meta TEXT,
+  receipt_code TEXT UNIQUE,
+  redeemed INTEGER DEFAULT 0,
+  redeemed_at TEXT,
+  redeemed_player TEXT
 );
 
 CREATE TABLE IF NOT EXISTS reviews (
@@ -160,6 +164,10 @@ safeAlter('products', 'rating_count', 'INTEGER DEFAULT 0');
 safeAlter('products', 'views', 'INTEGER DEFAULT 0');
 safeAlter('products', 'is_featured', 'INTEGER DEFAULT 0');
 safeAlter('orders', 'points_earned', 'INTEGER DEFAULT 0');
+safeAlter('order_items', 'receipt_code', 'TEXT');
+safeAlter('order_items', 'redeemed', 'INTEGER DEFAULT 0');
+safeAlter('order_items', 'redeemed_at', 'TEXT');
+safeAlter('order_items', 'redeemed_player', 'TEXT');
 
 // ----------------- Seed -----------------
 function seed() {
@@ -246,6 +254,10 @@ function seed() {
     ins.run('hero_image_url', '');
     ins.run('monthly_goal', '5000');
     ins.run('monthly_goal_label', 'יעד חודשי');
+    // Bearer token used by the FiveM resource to call /api/redeem.
+    // Auto-generated; admin can rotate it from /admin/settings.
+    ins.run('fivem_api_token', generateApiToken());
+    ins.run('receipt_prefix', 'inf');
   }
 
   // Seed testimonials
@@ -279,6 +291,23 @@ function generateRefCode(username) {
   const base = (username || 'USER').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || 'USER';
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `${base}-${suffix}`;
+}
+
+function generateApiToken() {
+  return require('crypto').randomBytes(24).toString('hex');
+}
+
+// Receipt code: e.g. inf-K7P9X2A3F1B8 — 12 random hex+letters, prefixed.
+function generateReceiptCode() {
+  const stored = db.prepare(`SELECT value FROM settings WHERE key = 'receipt_prefix'`).get();
+  const prefix = (stored && stored.value || process.env.RECEIPT_PREFIX || 'inf').toLowerCase();
+  let code, exists;
+  do {
+    const part = Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8);
+    code = `${prefix}-${part.toUpperCase()}`;
+    exists = db.prepare('SELECT 1 FROM order_items WHERE receipt_code = ?').get(code);
+  } while (exists);
+  return code;
 }
 
 seed();
@@ -333,7 +362,19 @@ const Q = {
                               ORDER BY p.sold_count DESC, p.id DESC`),
 
   insertOrder: db.prepare(`INSERT INTO orders (user_id, total, payment_method, status, transaction_id, notes, points_earned) VALUES (?,?,?,?,?,?,?)`),
-  insertOrderItem: db.prepare(`INSERT INTO order_items (order_id, product_id, product_name, qty, price, meta) VALUES (?,?,?,?,?,?)`),
+  insertOrderItem: db.prepare(`INSERT INTO order_items (order_id, product_id, product_name, qty, price, meta, receipt_code) VALUES (?,?,?,?,?,?,?)`),
+  setItemRedeemed: db.prepare(`UPDATE order_items SET redeemed = 1, redeemed_at = CURRENT_TIMESTAMP, redeemed_player = ? WHERE receipt_code = ? AND redeemed = 0`),
+  getItemByCode: db.prepare(`SELECT oi.*, p.name AS product_full_name, p.description AS product_description, p.features AS product_features, p.tags AS product_tags, p.is_package, o.status AS order_status, o.user_id, u.username, u.email
+                              FROM order_items oi
+                              JOIN orders o ON oi.order_id = o.id
+                              LEFT JOIN products p ON oi.product_id = p.id
+                              LEFT JOIN users u ON o.user_id = u.id
+                              WHERE oi.receipt_code = ?`),
+  listAllRedemptions: db.prepare(`SELECT oi.*, o.created_at AS ordered_at, u.username
+                                  FROM order_items oi
+                                  JOIN orders o ON oi.order_id = o.id
+                                  LEFT JOIN users u ON o.user_id = u.id
+                                  ORDER BY oi.id DESC LIMIT 200`),
   listOrders: db.prepare(`SELECT o.*, u.username FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.id DESC`),
   listOrdersForUser: db.prepare(`SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC`),
   getOrder: db.prepare(`SELECT o.*, u.username, u.email FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?`),
@@ -519,11 +560,37 @@ module.exports = {
     const tx = db.transaction(() => {
       const r = Q.insertOrder.run(userId, total, paymentMethod, 'pending', transactionId, notes, pointsEarned);
       const orderId = r.lastInsertRowid;
-      items.forEach(it => Q.insertOrderItem.run(orderId, it.product_id, it.name, it.qty, it.price, it.meta || null));
+      items.forEach(it => {
+        const code = it.receipt_code || generateReceiptCode();
+        Q.insertOrderItem.run(orderId, it.product_id, it.name, it.qty, it.price, it.meta || null, code);
+      });
       return orderId;
     });
     return tx();
   },
+  redeemReceiptCode: (code, player) => {
+    const item = Q.getItemByCode.get(code);
+    if (!item) return { ok: false, error: 'קוד לא נמצא' };
+    if (item.order_status !== 'paid') return { ok: false, error: 'הקוד עוד לא שולם' };
+    if (item.redeemed) return { ok: false, error: 'הקוד כבר מומש', redeemedAt: item.redeemed_at, redeemedPlayer: item.redeemed_player };
+    Q.setItemRedeemed.run(player || 'unknown', code);
+    return {
+      ok: true,
+      product: {
+        id: item.product_id,
+        name: item.product_full_name || item.product_name,
+        description: item.product_description,
+        features: item.product_features,
+        tags: item.product_tags,
+        is_package: !!item.is_package,
+        qty: item.qty
+      },
+      buyer: { id: item.user_id, username: item.username, email: item.email },
+      receipt_code: code
+    };
+  },
+  getItemByCode: (code) => Q.getItemByCode.get(code),
+  listAllRedemptions: () => Q.listAllRedemptions.all(),
   listOrders: () => Q.listOrders.all(),
   listOrdersForUser: (uid) => Q.listOrdersForUser.all(uid),
   getOrder: (id) => {

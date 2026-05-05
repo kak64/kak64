@@ -114,6 +114,62 @@ db/                          # SQLite data + sessions
 מ-`/admin/flash-deals` יוצרים מבצע מוגבל בזמן עם countdown באתר.
 המחיר במבצע גובר על מחיר רגיל ועל sale_price.
 
+## 🎟 Receipt code system + FiveM integration
+
+זרימת מימוש מלאה — קונה משלם → מקבל קודים במייל → כותב `/redeem CODE`
+בשרת FiveM → השרת קורא ל-API שלכם → ההטבה מוענקת בעולם.
+
+### איך זה עובד
+
+1. כל פריט בהזמנה מקבל קוד ייחודי כמו `inf-A1B2C3D4E5F6`
+2. הקודים נשלחים במייל לקונה (וגם נראים בעמוד תודה + הדשבורד)
+3. בשרת FiveM הקונה כותב `/redeem inf-A1B2C3D4E5F6`
+4. הסקריפט שלכם שולח `POST /api/redeem` לאתר עם הקוד
+5. האתר מאמת, מסמן כמומש, ומחזיר את פרטי המוצר
+6. הסקריפט מעניק את ההטבה לפי `Config.Rewards`
+7. כל מימוש מוצג ב-`/admin/redemptions` + נשלח Webhook ל-Discord (אם הוגדר)
+
+### התקנת הסקריפט
+
+הסקריפט נמצא ב-`fivem/infinity-redeem/`. מעתיקים אותו ל:
+`resources/[infinity]/infinity-redeem` בשרת ה-FXServer ומוסיפים
+ל-`server.cfg`:
+
+```
+ensure infinity-redeem
+```
+
+ב-`config.lua`:
+- `Config.ApiBase`  — דומיין האתר (לדוגמה `https://store.infinity-il.com`)
+- `Config.ApiToken` — מ-`/admin/settings` ("API Token")
+- `Config.Rewards`  — מתאמים שם מוצר לפעולה בשרת (ESX/QBCore/וכו')
+
+לדוגמה ב-ESX:
+
+```lua
+function RewardGiveMoney(src, amount)
+  local xPlayer = ESX.GetPlayerFromId(src)
+  if xPlayer then xPlayer.addAccountMoney('bank', amount) end
+end
+```
+
+### API endpoints
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET`  | `/api/redeem/:code` | `Authorization: Bearer <token>` | בדיקה (ללא מימוש) |
+| `POST` | `/api/redeem` | `Authorization: Bearer <token>` | מימוש; body: `{code, player}` |
+
+תגובה למימוש מוצלח כוללת `product.name`, `product.features`,
+`product.qty`, ו-`buyer.username`. השתמשו בזה ב-`Config.Rewards` כדי
+לבחור מה להעניק.
+
+### החלפת הטוקן
+
+ב-`/admin/settings` יש כפתור "🔄 צור טוקן חדש" — שימושי אם הטוקן דלף.
+אחרי החלפה צריך לעדכן את `Config.ApiToken` בשרת FiveM ולהפעיל מחדש
+את הסקריפט.
+
 ## Production checklist
 
 - [ ] שנו את `SESSION_SECRET` למחרוזת ארוכה אקראית

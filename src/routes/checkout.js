@@ -3,6 +3,7 @@ const db = require('../db');
 const { requireAuth, flash } = require('../middleware');
 const { cartWithProducts } = require('./cart');
 const { sendOrderWebhook } = require('../discord');
+const { sendReceiptEmail } = require('../email');
 const router = express.Router();
 
 function computeTotals(req) {
@@ -129,9 +130,10 @@ router.post('/pay', requireAuth, async (req, res) => {
       }
     }
 
-    // Discord webhook (fire-and-forget)
+    // Discord webhook + email (fire-and-forget)
     const order = db.getOrder(orderId);
     sendOrderWebhook(order, order.items, req.user).catch(() => {});
+    sendReceiptEmail(req.user, order, order.items).catch(() => {});
   }
 
   req.session.cart = [];

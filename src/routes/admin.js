@@ -239,6 +239,19 @@ router.post('/faq/:id/delete', (req, res) => {
   res.redirect('/admin/faq');
 });
 
+router.post('/settings/rotate-token', (req, res) => {
+  const token = require('crypto').randomBytes(24).toString('hex');
+  db.setSetting('fivem_api_token', token);
+  flash(req, 'success', 'הטוקן הוחלף — עדכנו את הסקריפט בשרת');
+  res.redirect('/admin/settings');
+});
+
+// ----- Redemptions -----
+router.get('/redemptions', (req, res) => {
+  const items = db.listAllRedemptions();
+  res.render('admin/redemptions', { title: 'מימושים', items });
+});
+
 // ----- Settings -----
 router.get('/settings', (req, res) => {
   const allKeys = [
@@ -246,6 +259,7 @@ router.get('/settings', (req, res) => {
     'hero_image_url', 'monthly_goal', 'monthly_goal_label',
     'announcement_bar', 'announcement_link',
     'discord_webhook_url', 'fivem_endpoint', 'fivem_server_name',
+    'fivem_api_token', 'receipt_prefix',
     'extra_fee', 'discount_codes',
     'points_per_currency', 'points_redeem_rate', 'referral_bonus'
   ];

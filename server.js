@@ -73,6 +73,7 @@ app.use('/wishlist', require('./src/routes/wishlist'));
 app.use('/reviews', require('./src/routes/reviews'));
 app.use('/dashboard', require('./src/routes/dashboard'));
 app.use('/admin', require('./src/routes/admin'));
+app.use('/api', require('./src/routes/api'));
 
 // 404
 app.use((req, res) => {

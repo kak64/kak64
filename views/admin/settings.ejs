@@ -50,6 +50,14 @@
       <input type="text" name="fivem_server_name" value="<%= settingsMap.fivem_server_name %>">
 
       <hr>
+      <h3>🎟 קודי מימוש — חיבור לשרת FiveM</h3>
+      <p class="muted small">השרת ב-FiveM יקרא ל-<code>POST /api/redeem</code> כדי לאמת קודים. העתיקו את הטוקן לסקריפט שבתיקייה <code>fivem/infinity-redeem/</code>.</p>
+      <label>API Token (לסקריפט בשרת FiveM)</label>
+      <input type="text" name="fivem_api_token" value="<%= settingsMap.fivem_api_token %>" readonly style="font-family:monospace">
+      <label>תחילית קוד מימוש (לדוגמה <code>inf</code> ייצור קודים כמו <code>inf-A1B2C3D4E5</code>)</label>
+      <input type="text" name="receipt_prefix" value="<%= settingsMap.receipt_prefix %>" maxlength="10">
+
+      <hr>
       <h3>תשלום ומחירים</h3>
       <label>תוספת מחיר (₪) — מתווסף בעת תשלום</label>
       <input type="number" step="0.01" name="extra_fee" value="<%= settingsMap.extra_fee %>">
@@ -66,6 +74,12 @@
       <input type="number" name="referral_bonus" value="<%= settingsMap.referral_bonus %>">
 
       <button class="btn btn-primary mt" type="submit">שמור</button>
+    </form>
+
+    <form method="post" action="/admin/settings/rotate-token" class="card" onsubmit="return confirm('להחליף את ה-API token? הסקריפט בשרת FiveM יפסיק לעבוד עד שתעדכנו אותו.')">
+      <h3>החלפת API token</h3>
+      <p class="muted small">לחיצה תייצר טוקן חדש. אחרי זה צריך לעדכן את הקובץ <code>config.lua</code> ב-FiveM.</p>
+      <button class="btn btn-danger" type="submit">🔄 צור טוקן חדש</button>
     </form>
   </main>
 </div>

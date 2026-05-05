@@ -15,16 +15,25 @@
     </div>
 
     <div class="card">
-      <h3>פריטים</h3>
+      <h3>פריטים + קודי מימוש</h3>
       <table class="data-table">
-        <thead><tr><th>מוצר</th><th>כמות</th><th>מחיר</th><th>סה"כ</th></tr></thead>
+        <thead><tr><th>מוצר</th><th>כמות</th><th>מחיר</th><th>קוד מימוש</th><th>סטטוס</th></tr></thead>
         <tbody>
           <% order.items.forEach(function(it){ %>
             <tr>
               <td><%= it.product_name %></td>
               <td><%= it.qty %></td>
               <td><%= formatCurrency(it.price) %></td>
-              <td><%= formatCurrency(it.qty * it.price) %></td>
+              <td><code class="receipt-code small"><%= it.receipt_code || '—' %></code></td>
+              <td>
+                <% if (it.redeemed) { %>
+                  <span class="status status-paid">✓ מומש</span>
+                  <div class="muted small"><%= new Date(it.redeemed_at).toLocaleString('he-IL') %></div>
+                  <% if (it.redeemed_player) { %><div class="muted small">שחקן: <%= it.redeemed_player %></div><% } %>
+                <% } else { %>
+                  <span class="status status-pending">ממתין</span>
+                <% } %>
+              </td>
             </tr>
           <% }); %>
         </tbody>
