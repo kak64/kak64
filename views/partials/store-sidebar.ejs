@@ -24,25 +24,6 @@
     <% } %>
   </div>
 
-  <!-- Categories panel -->
-  <nav class="store-panel cat-panel">
-    <div class="sp-head">
-      <span class="sp-icon">📂</span>
-      <span>קטגוריות</span>
-    </div>
-    <ul class="cat-list">
-      <li><a href="/" class="<%= currentPath === '/' ? 'active' : '' %>"><span class="ci">✦</span><span>כל המוצרים</span></a></li>
-      <% (categoriesAll || categories || []).forEach(function(c){ %>
-        <li>
-          <a href="/category/<%= c.slug %>" class="<%= currentPath === '/category/' + c.slug ? 'active' : '' %>" style="--cat-color: <%= c.color || '#a855f7' %>">
-            <span class="ci"><%= c.icon || '✦' %></span>
-            <span><%= c.name %></span>
-          </a>
-        </li>
-      <% }); %>
-    </ul>
-  </nav>
-
   <!-- Monthly goal panel -->
   <% if (typeof monthlyGoal !== 'undefined' && monthlyGoal > 0) {
        var pct = Math.min(100, Math.round((monthlySales / monthlyGoal) * 100));
