@@ -1,0 +1,36 @@
+<article class="product-card" style="--cat-color: <%= product.category_color || '#a855f7' %>">
+  <% if (product.badge) { %>
+    <span class="badge" style="background: <%= product.badge_color || '#a855f7' %>"><%= product.badge %></span>
+  <% } %>
+  <a href="/product/<%= product.id %>" class="product-image">
+    <% if (product.image_url) { %>
+      <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
+    <% } else { %>
+      <div class="image-placeholder">
+        <span class="ph-icon"><%= product.category_icon || '✦' %></span>
+        <span class="ph-text"><%= product.category_name || 'INFINITY' %></span>
+      </div>
+    <% } %>
+  </a>
+  <div class="product-body">
+    <a href="/product/<%= product.id %>" class="product-title"><%= product.name %></a>
+    <p class="product-desc"><%= product.description %></p>
+    <div class="product-foot">
+      <form method="post" action="/cart/add" class="inline">
+        <input type="hidden" name="product_id" value="<%= product.id %>">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          הוסף לסל
+        </button>
+      </form>
+      <div class="price">
+        <% if (product.sale_price && product.sale_price > 0) { %>
+          <span class="price-old"><%= formatCurrency(product.price) %></span>
+          <span class="price-now"><%= formatCurrency(product.sale_price) %></span>
+        <% } else { %>
+          <span class="price-now"><%= formatCurrency(product.price) %></span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</article>

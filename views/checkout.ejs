@@ -1,0 +1,76 @@
+<%- include('partials/header') %>
+
+<h1 class="page-title">תשלום</h1>
+
+<div class="checkout-layout">
+  <div class="checkout-main">
+    <div class="card">
+      <h3>פריטים</h3>
+      <% items.forEach(function(it){ %>
+        <div class="checkout-row">
+          <span><%= it.product.name %> × <%= it.qty %></span>
+          <span><%= formatCurrency(it.lineTotal) %></span>
+        </div>
+      <% }); %>
+    </div>
+
+    <div class="card">
+      <h3>קוד הנחה</h3>
+      <form method="post" action="/checkout/discount" class="row-form">
+        <input type="text" name="code" value="<%= discountCode || '' %>" placeholder="הכנס קוד...">
+        <button class="btn btn-ghost">הפעל</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>בחר אמצעי תשלום</h3>
+      <form method="post" action="/checkout/pay" class="pay-methods">
+        <% if (paypalEnabled) { %>
+          <label class="pay-method">
+            <input type="radio" name="method" value="paypal" checked>
+            <div class="pm-body">
+              <div class="pm-name">PayPal</div>
+              <div class="muted">תשלום מאובטח דרך PayPal</div>
+            </div>
+            <div class="pm-logo">PayPal</div>
+          </label>
+        <% } else { %>
+          <label class="pay-method">
+            <input type="radio" name="method" value="paypal" checked>
+            <div class="pm-body">
+              <div class="pm-name">PayPal <span class="tag">דמו</span></div>
+              <div class="muted">PayPal לא הוגדר בשרת — מצב דמו</div>
+            </div>
+            <div class="pm-logo">PayPal</div>
+          </label>
+        <% } %>
+
+        <label class="pay-method">
+          <input type="radio" name="method" value="bit">
+          <div class="pm-body">
+            <div class="pm-name">Bit <% if (!process.env.BIT_API_KEY) { %><span class="tag">דמו</span><% } %></div>
+            <div class="muted">תשלום מהיר באפליקציית ביט</div>
+          </div>
+          <div class="pm-logo bit">bit</div>
+        </label>
+
+        <button class="btn btn-primary btn-lg block mt" type="submit">שלם <%= formatCurrency(total) %></button>
+      </form>
+    </div>
+  </div>
+
+  <aside class="checkout-summary">
+    <h3>סיכום הזמנה</h3>
+    <div class="row"><span>סכום ביניים</span><strong><%= formatCurrency(subtotal) %></strong></div>
+    <% if (extraFee > 0) { %>
+      <div class="row"><span>תוספת</span><strong><%= formatCurrency(extraFee) %></strong></div>
+    <% } %>
+    <% if (discount > 0) { %>
+      <div class="row"><span>הנחה (<%= discountCode %>)</span><strong>-<%= formatCurrency(discount) %></strong></div>
+    <% } %>
+    <div class="row total"><span>לתשלום</span><strong><%= formatCurrency(total) %></strong></div>
+    <p class="muted small">בלחיצה על "שלם" אתם מאשרים את תנאי השימוש.</p>
+  </aside>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,53 @@
+<%- include('partials/header') %>
+
+<h1 class="page-title">עגלת קניות</h1>
+
+<% if (!items.length) { %>
+  <div class="empty-state">
+    <div class="empty-icon">🛒</div>
+    <p>העגלה ריקה</p>
+    <a href="/" class="btn btn-primary">חזרה לחנות</a>
+  </div>
+<% } else { %>
+  <div class="cart-layout">
+    <div class="cart-items">
+      <% items.forEach(function(it){ %>
+        <div class="cart-item" style="--cat-color: <%= it.product.category_color || '#a855f7' %>">
+          <a href="/product/<%= it.product.id %>" class="cart-thumb">
+            <% if (it.product.image_url) { %>
+              <img src="<%= it.product.image_url %>" alt="">
+            <% } else { %>
+              <div class="image-placeholder small"><%= it.product.category_icon || '✦' %></div>
+            <% } %>
+          </a>
+          <div class="cart-info">
+            <a href="/product/<%= it.product.id %>" class="cart-name"><%= it.product.name %></a>
+            <div class="muted"><%= it.product.category_name %></div>
+          </div>
+          <form method="post" action="/cart/update" class="cart-qty">
+            <input type="hidden" name="product_id" value="<%= it.product.id %>">
+            <input type="number" name="qty" value="<%= it.qty %>" min="0" class="qty-input">
+            <button class="btn btn-ghost btn-sm" type="submit">עדכן</button>
+          </form>
+          <div class="cart-price"><%= formatCurrency(it.lineTotal) %></div>
+          <form method="post" action="/cart/remove">
+            <input type="hidden" name="product_id" value="<%= it.product.id %>">
+            <button class="icon-btn" title="הסר" type="submit">×</button>
+          </form>
+        </div>
+      <% }); %>
+    </div>
+
+    <aside class="cart-summary">
+      <h3>סיכום</h3>
+      <div class="row"><span>סכום ביניים</span><strong><%= formatCurrency(subtotal) %></strong></div>
+      <div class="row total"><span>לתשלום</span><strong><%= formatCurrency(subtotal) %></strong></div>
+      <a href="/checkout" class="btn btn-primary btn-lg block">המשך לתשלום ←</a>
+      <form method="post" action="/cart/clear" class="mt">
+        <button class="btn btn-ghost btn-sm block">רוקן עגלה</button>
+      </form>
+    </aside>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

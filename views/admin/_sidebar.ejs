@@ -1,0 +1,18 @@
+<aside class="dash-sidebar">
+  <div class="dash-user">
+    <div class="user-initial big">⚡</div>
+    <div>
+      <div class="dash-name">לוח ניהול</div>
+      <div class="muted">Infinity IL</div>
+    </div>
+  </div>
+  <nav class="dash-nav">
+    <a href="/admin" class="<%= currentPath === '/admin' ? 'active' : '' %>">סקירה</a>
+    <a href="/admin/products" class="<%= currentPath.indexOf('/admin/products') === 0 ? 'active' : '' %>">מוצרים</a>
+    <a href="/admin/categories" class="<%= currentPath.indexOf('/admin/categories') === 0 ? 'active' : '' %>">קטגוריות</a>
+    <a href="/admin/orders" class="<%= currentPath.indexOf('/admin/orders') === 0 ? 'active' : '' %>">הזמנות</a>
+    <a href="/admin/users" class="<%= currentPath.indexOf('/admin/users') === 0 ? 'active' : '' %>">משתמשים</a>
+    <a href="/admin/settings" class="<%= currentPath === '/admin/settings' ? 'active' : '' %>">הגדרות</a>
+    <a href="/">חזרה לאתר</a>
+  </nav>
+</aside>

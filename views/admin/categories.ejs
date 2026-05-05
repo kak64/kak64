@@ -1,0 +1,38 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <h1 class="page-title">קטגוריות</h1>
+
+    <div class="card">
+      <h3>קטגוריה חדשה</h3>
+      <form method="post" action="/admin/categories/new" class="row-form">
+        <input type="text" name="slug" placeholder="slug (אנגלית)" required>
+        <input type="text" name="name" placeholder="שם בעברית" required>
+        <input type="text" name="icon" placeholder="🚗" maxlength="2">
+        <input type="color" name="color" value="#a855f7">
+        <input type="number" name="sort_order" value="0" placeholder="סדר" style="width:80px">
+        <button class="btn btn-primary">הוסף</button>
+      </form>
+    </div>
+
+    <div class="cat-edit-list">
+      <% categoriesList.forEach(function(c){ %>
+        <div class="cat-edit-row" style="--cat-color: <%= c.color || '#a855f7' %>">
+          <form method="post" action="/admin/categories/<%= c.id %>/edit" class="row-form" style="flex:1">
+            <input type="text" name="icon" value="<%= c.icon || '' %>" style="width:60px;text-align:center">
+            <input type="text" name="name" value="<%= c.name %>">
+            <input type="text" name="slug" value="<%= c.slug %>">
+            <input type="color" name="color" value="<%= c.color || '#a855f7' %>">
+            <input type="number" name="sort_order" value="<%= c.sort_order %>" style="width:70px">
+            <button class="btn btn-ghost btn-sm" type="submit">שמור</button>
+          </form>
+          <form method="post" action="/admin/categories/<%= c.id %>/delete" onsubmit="return confirm('למחוק קטגוריה?')">
+            <button class="btn btn-danger btn-sm" type="submit">מחק</button>
+          </form>
+        </div>
+      <% }); %>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

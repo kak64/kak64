@@ -1,0 +1,48 @@
+<%- include('../partials/header') %>
+
+<div class="dash-layout">
+  <aside class="dash-sidebar">
+    <div class="dash-user">
+      <% if (user.avatar_url) { %><img src="<%= user.avatar_url %>" alt=""><% } else { %><div class="user-initial big"><%= (user.username || '?').slice(0,1).toUpperCase() %></div><% } %>
+      <div>
+        <div class="dash-name"><%= user.username %></div>
+        <div class="muted"><%= user.email || '—' %></div>
+      </div>
+    </div>
+    <nav class="dash-nav">
+      <a href="/dashboard" class="active">הזמנות</a>
+      <a href="/dashboard/profile">פרופיל</a>
+      <% if (user.is_admin) { %><a href="/admin">ניהול האתר</a><% } %>
+      <a href="/auth/logout">התנתק</a>
+    </nav>
+  </aside>
+
+  <main class="dash-main">
+    <h1 class="page-title">ההזמנות שלי</h1>
+    <% if (!orders.length) { %>
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <p>עוד אין לך הזמנות</p>
+        <a class="btn btn-primary" href="/">בוא נקנה משהו</a>
+      </div>
+    <% } else { %>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>תאריך</th><th>תשלום</th><th>סטטוס</th><th>סכום</th><th></th></tr></thead>
+        <tbody>
+          <% orders.forEach(function(o){ %>
+            <tr>
+              <td>#<%= o.id %></td>
+              <td><%= new Date(o.created_at).toLocaleDateString('he-IL') %></td>
+              <td><%= o.payment_method %></td>
+              <td><span class="status status-<%= o.status %>"><%= o.status %></span></td>
+              <td><%= formatCurrency(o.total) %></td>
+              <td><a class="btn btn-ghost btn-sm" href="/dashboard/orders/<%= o.id %>">פרטים</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+</div>
+
+<%- include('../partials/footer') %>

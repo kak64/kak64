@@ -1,0 +1,15 @@
+<%- include('partials/header') %>
+
+<div class="success-card">
+  <div class="success-icon">✓</div>
+  <h1>תודה על ההזמנה!</h1>
+  <p>הזמנה <strong>#<%= order.id %></strong> התקבלה בהצלחה.</p>
+  <p>סטטוס: <span class="status status-<%= order.status %>"><%= order.status %></span></p>
+  <p>סך הכל: <strong><%= formatCurrency(order.total) %></strong></p>
+  <div class="success-actions">
+    <a href="/dashboard" class="btn btn-primary">לאזור האישי</a>
+    <a href="/" class="btn btn-ghost">חזרה לחנות</a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

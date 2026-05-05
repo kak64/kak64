@@ -1,0 +1,72 @@
+<%- include('partials/header') %>
+
+<div class="product-detail" style="--cat-color: <%= product.category_color || '#a855f7' %>">
+  <div class="product-detail-image">
+    <% if (product.badge) { %>
+      <span class="badge" style="background: <%= product.badge_color || '#a855f7' %>"><%= product.badge %></span>
+    <% } %>
+    <% if (product.image_url) { %>
+      <img src="<%= product.image_url %>" alt="<%= product.name %>">
+    <% } else { %>
+      <div class="image-placeholder image-placeholder-large">
+        <span class="ph-icon"><%= product.category_icon || '✦' %></span>
+        <span class="ph-text"><%= product.category_name || 'INFINITY IL' %></span>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="product-detail-body">
+    <a class="muted" href="/category/<%= product.category_slug %>">← <%= product.category_name %></a>
+    <h1><%= product.name %></h1>
+    <% if (product.tags) { %>
+      <div class="tags">
+        <% product.tags.split(',').map(function(t){ return t.trim(); }).filter(Boolean).forEach(function(t){ %>
+          <span class="tag"><%= t %></span>
+        <% }); %>
+      </div>
+    <% } %>
+    <p class="lead"><%= product.description %></p>
+
+    <% if (product.features) { %>
+      <div class="features-box">
+        <div class="features-title">
+          <% if (product.is_package) { %>📦 מה כלול בחבילה<% } else { %>✦ מה כלול<% } %>
+        </div>
+        <ul>
+          <% product.features.split('\n').map(function(f){ return f.trim(); }).filter(Boolean).forEach(function(f){ %>
+            <li><span class="check">✓</span><%= f %></li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+
+    <div class="buy-row">
+      <div class="price-large">
+        <% if (product.sale_price && product.sale_price > 0) { %>
+          <span class="price-old"><%= formatCurrency(product.price) %></span>
+          <span class="price-now"><%= formatCurrency(product.sale_price) %></span>
+        <% } else { %>
+          <span class="price-now"><%= formatCurrency(product.price) %></span>
+        <% } %>
+      </div>
+      <form method="post" action="/cart/add" class="buy-form">
+        <input type="hidden" name="product_id" value="<%= product.id %>">
+        <input type="number" name="qty" value="1" min="1" class="qty-input">
+        <button class="btn btn-primary btn-lg" type="submit">הוסף לעגלה</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<% if (related && related.length) { %>
+  <section class="related">
+    <h2>מוצרים נוספים</h2>
+    <div class="product-grid">
+      <% related.forEach(function(product){ %>
+        <%- include('partials/product-card', { product: product }) %>
+      <% }); %>
+    </div>
+  </section>
+<% } %>
+
+<%- include('partials/footer') %>

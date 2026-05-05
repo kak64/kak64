@@ -1,0 +1,37 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <h1 class="page-title">משתמשים</h1>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>שם משתמש</th><th>אימייל</th><th>חיבורים</th><th>נוצר</th><th>אדמין</th></tr></thead>
+      <tbody>
+        <% usersList.forEach(function(u){ %>
+          <tr>
+            <td><%= u.id %></td>
+            <td>
+              <% if (u.avatar_url) { %><img src="<%= u.avatar_url %>" style="width:24px;height:24px;border-radius:50%;vertical-align:middle"><% } %>
+              <%= u.username %>
+            </td>
+            <td><%= u.email || '—' %></td>
+            <td>
+              <% if (u.discord_id) { %><span class="tag">Discord</span><% } %>
+              <% if (u.cfx_id) { %><span class="tag">CFX</span><% } %>
+              <% if (u.password_hash) { %><span class="tag">Pass</span><% } %>
+            </td>
+            <td><%= new Date(u.created_at).toLocaleDateString('he-IL') %></td>
+            <td>
+              <form method="post" action="/admin/users/<%= u.id %>/admin">
+                <input type="hidden" name="is_admin" value="<%= u.is_admin ? '0' : '1' %>">
+                <button class="btn <%= u.is_admin ? 'btn-danger' : 'btn-ghost' %> btn-sm" type="submit">
+                  <%= u.is_admin ? 'הסר אדמין' : 'הפוך לאדמין' %>
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </main>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,29 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <h1 class="page-title">הגדרות</h1>
+    <form method="post" action="/admin/settings" class="card">
+      <label>שם האתר</label>
+      <input type="text" name="site_name" value="<%= settingsMap.site_name %>">
+
+      <label>כותרת משנה</label>
+      <input type="text" name="site_subtitle" value="<%= settingsMap.site_subtitle %>">
+
+      <label>קישור Discord</label>
+      <input type="text" name="discord_invite" value="<%= settingsMap.discord_invite %>">
+
+      <label>טקסט גיבור (Hero)</label>
+      <input type="text" name="hero_tagline" value="<%= settingsMap.hero_tagline %>">
+
+      <label>תוספת מחיר (₪) — מתווסף בעת תשלום</label>
+      <input type="number" step="0.01" name="extra_fee" value="<%= settingsMap.extra_fee %>">
+
+      <label>קודי הנחה — פורמט: <code>WELCOME10:10,SUMMER20:20</code></label>
+      <input type="text" name="discount_codes" value="<%= settingsMap.discount_codes %>">
+
+      <button class="btn btn-primary mt" type="submit">שמור</button>
+    </form>
+  </main>
+</div>
+<%- include('../partials/footer') %>

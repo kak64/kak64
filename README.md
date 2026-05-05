@@ -1,64 +1,94 @@
-# KAK64 Hosting Panel
+# Infinity IL — Roleplay Server Store
 
-פאנל ניהול אחסון בעברית מעל VMware ESXi.
-
-A Hebrew (RTL) hosting company website with user registration/login, server
-ordering, billing, support tickets and an admin panel — built on top of a
-VMware ESXi host.
+חנות אונליין מודרנית בעברית (RTL) לקהילת **Infinity IL** — בנויה על Express + EJS + SQLite, עם פאנל ניהול מלא, תשלומים PayPal/Bit, והתחברות עם Discord או Cfx.re.
 
 ## Features
 
-- **דף הבית, חבילות, אודות, צור קשר, תנאי שימוש** (public site)
-- **הרשמה והתחברות** with bcrypt password hashing
-- **אזור אישי (Dashboard)**: סקירה, השרתים שלי, הזמנת שרת, חשבוניות, פניות תמיכה, פרופיל
-- **לוח ניהול (Admin)**: משתמשים, חבילות, שרתים, פניות תמיכה, סטטיסטיקות
-- **שילוב ESXi**: יצירה / הפעלה / כיבוי / אתחול / מחיקה של מכונות וירטואליות
-- **RTL מלא** עם פונט עברי
-- בסיס נתונים SQLite (קובץ אחד, ללא תלות חיצונית)
+- 🎨 **עיצוב סגול קוסמי** עם glassmorphism, hero מואר, באדג'ים צבעוניים
+- 🛒 **עגלת קניות + Checkout** עם אופציה לקודי הנחה ותוספת מחיר אדמין
+- 💳 **תשלום PayPal או Bit** — מצב דמו אוטומטי כשלא מוגדרים מפתחות
+- 🔐 **התחברות**: אימייל+סיסמה, Discord OAuth, Cfx.re OAuth
+- 📦 **קטגוריות + תגיות + חבילות** עם תכולת מוצר ("מה כלול בחבילה")
+- 🛠 **פאנל אדמין מלא**: מוצרים (CRUD + העלאת תמונות), קטגוריות, הזמנות, משתמשים, הגדרות
+- 👤 **אזור אישי**: היסטוריית הזמנות, פרטי הזמנה, פרופיל
+- 📱 **רספונסיבי מלא** — נראה מצוין במובייל ובדסקטופ
+- 🌟 SQLite — קובץ אחד, ללא תלות חיצונית
 
 ## Quick start
 
 ```bash
-cp .env.example .env
-# Edit .env — set SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, and ESXi credentials
+cp .env.example .env          # ערוך את ה-.env
 npm install
-npm start
+npm start                     # http://localhost:3000
 ```
 
-Open http://localhost:3000
+הריצה הראשונה יוצרת את ה-DB ב-`db/data.sqlite`, מזריעה קטגוריות + מוצרים לדוגמה,
+ויוצרת משתמש אדמין בהתאם ל-`ADMIN_EMAIL` / `ADMIN_PASSWORD` מה-.env.
 
-The first run creates the SQLite DB at `db/data.sqlite`, seeds default plans,
-and creates an admin user from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+ברירת מחדל לאדמין: `admin@infinity-il.com` / `change-me-now`. **שנו אותם ב-.env**.
 
-## ESXi integration
+## ENV variables
 
-`src/esxi.js` provides power-on / power-off / reboot / destroy via the
-ESXi REST API. The `provisionVm` function is intentionally left as a TODO —
-provisioning a VM via the ESXi API requires choosing a strategy:
-clone-from-template, OVF deploy, or PowerCLI/govc. Implement it according to
-your environment.
+| Variable | Description |
+|---|---|
+| `SESSION_SECRET` | מחרוזת ארוכה אקראית לחתימת session cookies |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_USERNAME` | משתמש אדמין שנוצר בהרצה הראשונה |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI` | Discord OAuth — צרו אפליקציה ב-https://discord.com/developers/applications |
+| `CFX_CLIENT_ID`, `CFX_CLIENT_SECRET`, `CFX_REDIRECT_URI` | Cfx.re OAuth |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE` | PayPal — אם ריקים, ירוץ במצב דמו |
+| `BIT_MERCHANT_ID`, `BIT_API_KEY` | Bit — אם ריקים, ירוץ במצב דמו |
+| `CURRENCY`, `CURRENCY_SYMBOL` | ברירת מחדל ILS / ₪ |
 
-When ESXi credentials are not set in `.env`, the system falls back to a
-mocked mode so you can demo the full flow locally.
-
-## Project structure
+## Project layout
 
 ```
-server.js              # Express bootstrap
-src/db.js              # SQLite schema + seed
-src/esxi.js            # ESXi REST client
-src/middleware.js      # auth helpers
-src/routes/            # public, auth, dashboard, servers, billing, tickets, admin
-views/                 # Hebrew RTL EJS templates
-public/css/style.css   # styling
+server.js                    # Express bootstrap
+src/
+  db.js                      # SQLite schema, seed, all queries
+  middleware.js              # auth helpers + currency formatter
+  routes/
+    public.js                # home, category, product
+    auth.js                  # email/pass, Discord, CFX
+    cart.js                  # add/update/remove/clear
+    checkout.js              # discount, pay, success
+    dashboard.js             # user orders + profile
+    admin.js                 # products, categories, orders, users, settings
+views/                       # EJS — Hebrew RTL
+  partials/                  # header, footer, product-card
+  auth/                      # login, register
+  dashboard/                 # index, order, profile
+  admin/                     # index, products, product-form, categories, orders, order, users, settings
+public/
+  css/style.css              # purple cosmic theme
+  js/app.js
+  img/logo.svg               # Infinity IL logo
+  uploads/                   # product images uploaded via admin
+db/                          # SQLite data + sessions
 ```
+
+## Adding products
+
+1. התחברו כאדמין ועברו ל-`/admin/products/new`
+2. בחרו קטגוריה, הזינו שם, תיאור, מחיר ומחיר מבצע (אופציונלי)
+3. הוסיפו "תכולה" — שורה לכל פריט שמופיע בחבילה
+4. סמנו "זוהי חבילה" אם המוצר כולל מספר פריטים
+5. העלו תמונה (אופציונלי — אם אין, יוצג placeholder עם אייקון הקטגוריה)
+
+## Discount codes
+
+הגדירו ב-`/admin/settings` בפורמט: `WELCOME10:10,SUMMER20:20`
+(הקוד מיושם כסכום שמופחת מסך ההזמנה ב-checkout).
 
 ## Production checklist
 
-- [ ] Strong `SESSION_SECRET`
-- [ ] HTTPS reverse proxy (nginx / Caddy)
-- [ ] Real payment provider (Tranzila / iCount / Stripe)
-- [ ] Email sending for ticket replies / invoices
-- [ ] Implement `esxi.provisionVm` for real VM provisioning
-- [ ] Switch session store to Redis for multi-instance
-- [ ] Backups for `db/data.sqlite`
+- [ ] שנו את `SESSION_SECRET` למחרוזת ארוכה אקראית
+- [ ] הגדירו `ADMIN_PASSWORD` חזקה ושנו את האדמין הראשוני
+- [ ] הריצו מאחורי HTTPS reverse proxy (nginx / Caddy)
+- [ ] צרו אפליקציות OAuth ב-Discord / Cfx.re והגדירו את ה-`REDIRECT_URI` המתאים לדומיין שלכם
+- [ ] חברו PayPal ו-Bit אמיתיים (Pelecard/Tranzila עבור Bit) ואמתו שתשלום מסמן את ההזמנה כ-`paid` (כיום מצב דמו מסמן אוטומטית)
+- [ ] הגדירו backups ל-`db/data.sqlite`
+- [ ] עברו ל-Redis session store בריצה רב-מופעית
+
+## License
+
+MIT

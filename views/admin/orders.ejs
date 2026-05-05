@@ -1,0 +1,24 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <h1 class="page-title">הזמנות</h1>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>תאריך</th><th>משתמש</th><th>תשלום</th><th>סטטוס</th><th>סכום</th><th></th></tr></thead>
+      <tbody>
+        <% orders.forEach(function(o){ %>
+          <tr>
+            <td>#<%= o.id %></td>
+            <td><%= new Date(o.created_at).toLocaleString('he-IL') %></td>
+            <td><%= o.username || '—' %></td>
+            <td><%= o.payment_method %></td>
+            <td><span class="status status-<%= o.status %>"><%= o.status %></span></td>
+            <td><%= formatCurrency(o.total) %></td>
+            <td><a class="btn btn-ghost btn-sm" href="/admin/orders/<%= o.id %>">פתח</a></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </main>
+</div>
+<%- include('../partials/footer') %>

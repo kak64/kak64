@@ -1,0 +1,36 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <h1 class="page-title">סקירה</h1>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num"><%= stats.users %></div><div class="muted">משתמשים</div></div>
+      <div class="stat-card"><div class="stat-num"><%= stats.products %></div><div class="muted">מוצרים</div></div>
+      <div class="stat-card"><div class="stat-num"><%= stats.categories %></div><div class="muted">קטגוריות</div></div>
+      <div class="stat-card"><div class="stat-num"><%= stats.orders %></div><div class="muted">הזמנות</div></div>
+      <div class="stat-card big"><div class="stat-num"><%= formatCurrency(stats.revenue) %></div><div class="muted">הכנסות (שולם)</div></div>
+    </div>
+
+    <h3 class="mt">הזמנות אחרונות</h3>
+    <% if (!recentOrders.length) { %>
+      <p class="muted">עוד אין הזמנות</p>
+    <% } else { %>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>משתמש</th><th>תשלום</th><th>סטטוס</th><th>סכום</th><th></th></tr></thead>
+        <tbody>
+          <% recentOrders.forEach(function(o){ %>
+            <tr>
+              <td>#<%= o.id %></td>
+              <td><%= o.username || '—' %></td>
+              <td><%= o.payment_method %></td>
+              <td><span class="status status-<%= o.status %>"><%= o.status %></span></td>
+              <td><%= formatCurrency(o.total) %></td>
+              <td><a class="btn btn-ghost btn-sm" href="/admin/orders/<%= o.id %>">פתח</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,30 @@
+<%- include('../partials/header') %>
+
+<a href="/dashboard" class="muted">← חזרה להזמנות</a>
+<h1 class="page-title">הזמנה #<%= order.id %></h1>
+
+<div class="card">
+  <div class="row"><span>תאריך</span><strong><%= new Date(order.created_at).toLocaleString('he-IL') %></strong></div>
+  <div class="row"><span>אמצעי תשלום</span><strong><%= order.payment_method %></strong></div>
+  <div class="row"><span>סטטוס</span><strong><span class="status status-<%= order.status %>"><%= order.status %></span></strong></div>
+  <div class="row total"><span>סכום</span><strong><%= formatCurrency(order.total) %></strong></div>
+</div>
+
+<div class="card">
+  <h3>פריטים</h3>
+  <table class="data-table">
+    <thead><tr><th>מוצר</th><th>כמות</th><th>מחיר</th><th>סה"כ</th></tr></thead>
+    <tbody>
+      <% order.items.forEach(function(it){ %>
+        <tr>
+          <td><%= it.product_name %></td>
+          <td><%= it.qty %></td>
+          <td><%= formatCurrency(it.price) %></td>
+          <td><%= formatCurrency(it.qty * it.price) %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,47 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <a href="/admin/orders" class="muted">← חזרה להזמנות</a>
+    <h1 class="page-title">הזמנה #<%= order.id %></h1>
+
+    <div class="card">
+      <div class="row"><span>תאריך</span><strong><%= new Date(order.created_at).toLocaleString('he-IL') %></strong></div>
+      <div class="row"><span>משתמש</span><strong><%= order.username || '—' %> (<%= order.email || '—' %>)</strong></div>
+      <div class="row"><span>אמצעי תשלום</span><strong><%= order.payment_method %></strong></div>
+      <div class="row"><span>מזהה עסקה</span><strong><%= order.transaction_id || '—' %></strong></div>
+      <div class="row"><span>הערות</span><strong><%= order.notes || '—' %></strong></div>
+      <div class="row total"><span>סכום</span><strong><%= formatCurrency(order.total) %></strong></div>
+    </div>
+
+    <div class="card">
+      <h3>פריטים</h3>
+      <table class="data-table">
+        <thead><tr><th>מוצר</th><th>כמות</th><th>מחיר</th><th>סה"כ</th></tr></thead>
+        <tbody>
+          <% order.items.forEach(function(it){ %>
+            <tr>
+              <td><%= it.product_name %></td>
+              <td><%= it.qty %></td>
+              <td><%= formatCurrency(it.price) %></td>
+              <td><%= formatCurrency(it.qty * it.price) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>עדכון סטטוס</h3>
+      <form method="post" action="/admin/orders/<%= order.id %>/status" class="row-form">
+        <select name="status">
+          <% ['pending','paid','cancelled','refunded','delivered'].forEach(function(s){ %>
+            <option value="<%= s %>" <%= order.status === s ? 'selected' : '' %>><%= s %></option>
+          <% }); %>
+        </select>
+        <button class="btn btn-primary">שמור</button>
+      </form>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

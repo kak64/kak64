@@ -1,0 +1,31 @@
+<%- include('../partials/header') %>
+
+<div class="auth-card">
+  <div class="auth-logo"><img src="/img/logo.svg" alt=""></div>
+  <h1>הרשמה</h1>
+  <p class="muted">יצירת חשבון חדש לחנות Infinity IL</p>
+
+  <div class="oauth-row">
+    <a href="/auth/discord" class="btn btn-discord block">הירשם עם Discord</a>
+    <a href="/auth/cfx" class="btn btn-cfx block"><span class="cfx-mark">CFX</span> הירשם עם Cfx.re</a>
+  </div>
+
+  <div class="divider"><span>או</span></div>
+
+  <form method="post" action="/auth/register">
+    <label>שם משתמש</label>
+    <input type="text" name="username" required minlength="2">
+    <label>אימייל</label>
+    <input type="email" name="email" required>
+    <label>סיסמה</label>
+    <input type="password" name="password" required minlength="6">
+    <label>אימות סיסמה</label>
+    <input type="password" name="password2" required minlength="6">
+    <button class="btn btn-primary block btn-lg" type="submit">צור חשבון</button>
+  </form>
+  <p class="muted center mt">
+    כבר יש לך חשבון? <a href="/auth/login">התחבר</a>
+  </p>
+</div>
+
+<%- include('../partials/footer') %>
