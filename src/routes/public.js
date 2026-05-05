@@ -26,7 +26,9 @@ router.get('/', (req, res) => {
     heroTagline: db.getSetting('hero_tagline'),
     heroImageUrl: db.getSetting('hero_image_url'),
     monthlyGoalLabel: db.getSetting('monthly_goal_label') || 'יעד חודשי',
-    fivemServerName: db.getSetting('fivem_server_name')
+    fivemServerName: db.getSetting('fivem_server_name'),
+    homeMessageTitle: db.getSetting('home_message_title') || '',
+    homeMessageBody: db.getSetting('home_message_body') || ''
   });
 });
 

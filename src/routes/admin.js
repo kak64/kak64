@@ -262,6 +262,7 @@ router.get('/settings', (req, res) => {
   const allKeys = [
     'site_name', 'site_subtitle', 'discord_invite', 'hero_tagline',
     'hero_image_url', 'monthly_goal', 'monthly_goal_label',
+    'home_message_title', 'home_message_body',
     'announcement_bar', 'announcement_link',
     'discord_webhook_url', 'fivem_endpoint', 'fivem_server_name',
     'fivem_api_token', 'receipt_prefix',

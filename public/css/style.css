@@ -1488,3 +1488,38 @@ textarea { resize: vertical; min-height: 80px; }
 .cat-edit-form input[type="file"] {
   width: auto; flex: 0 1 180px;
 }
+
+/* Admin-editable home message (renders just under the circle nav). */
+.home-message {
+  position: relative;
+  margin: 6px 0 24px;
+  padding: 24px 28px;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 70% 80% at 0% 50%, rgba(168,85,247,0.18), transparent 60%),
+    radial-gradient(ellipse 70% 80% at 100% 50%, rgba(236,72,153,0.14), transparent 60%),
+    linear-gradient(135deg, rgba(28,18,56,0.7), rgba(45,20,90,0.5));
+  border: 1px solid var(--border-hi);
+  box-shadow: 0 10px 30px -16px var(--primary);
+  text-align: center;
+}
+.home-message::before {
+  /* glowing accent bar on the right (RTL-friendly) */
+  content: ''; position: absolute; top: 14%; bottom: 14%;
+  right: 0; width: 4px;
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  border-radius: 4px 0 0 4px;
+}
+.home-message-title {
+  margin: 0 0 8px;
+  font-size: 24px; font-weight: 800;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.home-message-body {
+  color: var(--text-dim);
+  font-size: 15px; line-height: 1.7;
+  max-width: 720px; margin: 0 auto;
+}
+.home-message-body a { color: var(--primary); }
+.home-message-body strong { color: var(--text); }

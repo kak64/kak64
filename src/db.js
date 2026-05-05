@@ -260,6 +260,8 @@ function seed() {
     // Auto-generated; admin can rotate it from /admin/settings.
     ins.run('fivem_api_token', generateApiToken());
     ins.run('receipt_prefix', 'inf');
+    ins.run('home_message_title', '');
+    ins.run('home_message_body', '');
   }
 
   // Seed testimonials

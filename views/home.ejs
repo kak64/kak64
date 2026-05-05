@@ -2,6 +2,17 @@
 
 <%- include('partials/circle-nav') %>
 
+<% if ((homeMessageTitle && homeMessageTitle.trim()) || (homeMessageBody && homeMessageBody.trim())) { %>
+  <section class="home-message">
+    <% if (homeMessageTitle && homeMessageTitle.trim()) { %>
+      <h2 class="home-message-title"><%= homeMessageTitle %></h2>
+    <% } %>
+    <% if (homeMessageBody && homeMessageBody.trim()) { %>
+      <div class="home-message-body"><%- homeMessageBody %></div>
+    <% } %>
+  </section>
+<% } %>
+
 <!-- Banner hero -->
 <section class="store-hero <%= heroImageUrl ? 'has-image' : '' %>">
   <% if (heroImageUrl) { %>

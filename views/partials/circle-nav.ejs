@@ -1,16 +1,8 @@
 <%
   var cats = (typeof categoriesAll !== 'undefined' && categoriesAll) ? categoriesAll : (categories || []);
-  var totalProducts = cats.reduce(function(s, c){ return s + (c.product_count || 0); }, 0);
 %>
 <section class="circle-nav-shell" aria-label="קטגוריות">
   <div class="circle-nav-track">
-    <a href="/" class="circle-item all <%= currentPath === '/' ? 'active' : '' %>">
-      <span class="circle-disc">
-        <span class="circle-ring" aria-hidden="true"></span>
-      </span>
-      <span class="circle-label">הכל</span>
-      <% if (totalProducts) { %><span class="circle-count"><%= totalProducts %></span><% } %>
-    </a>
     <% cats.forEach(function(c){ %>
       <a href="/category/<%= c.slug %>"
          class="circle-item <%= currentPath === '/category/' + c.slug ? 'active' : '' %>"

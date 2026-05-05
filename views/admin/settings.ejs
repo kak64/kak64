@@ -21,6 +21,14 @@
       <% } %>
 
       <hr>
+      <h3>הודעה בעמוד הבית (בלוק טקסט אישי שאתה כותב)</h3>
+      <p class="muted small">מופיע מתחת לעיגולי הקטגוריות. השאירו ריק כדי להסתיר.</p>
+      <label>כותרת</label>
+      <input type="text" name="home_message_title" value="<%= settingsMap.home_message_title %>">
+      <label>גוף ההודעה (אפשר HTML פשוט — &lt;br&gt;, &lt;strong&gt;, &lt;a&gt;)</label>
+      <textarea name="home_message_body" rows="4"><%= settingsMap.home_message_body %></textarea>
+
+      <hr>
       <h3>יעד חודשי (סרגל התקדמות בעמוד הבית)</h3>
       <label>תווית היעד</label>
       <input type="text" name="monthly_goal_label" value="<%= settingsMap.monthly_goal_label %>">
