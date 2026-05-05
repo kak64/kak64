@@ -34,4 +34,16 @@ function formatCurrency(amount) {
   return `${sym}${n.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
-module.exports = { attachUser, requireAuth, requireAdmin, flash, formatCurrency };
+// Price logic: flash_deal beats sale_price beats price.
+function effectivePrice(product, flashDeal) {
+  if (flashDeal && flashDeal.deal_price != null) return Number(flashDeal.deal_price);
+  if (product.sale_price && product.sale_price > 0) return Number(product.sale_price);
+  return Number(product.price);
+}
+
+function avgRating(product) {
+  if (!product.rating_count) return 0;
+  return product.rating_sum / product.rating_count;
+}
+
+module.exports = { attachUser, requireAuth, requireAdmin, flash, formatCurrency, effectivePrice, avgRating };

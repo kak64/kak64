@@ -21,6 +21,8 @@
     <input type="password" name="password" required minlength="6">
     <label>אימות סיסמה</label>
     <input type="password" name="password2" required minlength="6">
+    <label>קוד הזמנה מחבר (אופציונלי)</label>
+    <input type="text" name="ref" value="<%= refCode || '' %>" placeholder="לדוגמה: DAVID-AB12">
     <button class="btn btn-primary block btn-lg" type="submit">צור חשבון</button>
   </form>
   <p class="muted center mt">

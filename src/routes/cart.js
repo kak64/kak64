@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { flash } = require('../middleware');
+const { flash, effectivePrice } = require('../middleware');
 const router = express.Router();
 
 function getCart(req) {
@@ -13,8 +13,9 @@ function cartWithProducts(req) {
   return cart.map(item => {
     const p = db.getProduct(item.product_id);
     if (!p) return null;
-    const unit = (p.sale_price && p.sale_price > 0) ? p.sale_price : p.price;
-    return { ...item, product: p, unit, lineTotal: unit * item.qty };
+    const flash = db.getActiveFlashForProduct(p.id);
+    const unit = effectivePrice(p, flash);
+    return { ...item, product: p, flash, unit, lineTotal: unit * item.qty };
   }).filter(Boolean);
 }
 
@@ -30,7 +31,12 @@ router.post('/add', (req, res) => {
   const product = db.getProduct(productId);
   if (!product) {
     flash(req, 'error', 'מוצר לא נמצא');
-    return res.redirect('back');
+    return res.redirect(req.get('referer') || '/');
+  }
+  // Stock check
+  if (product.stock !== null && product.stock !== undefined && product.stock <= 0) {
+    flash(req, 'error', 'המוצר אזל מהמלאי');
+    return res.redirect(req.get('referer') || '/');
   }
   const cart = getCart(req);
   const exist = cart.find(c => c.product_id === productId);

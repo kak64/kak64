@@ -30,11 +30,13 @@ router.post('/login', (req, res) => {
 
 router.get('/register', (req, res) => {
   if (req.user) return res.redirect('/');
-  res.render('auth/register', { title: 'הרשמה' });
+  // Capture ?ref= for after-signup linkage
+  if (req.query.ref) req.session.refCode = String(req.query.ref).trim().toUpperCase();
+  res.render('auth/register', { title: 'הרשמה', refCode: req.session.refCode || '' });
 });
 
 router.post('/register', (req, res) => {
-  const { username, email, password, password2 } = req.body;
+  const { username, email, password, password2, ref } = req.body;
   if (!username || !email || !password) {
     flash(req, 'error', 'נא למלא את כל השדות');
     return res.redirect('/auth/register');
@@ -52,9 +54,16 @@ router.post('/register', (req, res) => {
     return res.redirect('/auth/register');
   }
   const hash = bcrypt.hashSync(password, 10);
-  const user = db.createUser({ username, email, password_hash: hash });
+  let referredBy = null;
+  const refInput = (ref || req.session.refCode || '').trim().toUpperCase();
+  if (refInput) {
+    const referrer = db.getUserByRefCode(refInput);
+    if (referrer) referredBy = referrer.id;
+  }
+  const user = db.createUser({ username, email, password_hash: hash, referred_by: referredBy });
+  delete req.session.refCode;
   req.session.userId = user.id;
-  flash(req, 'success', 'נרשמת בהצלחה!');
+  flash(req, 'success', referredBy ? 'נרשמת בהצלחה! קוד החבר מאומת.' : 'נרשמת בהצלחה!');
   res.redirect('/');
 });
 

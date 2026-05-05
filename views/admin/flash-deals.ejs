@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <h1 class="page-title">⚡ מבצעי בזק</h1>
+    <p class="muted">מבצעים מוגבלים בזמן עם countdown באתר. דוחפים בכוח את ההמרות.</p>
+
+    <div class="card">
+      <h3>מבצע חדש</h3>
+      <form method="post" action="/admin/flash-deals/new" class="row-form">
+        <select name="product_id" required>
+          <option value="">— בחרו מוצר —</option>
+          <% products.forEach(function(p){ %>
+            <option value="<%= p.id %>"><%= p.name %> (<%= formatCurrency(p.price) %>)</option>
+          <% }); %>
+        </select>
+        <input type="number" step="0.01" name="deal_price" placeholder="מחיר במבצע" required>
+        <input type="datetime-local" name="ends_at" required>
+        <label class="checkbox"><input type="checkbox" name="active" value="1" checked> פעיל</label>
+        <button class="btn btn-primary">צור מבצע</button>
+      </form>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>#</th><th>מוצר</th><th>מחיר מבצע</th><th>מסתיים</th><th>פעיל</th><th></th></tr></thead>
+      <tbody>
+        <% deals.forEach(function(d){ %>
+          <tr>
+            <td><%= d.id %></td>
+            <td><%= d.product_name %></td>
+            <td><%= formatCurrency(d.deal_price) %></td>
+            <td><%= new Date(d.ends_at).toLocaleString('he-IL') %></td>
+            <td><%= d.active ? '✓' : '✗' %></td>
+            <td>
+              <form method="post" action="/admin/flash-deals/<%= d.id %>/delete" onsubmit="return confirm('למחוק?')">
+                <button class="btn btn-danger btn-sm">מחק</button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </main>
+</div>
+<%- include('../partials/footer') %>

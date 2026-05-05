@@ -8,7 +8,10 @@
       <h3>פריטים</h3>
       <% items.forEach(function(it){ %>
         <div class="checkout-row">
-          <span><%= it.product.name %> × <%= it.qty %></span>
+          <span>
+            <%= it.product.name %> × <%= it.qty %>
+            <% if (it.flash) { %><span class="tag" style="background:#f97316;color:white">⚡ FLASH</span><% } %>
+          </span>
           <span><%= formatCurrency(it.lineTotal) %></span>
         </div>
       <% }); %>
@@ -22,28 +25,28 @@
       </form>
     </div>
 
+    <% if (user && user.points > 0) { %>
+      <div class="card">
+        <h3>פדיון נקודות (יש לך ✦ <%= user.points %>)</h3>
+        <p class="muted small">כל <%= redeemRate %> נקודות = ₪1 הנחה</p>
+        <form method="post" action="/checkout/redeem" class="row-form">
+          <input type="number" name="points" min="0" max="<%= user.points %>" value="<%= pointsToRedeem || 0 %>" placeholder="כמה נקודות להשתמש">
+          <button class="btn btn-ghost">פדה</button>
+        </form>
+      </div>
+    <% } %>
+
     <div class="card">
       <h3>בחר אמצעי תשלום</h3>
       <form method="post" action="/checkout/pay" class="pay-methods">
-        <% if (paypalEnabled) { %>
-          <label class="pay-method">
-            <input type="radio" name="method" value="paypal" checked>
-            <div class="pm-body">
-              <div class="pm-name">PayPal</div>
-              <div class="muted">תשלום מאובטח דרך PayPal</div>
-            </div>
-            <div class="pm-logo">PayPal</div>
-          </label>
-        <% } else { %>
-          <label class="pay-method">
-            <input type="radio" name="method" value="paypal" checked>
-            <div class="pm-body">
-              <div class="pm-name">PayPal <span class="tag">דמו</span></div>
-              <div class="muted">PayPal לא הוגדר בשרת — מצב דמו</div>
-            </div>
-            <div class="pm-logo">PayPal</div>
-          </label>
-        <% } %>
+        <label class="pay-method">
+          <input type="radio" name="method" value="paypal" checked>
+          <div class="pm-body">
+            <div class="pm-name">PayPal <% if (!paypalEnabled) { %><span class="tag">דמו</span><% } %></div>
+            <div class="muted">תשלום מאובטח דרך PayPal</div>
+          </div>
+          <div class="pm-logo">PayPal</div>
+        </label>
 
         <label class="pay-method">
           <input type="radio" name="method" value="bit">
@@ -65,10 +68,16 @@
     <% if (extraFee > 0) { %>
       <div class="row"><span>תוספת</span><strong><%= formatCurrency(extraFee) %></strong></div>
     <% } %>
-    <% if (discount > 0) { %>
-      <div class="row"><span>הנחה (<%= discountCode %>)</span><strong>-<%= formatCurrency(discount) %></strong></div>
+    <% if (couponDiscount > 0) { %>
+      <div class="row"><span>הנחה (<%= discountCode %>)</span><strong>-<%= formatCurrency(couponDiscount) %></strong></div>
+    <% } %>
+    <% if (pointsDiscount > 0) { %>
+      <div class="row"><span>נקודות (-<%= pointsToRedeem %>)</span><strong>-<%= formatCurrency(pointsDiscount) %></strong></div>
     <% } %>
     <div class="row total"><span>לתשלום</span><strong><%= formatCurrency(total) %></strong></div>
+    <% if (pointsToEarn > 0) { %>
+      <div class="row earn-row"><span>תרוויח על הקנייה</span><strong>✦ <%= pointsToEarn %> נקודות</strong></div>
+    <% } %>
     <p class="muted small">בלחיצה על "שלם" אתם מאשרים את תנאי השימוש.</p>
   </aside>
 </div>

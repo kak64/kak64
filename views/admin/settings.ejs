@@ -4,23 +4,53 @@
   <main class="dash-main">
     <h1 class="page-title">הגדרות</h1>
     <form method="post" action="/admin/settings" class="card">
+      <h3>אתר</h3>
       <label>שם האתר</label>
       <input type="text" name="site_name" value="<%= settingsMap.site_name %>">
 
       <label>כותרת משנה</label>
       <input type="text" name="site_subtitle" value="<%= settingsMap.site_subtitle %>">
 
-      <label>קישור Discord</label>
-      <input type="text" name="discord_invite" value="<%= settingsMap.discord_invite %>">
-
       <label>טקסט גיבור (Hero)</label>
       <input type="text" name="hero_tagline" value="<%= settingsMap.hero_tagline %>">
 
+      <hr>
+      <h3>פס הכרזה (מופיע למעלה בכל עמוד)</h3>
+      <label>טקסט ההכרזה (השאירו ריק כדי להסתיר)</label>
+      <input type="text" name="announcement_bar" value="<%= settingsMap.announcement_bar %>">
+      <label>קישור להכרזה (אופציונלי)</label>
+      <input type="text" name="announcement_link" value="<%= settingsMap.announcement_link %>">
+
+      <hr>
+      <h3>Discord</h3>
+      <label>קישור הזמנה ל-Discord</label>
+      <input type="text" name="discord_invite" value="<%= settingsMap.discord_invite %>">
+      <label>Discord Webhook URL — שלח עדכון לכל הזמנה ששולמה</label>
+      <input type="text" name="discord_webhook_url" value="<%= settingsMap.discord_webhook_url %>" placeholder="https://discord.com/api/webhooks/...">
+      <p class="muted small">צרו webhook בערוץ ב-Discord (Edit Channel → Integrations → Webhooks → New Webhook → העתק URL)</p>
+
+      <hr>
+      <h3>FiveM Server (live status widget)</h3>
+      <label>כתובת השרת — IP:PORT (למשל 1.2.3.4:30120)</label>
+      <input type="text" name="fivem_endpoint" value="<%= settingsMap.fivem_endpoint %>">
+      <label>שם השרת לתצוגה</label>
+      <input type="text" name="fivem_server_name" value="<%= settingsMap.fivem_server_name %>">
+
+      <hr>
+      <h3>תשלום ומחירים</h3>
       <label>תוספת מחיר (₪) — מתווסף בעת תשלום</label>
       <input type="number" step="0.01" name="extra_fee" value="<%= settingsMap.extra_fee %>">
-
       <label>קודי הנחה — פורמט: <code>WELCOME10:10,SUMMER20:20</code></label>
       <input type="text" name="discount_codes" value="<%= settingsMap.discount_codes %>">
+
+      <hr>
+      <h3>תוכנית נאמנות</h3>
+      <label>נקודות לכל ₪ שמוציאים</label>
+      <input type="number" step="0.1" name="points_per_currency" value="<%= settingsMap.points_per_currency %>">
+      <label>שער פדיון — כמה נקודות שווות ₪1</label>
+      <input type="number" name="points_redeem_rate" value="<%= settingsMap.points_redeem_rate %>">
+      <label>בונוס הפניה (₪ — לשני הצדדים, אחרי הזמנה ראשונה)</label>
+      <input type="number" name="referral_bonus" value="<%= settingsMap.referral_bonus %>">
 
       <button class="btn btn-primary mt" type="submit">שמור</button>
     </form>

@@ -95,7 +95,9 @@ function parseProductForm(req) {
     features: req.body.features || null,
     is_package: req.body.is_package ? 1 : 0,
     active: req.body.active ? 1 : 0,
-    sort_order: req.body.sort_order || 0
+    sort_order: req.body.sort_order || 0,
+    stock: req.body.stock === '' ? null : req.body.stock,
+    is_featured: req.body.is_featured ? 1 : 0
   };
 }
 
@@ -162,9 +164,90 @@ router.post('/users/:id/admin', (req, res) => {
   res.redirect('/admin/users');
 });
 
+// ----- Flash deals -----
+router.get('/flash-deals', (req, res) => {
+  const deals = db.listAllFlashDeals();
+  const products = db.listAllProducts();
+  res.render('admin/flash-deals', { title: 'מבצעי בזק', deals, products });
+});
+
+router.post('/flash-deals/new', (req, res) => {
+  const { product_id, deal_price, ends_at, active } = req.body;
+  if (!product_id || !deal_price || !ends_at) {
+    flash(req, 'error', 'נדרש מוצר, מחיר ותאריך סיום');
+    return res.redirect('/admin/flash-deals');
+  }
+  db.createFlashDeal({
+    product_id: parseInt(product_id, 10),
+    deal_price: Number(deal_price),
+    ends_at,
+    active: active ? 1 : 0
+  });
+  flash(req, 'success', 'מבצע בזק נוצר');
+  res.redirect('/admin/flash-deals');
+});
+
+router.post('/flash-deals/:id/delete', (req, res) => {
+  db.deleteFlashDeal(req.params.id);
+  flash(req, 'success', 'נמחק');
+  res.redirect('/admin/flash-deals');
+});
+
+// ----- Testimonials -----
+router.get('/testimonials', (req, res) => {
+  res.render('admin/testimonials', { title: 'המלצות', items: db.listAllTestimonials() });
+});
+
+router.post('/testimonials/new', upload.single('avatar'), (req, res) => {
+  db.createTestimonial({
+    author: req.body.author,
+    avatar_url: req.file ? '/uploads/' + req.file.filename : (req.body.avatar_url || null),
+    rating: req.body.rating,
+    body: req.body.body,
+    active: req.body.active ? 1 : 0,
+    sort_order: req.body.sort_order
+  });
+  flash(req, 'success', 'המלצה נוצרה');
+  res.redirect('/admin/testimonials');
+});
+
+router.post('/testimonials/:id/delete', (req, res) => {
+  db.deleteTestimonial(req.params.id);
+  flash(req, 'success', 'נמחק');
+  res.redirect('/admin/testimonials');
+});
+
+// ----- FAQ -----
+router.get('/faq', (req, res) => {
+  res.render('admin/faq', { title: 'שאלות נפוצות', items: db.listAllFaq() });
+});
+
+router.post('/faq/new', (req, res) => {
+  db.createFaq({
+    question: req.body.question,
+    answer: req.body.answer,
+    active: req.body.active ? 1 : 0,
+    sort_order: req.body.sort_order
+  });
+  flash(req, 'success', 'נוסף');
+  res.redirect('/admin/faq');
+});
+
+router.post('/faq/:id/delete', (req, res) => {
+  db.deleteFaq(req.params.id);
+  flash(req, 'success', 'נמחק');
+  res.redirect('/admin/faq');
+});
+
 // ----- Settings -----
 router.get('/settings', (req, res) => {
-  const allKeys = ['site_name', 'site_subtitle', 'discord_invite', 'hero_tagline', 'extra_fee', 'discount_codes'];
+  const allKeys = [
+    'site_name', 'site_subtitle', 'discord_invite', 'hero_tagline',
+    'announcement_bar', 'announcement_link',
+    'discord_webhook_url', 'fivem_endpoint', 'fivem_server_name',
+    'extra_fee', 'discount_codes',
+    'points_per_currency', 'points_redeem_rate', 'referral_bonus'
+  ];
   const settingsMap = {};
   allKeys.forEach(k => settingsMap[k] = db.getSetting(k) || '');
   res.render('admin/settings', { title: 'הגדרות', settingsMap });

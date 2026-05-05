@@ -10,6 +10,19 @@
       <span class="hero-sub"><%= siteSubtitle || 'ROLEPLAY SERVER STORE' %></span>
     </h1>
     <p class="hero-tag"><%= heroTagline || 'הצטרפו לקהילה הכי טובה — חנות, חבילות והטבות בלעדיות.' %></p>
+
+    <div id="server-status" class="server-status loading" data-name="<%= fivemServerName || 'Infinity IL Roleplay' %>">
+      <div class="ss-dot"></div>
+      <div class="ss-text">
+        <div class="ss-label muted">FiveM Server</div>
+        <div class="ss-name"><%= fivemServerName || 'Infinity IL Roleplay' %></div>
+      </div>
+      <div class="ss-players">
+        <span class="ss-num">—</span><span class="ss-max"></span>
+        <span class="ss-lbl muted">שחקנים</span>
+      </div>
+    </div>
+
     <div class="hero-stats">
       <div class="hero-stat"><span class="num">24/7</span><span class="lbl">פעילות</span></div>
       <div class="hero-stat"><span class="num"><%= products.length %></span><span class="lbl">מוצרים</span></div>
@@ -26,6 +39,76 @@
     </div>
   </div>
 </section>
+
+<% if (activity && activity.length) { %>
+  <section class="activity-section">
+    <div class="activity-head">
+      <span class="live-dot"></span>
+      <span>רכישות אחרונות בשרת</span>
+    </div>
+    <div class="ticker">
+      <div class="ticker-track">
+        <% activity.concat(activity).forEach(function(a){ %>
+          <div class="ticker-item">
+            <% if (a.avatar_url) { %><img src="<%= a.avatar_url %>" alt="" class="ticker-avatar"><% } else { %><span class="ticker-avatar fallback"><%= (a.username || '?').slice(0,1).toUpperCase() %></span><% } %>
+            <span><strong><%= a.username || 'אורח' %></strong> רכש/ה <a href="/product/<%= a.product_id %>"><%= a.product_name %></a></span>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+<% } %>
+
+<% if (flashDeals && flashDeals.length) { %>
+  <section class="flash-strip">
+    <div class="flash-head">
+      <h2>⚡ מבצעי בזק — מהר לפני שייגמר</h2>
+    </div>
+    <div class="flash-grid">
+      <% flashDeals.forEach(function(fd){ %>
+        <a href="/product/<%= fd.product_id %>" class="flash-card" data-ends="<%= fd.ends_at %>">
+          <div class="flash-image">
+            <% if (fd.image_url) { %><img src="<%= fd.image_url %>" alt=""><% } else { %><div class="image-placeholder"><span class="ph-icon"><%= fd.category_icon || '⚡' %></span></div><% } %>
+          </div>
+          <div class="flash-body">
+            <div class="flash-name"><%= fd.product_name %></div>
+            <div class="flash-prices">
+              <span class="price-old"><%= formatCurrency(fd.product_price) %></span>
+              <span class="price-now flash"><%= formatCurrency(fd.deal_price) %></span>
+            </div>
+            <div class="flash-cd"><span class="cd-text">⏱ —</span></div>
+          </div>
+        </a>
+      <% }); %>
+    </div>
+  </section>
+<% } %>
+
+<% if (featured && featured.length) { %>
+  <section class="featured-section">
+    <div class="cat-header">
+      <h2 class="cat-title"><span class="cat-icon">⭐</span>מומלצים השבוע</h2>
+    </div>
+    <div class="product-grid">
+      <% featured.forEach(function(product){ %>
+        <%- include('partials/product-card', { product: product }) %>
+      <% }); %>
+    </div>
+  </section>
+<% } %>
+
+<% if (bestSellers && bestSellers.length && bestSellers.some(function(p){ return (p.sold_count||0) > 0; })) { %>
+  <section class="featured-section">
+    <div class="cat-header">
+      <h2 class="cat-title"><span class="cat-icon">🔥</span>הכי נמכרים</h2>
+    </div>
+    <div class="product-grid">
+      <% bestSellers.forEach(function(product){ %>
+        <%- include('partials/product-card', { product: product }) %>
+      <% }); %>
+    </div>
+  </section>
+<% } %>
 
 <% var grouped = {};
    (categoriesAll || []).forEach(function(c){ grouped[c.id] = { cat: c, items: [] }; });
@@ -47,5 +130,56 @@
     </div>
   <% }); %>
 </section>
+
+<section class="trust-section">
+  <div class="trust-grid">
+    <div class="trust-card"><div class="trust-icon">⚡</div><h3>הפעלה מיידית</h3><p>ההטבה מופעלת אוטומטית תוך פחות מדקה.</p></div>
+    <div class="trust-card"><div class="trust-icon">🔒</div><h3>תשלום מאובטח</h3><p>PayPal ו-Bit — תשלומים מוצפנים, מאובטחים ומיידיים.</p></div>
+    <div class="trust-card"><div class="trust-icon">💬</div><h3>תמיכה 24/7</h3><p>הצוות שלנו זמין ב-Discord תמיד שתצטרכו עזרה.</p></div>
+    <div class="trust-card"><div class="trust-icon">🎁</div><h3>נקודות ובונוסים</h3><p>על כל קנייה מקבלים נקודות. הביאו חבר — שניכם מרוויחים.</p></div>
+  </div>
+</section>
+
+<% if (testimonials && testimonials.length) { %>
+  <section class="testimonials-section">
+    <h2 class="section-title">מה אומרים עלינו</h2>
+    <div class="testimonials-grid">
+      <% testimonials.forEach(function(t){ %>
+        <div class="testimonial-card">
+          <div class="t-stars">
+            <% for (var i = 1; i <= 5; i++) { %><span class="<%= i <= t.rating ? 'on' : '' %>">★</span><% } %>
+          </div>
+          <p class="t-body">"<%= t.body %>"</p>
+          <div class="t-author">
+            <% if (t.avatar_url) { %><img src="<%= t.avatar_url %>" alt=""><% } else { %><span class="user-initial"><%= t.author.slice(0,1).toUpperCase() %></span><% } %>
+            <strong><%= t.author %></strong>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </section>
+<% } %>
+
+<% if (faqs && faqs.length) { %>
+  <section class="faq-section">
+    <h2 class="section-title">שאלות נפוצות</h2>
+    <div class="faq-list">
+      <% faqs.forEach(function(f){ %>
+        <details class="faq-item">
+          <summary><%= f.question %></summary>
+          <div><%= f.answer %></div>
+        </details>
+      <% }); %>
+    </div>
+  </section>
+<% } %>
+
+<% if (discordInvite) { %>
+  <section class="cta-section">
+    <h2>רוצים את החוויה המלאה?</h2>
+    <p>הצטרפו ל-Discord שלנו — עדכונים, מבצעים בלעדיים, וקהילה פעילה 24/7.</p>
+    <a href="<%= discordInvite %>" target="_blank" rel="noopener" class="btn btn-discord btn-lg">הצטרפו ל-Discord</a>
+  </section>
+<% } %>
 
 <%- include('partials/footer') %>

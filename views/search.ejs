@@ -1,0 +1,27 @@
+<%- include('partials/header') %>
+
+<h1 class="page-title">
+  <% if (q) { %>תוצאות חיפוש: "<%= q %>"<% } else { %>חיפוש<% } %>
+</h1>
+
+<form action="/search" method="get" class="search-page-form">
+  <input type="search" name="q" value="<%= q %>" placeholder="חפשו..." autofocus>
+  <button class="btn btn-primary">חפש</button>
+</form>
+
+<% if (q && !results.length) { %>
+  <div class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <p>לא נמצאו תוצאות עבור "<%= q %>"</p>
+    <a href="/" class="btn btn-primary">חזרה לחנות</a>
+  </div>
+<% } else if (results.length) { %>
+  <p class="muted"><%= results.length %> תוצאות</p>
+  <div class="product-grid">
+    <% results.forEach(function(product){ %>
+      <%- include('partials/product-card', { product: product }) %>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

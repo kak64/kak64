@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+
+<h1 class="page-title">המועדפים שלי</h1>
+
+<% if (!items.length) { %>
+  <div class="empty-state">
+    <div class="empty-icon">♡</div>
+    <p>עוד אין מועדפים</p>
+    <a href="/" class="btn btn-primary">בואו נמצא משהו</a>
+  </div>
+<% } else { %>
+  <div class="product-grid">
+    <% items.forEach(function(product){ %>
+      <%- include('partials/product-card', { product: product }) %>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS users (
   cfx_username TEXT,
   avatar_url TEXT,
   is_admin INTEGER DEFAULT 0,
+  points INTEGER DEFAULT 0,
+  referral_code TEXT UNIQUE,
+  referred_by INTEGER REFERENCES users(id),
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -50,6 +53,12 @@ CREATE TABLE IF NOT EXISTS products (
   is_package INTEGER DEFAULT 0,
   active INTEGER DEFAULT 1,
   sort_order INTEGER DEFAULT 0,
+  stock INTEGER,
+  sold_count INTEGER DEFAULT 0,
+  rating_sum INTEGER DEFAULT 0,
+  rating_count INTEGER DEFAULT 0,
+  views INTEGER DEFAULT 0,
+  is_featured INTEGER DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -61,6 +70,7 @@ CREATE TABLE IF NOT EXISTS orders (
   status TEXT DEFAULT 'pending',
   transaction_id TEXT,
   notes TEXT,
+  points_earned INTEGER DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -74,11 +84,82 @@ CREATE TABLE IF NOT EXISTS order_items (
   meta TEXT
 );
 
+CREATE TABLE IF NOT EXISTS reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  username TEXT,
+  rating INTEGER NOT NULL,
+  comment TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(product_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS wishlist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, product_id)
+);
+
+CREATE TABLE IF NOT EXISTS flash_deals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+  deal_price REAL NOT NULL,
+  ends_at TEXT NOT NULL,
+  active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS testimonials (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  author TEXT NOT NULL,
+  avatar_url TEXT,
+  rating INTEGER DEFAULT 5,
+  body TEXT NOT NULL,
+  active INTEGER DEFAULT 1,
+  sort_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS faq (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  active INTEGER DEFAULT 1,
+  sort_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_wishlist_user ON wishlist(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_flash_active ON flash_deals(active, ends_at);
 `);
+
+// Idempotent migrations for users upgrading from earlier schemas
+function safeAlter(table, column, def) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name);
+  if (!cols.includes(column)) {
+    try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${def}`); } catch (e) { /* ignore */ }
+  }
+}
+safeAlter('users', 'points', 'INTEGER DEFAULT 0');
+safeAlter('users', 'referral_code', 'TEXT');
+safeAlter('users', 'referred_by', 'INTEGER');
+safeAlter('products', 'stock', 'INTEGER');
+safeAlter('products', 'sold_count', 'INTEGER DEFAULT 0');
+safeAlter('products', 'rating_sum', 'INTEGER DEFAULT 0');
+safeAlter('products', 'rating_count', 'INTEGER DEFAULT 0');
+safeAlter('products', 'views', 'INTEGER DEFAULT 0');
+safeAlter('products', 'is_featured', 'INTEGER DEFAULT 0');
+safeAlter('orders', 'points_earned', 'INTEGER DEFAULT 0');
 
 // ----------------- Seed -----------------
 function seed() {
@@ -154,7 +235,47 @@ function seed() {
     ins.run('site_subtitle', 'ROLEPLAY SERVER STORE');
     ins.run('discord_invite', 'https://discord.gg/infinity-il');
     ins.run('hero_tagline', 'הכניסו את הקהילה הכי טובה במזרח התיכון');
+    ins.run('announcement_bar', '🔥 קוד WELCOME10 — 10₪ הנחה על כל קנייה ראשונה · הצטרפו לדיסקורד שלנו!');
+    ins.run('announcement_link', '');
+    ins.run('discord_webhook_url', '');
+    ins.run('fivem_endpoint', '');
+    ins.run('fivem_server_name', 'Infinity IL Roleplay');
+    ins.run('points_per_currency', '1');
+    ins.run('points_redeem_rate', '100');
+    ins.run('referral_bonus', '10');
   }
+
+  // Seed testimonials
+  const testCount = db.prepare('SELECT COUNT(*) AS c FROM testimonials').get().c;
+  if (testCount === 0) {
+    const ins = db.prepare(`INSERT INTO testimonials (author, rating, body, sort_order) VALUES (?,?,?,?)`);
+    ins.run('David K.', 5, 'הקהילה הכי טובה ברולפליי הישראלי. השרת חלק, הצוות אדיב, והחנות מסודרת. כיף לקנות פה.', 1);
+    ins.run('Yossi M.', 5, 'קניתי VIP זהב — הופעל תוך 30 שניות. שווה כל שקל. ממליץ בחום!', 2);
+    ins.run('Liron B.', 5, 'מערכת התשלום מהירה, ה-Discord פעיל, וההטבות אמיתיות. 10/10.', 3);
+    ins.run('Roi A.', 4, 'חוויית רולפליי ברמה גבוהה. הצוות עוזר תמיד, החנות עובדת מצוין.', 4);
+  }
+
+  // Seed FAQ
+  const faqCount = db.prepare('SELECT COUNT(*) AS c FROM faq').get().c;
+  if (faqCount === 0) {
+    const ins = db.prepare(`INSERT INTO faq (question, answer, sort_order) VALUES (?,?,?)`);
+    ins.run('כמה זמן לוקח עד שאני מקבל את ההטבה?', 'ברוב המקרים ההטבה מופעלת אוטומטית תוך פחות מדקה. אם זה לא קרה — פנו אלינו ב-Discord ואנחנו נטפל בזה מיד.', 1);
+    ins.run('איך אני משלם?', 'אנחנו תומכים ב-PayPal וב-Bit. שני האמצעים מאובטחים לחלוטין ומיידיים.', 2);
+    ins.run('מה קורה אם הצטערתי על הקנייה?', 'מדיניות החזר תוך 7 ימים על מוצרים שעדיין לא הופעלו בשרת. מספיק לפנות אלינו ב-Discord.', 3);
+    ins.run('איך עובדות נקודות הנאמנות?', 'על כל ₪ שאתם מוציאים אתם מקבלים נקודה. אפשר לפדות אותן בקנייה הבאה. בנוסף, חבר שמצטרף עם הקוד שלכם — שניכם מקבלים בונוס.', 4);
+    ins.run('אני יכול להעביר חבילה לחבר?', 'כן! VIP וחבילות ניתנות להעברה. צרו קשר ב-Discord עם פרטי המקבל.', 5);
+  }
+
+  // Backfill referral codes for users that don't have one
+  const usersNoCode = db.prepare(`SELECT id, username FROM users WHERE referral_code IS NULL OR referral_code = ''`).all();
+  const updRef = db.prepare(`UPDATE users SET referral_code = ? WHERE id = ?`);
+  usersNoCode.forEach(u => updRef.run(generateRefCode(u.username), u.id));
+}
+
+function generateRefCode(username) {
+  const base = (username || 'USER').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || 'USER';
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${base}-${suffix}`;
 }
 
 seed();
@@ -166,11 +287,13 @@ const Q = {
   getUserByUsername: db.prepare('SELECT * FROM users WHERE username = ?'),
   getUserByDiscord: db.prepare('SELECT * FROM users WHERE discord_id = ?'),
   getUserByCfx: db.prepare('SELECT * FROM users WHERE cfx_id = ?'),
-  insertUser: db.prepare(`INSERT INTO users (username, email, password_hash, discord_id, discord_username, cfx_id, cfx_username, avatar_url)
-                          VALUES (?,?,?,?,?,?,?,?)`),
+  getUserByRefCode: db.prepare('SELECT * FROM users WHERE referral_code = ?'),
+  insertUser: db.prepare(`INSERT INTO users (username, email, password_hash, discord_id, discord_username, cfx_id, cfx_username, avatar_url, referral_code, referred_by)
+                          VALUES (?,?,?,?,?,?,?,?,?,?)`),
   updateUser: db.prepare(`UPDATE users SET username=?, email=?, avatar_url=? WHERE id=?`),
   setUserAdmin: db.prepare(`UPDATE users SET is_admin=? WHERE id=?`),
   listUsers: db.prepare('SELECT * FROM users ORDER BY id DESC'),
+  addUserPoints: db.prepare(`UPDATE users SET points = points + ? WHERE id = ?`),
 
   listCategories: db.prepare('SELECT * FROM categories ORDER BY sort_order, name'),
   getCategoryBySlug: db.prepare('SELECT * FROM categories WHERE slug = ?'),
@@ -189,18 +312,73 @@ const Q = {
                                LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.id DESC`),
   getProduct: db.prepare(`SELECT p.*, c.name AS category_name, c.slug AS category_slug, c.color AS category_color, c.icon AS category_icon
                           FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = ?`),
-  insertProduct: db.prepare(`INSERT INTO products (category_id, name, description, price, sale_price, image_url, badge, badge_color, tags, features, is_package, active, sort_order)
-                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`),
-  updateProduct: db.prepare(`UPDATE products SET category_id=?, name=?, description=?, price=?, sale_price=?, image_url=?, badge=?, badge_color=?, tags=?, features=?, is_package=?, active=?, sort_order=? WHERE id=?`),
+  insertProduct: db.prepare(`INSERT INTO products (category_id, name, description, price, sale_price, image_url, badge, badge_color, tags, features, is_package, active, sort_order, stock, is_featured)
+                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`),
+  updateProduct: db.prepare(`UPDATE products SET category_id=?, name=?, description=?, price=?, sale_price=?, image_url=?, badge=?, badge_color=?, tags=?, features=?, is_package=?, active=?, sort_order=?, stock=?, is_featured=? WHERE id=?`),
   deleteProduct: db.prepare('DELETE FROM products WHERE id = ?'),
+  bumpProductViews: db.prepare(`UPDATE products SET views = views + 1 WHERE id = ?`),
+  bumpProductSold: db.prepare(`UPDATE products SET sold_count = sold_count + ?, stock = CASE WHEN stock IS NULL THEN NULL ELSE MAX(0, stock - ?) END WHERE id = ?`),
+  listFeaturedProducts: db.prepare(`SELECT p.*, c.name AS category_name, c.slug AS category_slug, c.color AS category_color, c.icon AS category_icon
+                                    FROM products p LEFT JOIN categories c ON p.category_id = c.id
+                                    WHERE p.active = 1 AND p.is_featured = 1 ORDER BY p.sort_order LIMIT 8`),
+  listBestSellers: db.prepare(`SELECT p.*, c.name AS category_name, c.slug AS category_slug, c.color AS category_color, c.icon AS category_icon
+                               FROM products p LEFT JOIN categories c ON p.category_id = c.id
+                               WHERE p.active = 1 ORDER BY p.sold_count DESC, p.id DESC LIMIT 8`),
+  searchProducts: db.prepare(`SELECT p.*, c.name AS category_name, c.slug AS category_slug, c.color AS category_color, c.icon AS category_icon
+                              FROM products p LEFT JOIN categories c ON p.category_id = c.id
+                              WHERE p.active = 1 AND (p.name LIKE ? OR p.description LIKE ? OR p.tags LIKE ?)
+                              ORDER BY p.sold_count DESC, p.id DESC`),
 
-  insertOrder: db.prepare(`INSERT INTO orders (user_id, total, payment_method, status, transaction_id, notes) VALUES (?,?,?,?,?,?)`),
+  insertOrder: db.prepare(`INSERT INTO orders (user_id, total, payment_method, status, transaction_id, notes, points_earned) VALUES (?,?,?,?,?,?,?)`),
   insertOrderItem: db.prepare(`INSERT INTO order_items (order_id, product_id, product_name, qty, price, meta) VALUES (?,?,?,?,?,?)`),
   listOrders: db.prepare(`SELECT o.*, u.username FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.id DESC`),
   listOrdersForUser: db.prepare(`SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC`),
   getOrder: db.prepare(`SELECT o.*, u.username, u.email FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?`),
   listOrderItems: db.prepare(`SELECT * FROM order_items WHERE order_id = ?`),
   updateOrderStatus: db.prepare(`UPDATE orders SET status = ? WHERE id = ?`),
+  recentPaidOrders: db.prepare(`SELECT o.id, o.total, o.created_at, u.username, u.avatar_url
+                                FROM orders o LEFT JOIN users u ON o.user_id = u.id
+                                WHERE o.status = 'paid' ORDER BY o.id DESC LIMIT ?`),
+  recentItemsForActivity: db.prepare(`SELECT oi.product_name, oi.qty, o.created_at, u.username, u.avatar_url, p.image_url, p.id AS product_id
+                                      FROM order_items oi
+                                      JOIN orders o ON oi.order_id = o.id
+                                      LEFT JOIN users u ON o.user_id = u.id
+                                      LEFT JOIN products p ON oi.product_id = p.id
+                                      WHERE o.status = 'paid'
+                                      ORDER BY o.id DESC LIMIT ?`),
+
+  insertReview: db.prepare(`INSERT INTO reviews (product_id, user_id, username, rating, comment) VALUES (?,?,?,?,?)
+                            ON CONFLICT(product_id, user_id) DO UPDATE SET rating = excluded.rating, comment = excluded.comment, created_at = CURRENT_TIMESTAMP`),
+  listReviewsForProduct: db.prepare(`SELECT * FROM reviews WHERE product_id = ? ORDER BY id DESC`),
+  recomputeProductRating: db.prepare(`UPDATE products SET rating_sum = (SELECT COALESCE(SUM(rating), 0) FROM reviews WHERE product_id = ?), rating_count = (SELECT COUNT(*) FROM reviews WHERE product_id = ?) WHERE id = ?`),
+
+  insertWishlist: db.prepare(`INSERT OR IGNORE INTO wishlist (user_id, product_id) VALUES (?,?)`),
+  removeWishlist: db.prepare(`DELETE FROM wishlist WHERE user_id = ? AND product_id = ?`),
+  isWishlisted: db.prepare(`SELECT 1 FROM wishlist WHERE user_id = ? AND product_id = ?`),
+  listWishlistFor: db.prepare(`SELECT p.*, c.name AS category_name, c.slug AS category_slug, c.color AS category_color, c.icon AS category_icon
+                               FROM wishlist w JOIN products p ON w.product_id = p.id
+                               LEFT JOIN categories c ON p.category_id = c.id
+                               WHERE w.user_id = ? ORDER BY w.id DESC`),
+
+  listFlashDeals: db.prepare(`SELECT fd.*, p.name AS product_name, p.price AS product_price, p.image_url, c.color AS category_color, c.icon AS category_icon
+                              FROM flash_deals fd JOIN products p ON fd.product_id = p.id
+                              LEFT JOIN categories c ON p.category_id = c.id
+                              WHERE fd.active = 1 AND fd.ends_at > datetime('now')
+                              ORDER BY fd.ends_at ASC`),
+  listAllFlashDeals: db.prepare(`SELECT fd.*, p.name AS product_name FROM flash_deals fd JOIN products p ON fd.product_id = p.id ORDER BY fd.id DESC`),
+  insertFlashDeal: db.prepare(`INSERT INTO flash_deals (product_id, deal_price, ends_at, active) VALUES (?,?,?,?)`),
+  deleteFlashDeal: db.prepare(`DELETE FROM flash_deals WHERE id = ?`),
+  getActiveFlashForProduct: db.prepare(`SELECT * FROM flash_deals WHERE product_id = ? AND active = 1 AND ends_at > datetime('now') ORDER BY ends_at ASC LIMIT 1`),
+
+  listTestimonials: db.prepare(`SELECT * FROM testimonials WHERE active = 1 ORDER BY sort_order, id`),
+  listAllTestimonials: db.prepare(`SELECT * FROM testimonials ORDER BY sort_order, id`),
+  insertTestimonial: db.prepare(`INSERT INTO testimonials (author, avatar_url, rating, body, active, sort_order) VALUES (?,?,?,?,?,?)`),
+  deleteTestimonial: db.prepare(`DELETE FROM testimonials WHERE id = ?`),
+
+  listFaq: db.prepare(`SELECT * FROM faq WHERE active = 1 ORDER BY sort_order, id`),
+  listAllFaq: db.prepare(`SELECT * FROM faq ORDER BY sort_order, id`),
+  insertFaq: db.prepare(`INSERT INTO faq (question, answer, active, sort_order) VALUES (?,?,?,?)`),
+  deleteFaq: db.prepare(`DELETE FROM faq WHERE id = ?`),
 
   getSetting: db.prepare('SELECT value FROM settings WHERE key = ?'),
   setSetting: db.prepare(`INSERT INTO settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`),
@@ -215,17 +393,21 @@ module.exports = {
   getUserByUsername: u => Q.getUserByUsername.get(u),
   getUserByDiscord: id => Q.getUserByDiscord.get(id),
   getUserByCfx: id => Q.getUserByCfx.get(id),
+  getUserByRefCode: c => Q.getUserByRefCode.get(c),
   createUser: (data) => {
+    const referralCode = generateRefCode(data.username);
     const r = Q.insertUser.run(
       data.username, data.email || null, data.password_hash || null,
       data.discord_id || null, data.discord_username || null,
-      data.cfx_id || null, data.cfx_username || null, data.avatar_url || null
+      data.cfx_id || null, data.cfx_username || null, data.avatar_url || null,
+      referralCode, data.referred_by || null
     );
     return Q.getUserById.get(r.lastInsertRowid);
   },
   updateUser: (id, data) => Q.updateUser.run(data.username, data.email || null, data.avatar_url || null, id),
   setUserAdmin: (id, isAdmin) => Q.setUserAdmin.run(isAdmin ? 1 : 0, id),
   listUsers: () => Q.listUsers.all(),
+  addUserPoints: (id, pts) => Q.addUserPoints.run(pts, id),
 
   // categories
   listCategories: () => Q.listCategories.all(),
@@ -239,6 +421,12 @@ module.exports = {
   listProducts: () => Q.listProducts.all(),
   listProductsByCategory: slug => Q.listProductsByCategory.all(slug),
   listAllProducts: () => Q.listAllProducts.all(),
+  listFeaturedProducts: () => Q.listFeaturedProducts.all(),
+  listBestSellers: () => Q.listBestSellers.all(),
+  searchProducts: (q) => {
+    const like = `%${q}%`;
+    return Q.searchProducts.all(like, like, like);
+  },
   getProduct: id => Q.getProduct.get(id),
   createProduct: (d) => {
     const r = Q.insertProduct.run(
@@ -246,7 +434,9 @@ module.exports = {
       d.sale_price ? Number(d.sale_price) : null, d.image_url || null,
       d.badge || null, d.badge_color || null, d.tags || null, d.features || null,
       d.is_package ? 1 : 0, d.active === undefined ? 1 : (d.active ? 1 : 0),
-      Number(d.sort_order) || 0
+      Number(d.sort_order) || 0,
+      d.stock !== undefined && d.stock !== '' && d.stock !== null ? Number(d.stock) : null,
+      d.is_featured ? 1 : 0
     );
     return Q.getProduct.get(r.lastInsertRowid);
   },
@@ -254,14 +444,60 @@ module.exports = {
     d.category_id || null, d.name, d.description || '', Number(d.price) || 0,
     d.sale_price ? Number(d.sale_price) : null, d.image_url || null,
     d.badge || null, d.badge_color || null, d.tags || null, d.features || null,
-    d.is_package ? 1 : 0, d.active ? 1 : 0, Number(d.sort_order) || 0, id
+    d.is_package ? 1 : 0, d.active ? 1 : 0, Number(d.sort_order) || 0,
+    d.stock !== undefined && d.stock !== '' && d.stock !== null ? Number(d.stock) : null,
+    d.is_featured ? 1 : 0, id
   ),
   deleteProduct: (id) => Q.deleteProduct.run(id),
+  bumpProductViews: (id) => Q.bumpProductViews.run(id),
+  bumpProductSold: (id, qty) => Q.bumpProductSold.run(qty, qty, id),
+
+  // reviews
+  upsertReview: (data) => {
+    Q.insertReview.run(data.product_id, data.user_id, data.username, data.rating, data.comment || null);
+    Q.recomputeProductRating.run(data.product_id, data.product_id, data.product_id);
+  },
+  listReviewsForProduct: (pid) => Q.listReviewsForProduct.all(pid),
+
+  // wishlist
+  toggleWishlist: (userId, productId) => {
+    if (Q.isWishlisted.get(userId, productId)) {
+      Q.removeWishlist.run(userId, productId);
+      return false;
+    }
+    Q.insertWishlist.run(userId, productId);
+    return true;
+  },
+  isWishlisted: (userId, productId) => !!Q.isWishlisted.get(userId, productId),
+  listWishlistFor: (userId) => Q.listWishlistFor.all(userId),
+
+  // flash deals
+  listFlashDeals: () => Q.listFlashDeals.all(),
+  listAllFlashDeals: () => Q.listAllFlashDeals.all(),
+  createFlashDeal: (d) => Q.insertFlashDeal.run(d.product_id, d.deal_price, d.ends_at, d.active ? 1 : 0),
+  deleteFlashDeal: (id) => Q.deleteFlashDeal.run(id),
+  getActiveFlashForProduct: (pid) => Q.getActiveFlashForProduct.get(pid),
+
+  // testimonials
+  listTestimonials: () => Q.listTestimonials.all(),
+  listAllTestimonials: () => Q.listAllTestimonials.all(),
+  createTestimonial: (d) => Q.insertTestimonial.run(d.author, d.avatar_url || null, Number(d.rating) || 5, d.body, d.active ? 1 : 0, Number(d.sort_order) || 0),
+  deleteTestimonial: (id) => Q.deleteTestimonial.run(id),
+
+  // faq
+  listFaq: () => Q.listFaq.all(),
+  listAllFaq: () => Q.listAllFaq.all(),
+  createFaq: (d) => Q.insertFaq.run(d.question, d.answer, d.active ? 1 : 0, Number(d.sort_order) || 0),
+  deleteFaq: (id) => Q.deleteFaq.run(id),
+
+  // activity feed
+  recentItemsForActivity: (limit = 12) => Q.recentItemsForActivity.all(limit),
+  recentPaidOrders: (limit = 8) => Q.recentPaidOrders.all(limit),
 
   // orders
-  createOrder: (userId, items, total, paymentMethod, transactionId = null, notes = null) => {
+  createOrder: (userId, items, total, paymentMethod, transactionId = null, notes = null, pointsEarned = 0) => {
     const tx = db.transaction(() => {
-      const r = Q.insertOrder.run(userId, total, paymentMethod, 'pending', transactionId, notes);
+      const r = Q.insertOrder.run(userId, total, paymentMethod, 'pending', transactionId, notes, pointsEarned);
       const orderId = r.lastInsertRowid;
       items.forEach(it => Q.insertOrderItem.run(orderId, it.product_id, it.name, it.qty, it.price, it.meta || null));
       return orderId;

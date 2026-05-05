@@ -11,6 +11,7 @@
     </div>
     <nav class="dash-nav">
       <a href="/dashboard" class="active">הזמנות</a>
+      <a href="/wishlist">מועדפים</a>
       <a href="/dashboard/profile">פרופיל</a>
       <% if (user.is_admin) { %><a href="/admin">ניהול האתר</a><% } %>
       <a href="/auth/logout">התנתק</a>
@@ -18,6 +19,22 @@
   </aside>
 
   <main class="dash-main">
+    <div class="dash-cards">
+      <div class="dash-card points">
+        <div class="dc-label">הנקודות שלך</div>
+        <div class="dc-num">✦ <%= user.points || 0 %></div>
+        <div class="muted small">פדו אותן בעמוד התשלום ותוזילו את הקנייה הבאה</div>
+      </div>
+
+      <div class="dash-card referral">
+        <div class="dc-label">קוד החבר שלך</div>
+        <div class="dc-code" id="refCode"><%= user.referral_code || '—' %></div>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="copyRef()">העתק קוד</button>
+        <a class="btn btn-primary btn-sm" href="/auth/register?ref=<%= user.referral_code %>" target="_blank">קישור הזמנה</a>
+        <div class="muted small">חבר נרשם עם הקוד שלך → שניכם מקבלים בונוס אחרי הקנייה הראשונה שלו.</div>
+      </div>
+    </div>
+
     <h1 class="page-title">ההזמנות שלי</h1>
     <% if (!orders.length) { %>
       <div class="empty-state">
@@ -27,7 +44,7 @@
       </div>
     <% } else { %>
       <table class="data-table">
-        <thead><tr><th>#</th><th>תאריך</th><th>תשלום</th><th>סטטוס</th><th>סכום</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>תאריך</th><th>תשלום</th><th>סטטוס</th><th>נקודות</th><th>סכום</th><th></th></tr></thead>
         <tbody>
           <% orders.forEach(function(o){ %>
             <tr>
@@ -35,6 +52,7 @@
               <td><%= new Date(o.created_at).toLocaleDateString('he-IL') %></td>
               <td><%= o.payment_method %></td>
               <td><span class="status status-<%= o.status %>"><%= o.status %></span></td>
+              <td>+<%= o.points_earned || 0 %></td>
               <td><%= formatCurrency(o.total) %></td>
               <td><a class="btn btn-ghost btn-sm" href="/dashboard/orders/<%= o.id %>">פרטים</a></td>
             </tr>
@@ -44,5 +62,18 @@
     <% } %>
   </main>
 </div>
+
+<script>
+  function copyRef(){
+    const txt = document.getElementById('refCode').textContent.trim();
+    navigator.clipboard.writeText(txt).then(() => {
+      const flash = document.createElement('div');
+      flash.className = 'flash flash-success';
+      flash.textContent = 'הקוד הועתק! הדביקו לחבר.';
+      document.querySelector('.dash-main').prepend(flash);
+      setTimeout(() => flash.remove(), 2500);
+    });
+  }
+</script>
 
 <%- include('../partials/footer') %>

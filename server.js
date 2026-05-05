@@ -6,7 +6,7 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const fs = require('fs');
 
 const db = require('./src/db');
-const { attachUser, formatCurrency } = require('./src/middleware');
+const { attachUser, formatCurrency, effectivePrice, avgRating } = require('./src/middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,10 +42,17 @@ app.use((req, res, next) => {
   res.locals.currencySymbol = process.env.CURRENCY_SYMBOL || '₪';
   res.locals.currency = process.env.CURRENCY || 'ILS';
   res.locals.formatCurrency = formatCurrency;
+  res.locals.effectivePrice = effectivePrice;
+  res.locals.avgRating = avgRating;
+  res.locals.getActiveFlashForProduct = (id) => db.getActiveFlashForProduct(id);
+  res.locals.isWishlisted = (pid) => req.user ? db.isWishlisted(req.user.id, pid) : false;
   res.locals.currentPath = req.path;
   res.locals.flash = req.session.flash || null;
   delete req.session.flash;
   res.locals.categories = db.listCategories();
+  res.locals.announcement = db.getSetting('announcement_bar') || '';
+  res.locals.announcementLink = db.getSetting('announcement_link') || '';
+  res.locals.discordInviteGlobal = db.getSetting('discord_invite') || '';
   next();
 });
 
@@ -54,6 +61,8 @@ app.use('/', require('./src/routes/public'));
 app.use('/auth', require('./src/routes/auth'));
 app.use('/cart', require('./src/routes/cart'));
 app.use('/checkout', require('./src/routes/checkout'));
+app.use('/wishlist', require('./src/routes/wishlist'));
+app.use('/reviews', require('./src/routes/reviews'));
 app.use('/dashboard', require('./src/routes/dashboard'));
 app.use('/admin', require('./src/routes/admin'));
 

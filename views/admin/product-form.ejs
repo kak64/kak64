@@ -52,6 +52,13 @@
         <label>סדר תצוגה</label>
         <input type="number" name="sort_order" value="<%= product ? product.sort_order : 0 %>">
 
+        <label>מלאי (השאירו ריק לאינסופי)</label>
+        <input type="number" name="stock" value="<%= product && product.stock !== null && product.stock !== undefined ? product.stock : '' %>" placeholder="ללא הגבלה">
+
+        <label class="checkbox">
+          <input type="checkbox" name="is_featured" value="1" <%= product && product.is_featured ? 'checked' : '' %>>
+          ⭐ מוצר מומלץ (מופיע בעמוד הבית)
+        </label>
         <label class="checkbox">
           <input type="checkbox" name="is_package" value="1" <%= product && product.is_package ? 'checked' : '' %>>
           זוהי חבילה (כוללת מספר פריטים)

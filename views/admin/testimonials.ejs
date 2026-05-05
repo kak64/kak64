@@ -1,0 +1,39 @@
+<%- include('../partials/header') %>
+<div class="dash-layout">
+  <%- include('_sidebar') %>
+  <main class="dash-main">
+    <h1 class="page-title">המלצות</h1>
+
+    <div class="card">
+      <h3>המלצה חדשה</h3>
+      <form method="post" action="/admin/testimonials/new" enctype="multipart/form-data">
+        <label>שם הממליץ</label>
+        <input type="text" name="author" required>
+        <label>אווטאר (אופציונלי)</label>
+        <input type="file" name="avatar" accept="image/*">
+        <label>דירוג (1-5)</label>
+        <input type="number" name="rating" min="1" max="5" value="5">
+        <label>גוף ההמלצה</label>
+        <textarea name="body" rows="3" required></textarea>
+        <label>סדר תצוגה</label>
+        <input type="number" name="sort_order" value="0">
+        <label class="checkbox"><input type="checkbox" name="active" value="1" checked> פעיל</label>
+        <button class="btn btn-primary mt">הוסף</button>
+      </form>
+    </div>
+
+    <% items.forEach(function(t){ %>
+      <div class="card">
+        <div class="row">
+          <span><strong><%= t.author %></strong> · ⭐ <%= t.rating %>/5</span>
+          <span class="muted small"><%= t.active ? 'פעיל' : 'לא פעיל' %></span>
+        </div>
+        <p><%= t.body %></p>
+        <form method="post" action="/admin/testimonials/<%= t.id %>/delete" onsubmit="return confirm('למחוק?')">
+          <button class="btn btn-danger btn-sm">מחק</button>
+        </form>
+      </div>
+    <% }); %>
+  </main>
+</div>
+<%- include('../partials/footer') %>
