@@ -106,14 +106,15 @@ router.get('/categories', (req, res) => {
   res.render('admin/categories', { title: 'קטגוריות', categoriesList: db.listCategories() });
 });
 
-router.post('/categories/new', (req, res) => {
+router.post('/categories/new', upload.single('image'), (req, res) => {
   const { slug, name, icon, color, sort_order } = req.body;
   if (!slug || !name) {
     flash(req, 'error', 'נדרש slug ושם');
     return res.redirect('/admin/categories');
   }
+  const image_url = req.file ? '/uploads/' + req.file.filename : (req.body.image_url || null);
   try {
-    db.createCategory({ slug, name, icon, color, sort_order });
+    db.createCategory({ slug, name, icon, image_url, color, sort_order });
     flash(req, 'success', 'קטגוריה נוצרה');
   } catch (e) {
     flash(req, 'error', 'שגיאה ביצירה (אולי slug כפול)');
@@ -121,9 +122,13 @@ router.post('/categories/new', (req, res) => {
   res.redirect('/admin/categories');
 });
 
-router.post('/categories/:id/edit', (req, res) => {
+router.post('/categories/:id/edit', upload.single('image'), (req, res) => {
   const { slug, name, icon, color, sort_order } = req.body;
-  db.updateCategory(req.params.id, { slug, name, icon, color, sort_order });
+  const existing = db.getCategoryById(req.params.id);
+  const image_url = req.file
+    ? '/uploads/' + req.file.filename
+    : (req.body.image_url !== undefined ? req.body.image_url : (existing && existing.image_url) || null);
+  db.updateCategory(req.params.id, { slug, name, icon, image_url, color, sort_order });
   flash(req, 'success', 'הקטגוריה עודכנה');
   res.redirect('/admin/categories');
 });

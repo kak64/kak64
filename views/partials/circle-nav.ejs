@@ -6,18 +6,19 @@
   <div class="circle-nav-track">
     <a href="/" class="circle-item all <%= currentPath === '/' ? 'active' : '' %>">
       <span class="circle-disc">
-        <span class="circle-icon">✦</span>
         <span class="circle-ring" aria-hidden="true"></span>
       </span>
       <span class="circle-label">הכל</span>
       <% if (totalProducts) { %><span class="circle-count"><%= totalProducts %></span><% } %>
     </a>
     <% cats.forEach(function(c){ %>
-      <a href="<%= currentPath === '/' ? '#cat-' + c.slug : '/category/' + c.slug %>"
+      <a href="/category/<%= c.slug %>"
          class="circle-item <%= currentPath === '/category/' + c.slug ? 'active' : '' %>"
          style="--cat-color: <%= c.color || '#a855f7' %>">
         <span class="circle-disc">
-          <span class="circle-icon"><%= c.icon || '✦' %></span>
+          <% if (c.image_url) { %>
+            <img class="circle-image" src="<%= c.image_url %>" alt="">
+          <% } %>
           <span class="circle-ring" aria-hidden="true"></span>
         </span>
         <span class="circle-label"><%= c.name %></span>

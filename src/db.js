@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS categories (
   slug TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   icon TEXT,
+  image_url TEXT,
   color TEXT,
   sort_order INTEGER DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -168,6 +169,7 @@ safeAlter('order_items', 'receipt_code', 'TEXT');
 safeAlter('order_items', 'redeemed', 'INTEGER DEFAULT 0');
 safeAlter('order_items', 'redeemed_at', 'TEXT');
 safeAlter('order_items', 'redeemed_player', 'TEXT');
+safeAlter('categories', 'image_url', 'TEXT');
 
 // ----------------- Seed -----------------
 function seed() {
@@ -337,8 +339,8 @@ const Q = {
   `),
   getCategoryBySlug: db.prepare('SELECT * FROM categories WHERE slug = ?'),
   getCategoryById: db.prepare('SELECT * FROM categories WHERE id = ?'),
-  insertCategory: db.prepare(`INSERT INTO categories (slug, name, icon, color, sort_order) VALUES (?,?,?,?,?)`),
-  updateCategory: db.prepare(`UPDATE categories SET slug=?, name=?, icon=?, color=?, sort_order=? WHERE id=?`),
+  insertCategory: db.prepare(`INSERT INTO categories (slug, name, icon, image_url, color, sort_order) VALUES (?,?,?,?,?,?)`),
+  updateCategory: db.prepare(`UPDATE categories SET slug=?, name=?, icon=?, image_url=?, color=?, sort_order=? WHERE id=?`),
   deleteCategory: db.prepare('DELETE FROM categories WHERE id = ?'),
 
   listProducts: db.prepare(`SELECT p.*, c.name AS category_name, c.slug AS category_slug, c.color AS category_color, c.icon AS category_icon
@@ -465,8 +467,8 @@ module.exports = {
   listCategoriesWithCounts: () => Q.listCategoriesWithCounts.all(),
   getCategoryBySlug: s => Q.getCategoryBySlug.get(s),
   getCategoryById: id => Q.getCategoryById.get(id),
-  createCategory: (d) => Q.insertCategory.run(d.slug, d.name, d.icon || null, d.color || null, d.sort_order || 0),
-  updateCategory: (id, d) => Q.updateCategory.run(d.slug, d.name, d.icon || null, d.color || null, d.sort_order || 0, id),
+  createCategory: (d) => Q.insertCategory.run(d.slug, d.name, d.icon || null, d.image_url || null, d.color || null, d.sort_order || 0),
+  updateCategory: (id, d) => Q.updateCategory.run(d.slug, d.name, d.icon || null, d.image_url || null, d.color || null, d.sort_order || 0, id),
   deleteCategory: (id) => Q.deleteCategory.run(id),
 
   // products

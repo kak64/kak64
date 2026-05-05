@@ -6,25 +6,49 @@
 
     <div class="card">
       <h3>קטגוריה חדשה</h3>
-      <form method="post" action="/admin/categories/new" class="row-form">
-        <input type="text" name="slug" placeholder="slug (אנגלית)" required>
-        <input type="text" name="name" placeholder="שם בעברית" required>
-        <input type="text" name="icon" placeholder="🚗" maxlength="2">
-        <input type="color" name="color" value="#a855f7">
-        <input type="number" name="sort_order" value="0" placeholder="סדר" style="width:80px">
-        <button class="btn btn-primary">הוסף</button>
+      <form method="post" action="/admin/categories/new" enctype="multipart/form-data" class="form-grid">
+        <div class="form-col">
+          <label>Slug (אנגלית)</label>
+          <input type="text" name="slug" required>
+          <label>שם בעברית</label>
+          <input type="text" name="name" required>
+          <label>אייקון אמוג'י (אופציונלי — מוצג רק אם אין תמונה)</label>
+          <input type="text" name="icon" placeholder="🚗" maxlength="2">
+        </div>
+        <div class="form-col">
+          <label>תמונה לעיגול (אופציונלי — תחליף לאמוג'י)</label>
+          <input type="file" name="image" accept="image/*">
+          <label>צבע</label>
+          <input type="color" name="color" value="#a855f7">
+          <label>סדר תצוגה</label>
+          <input type="number" name="sort_order" value="0">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary">הוסף קטגוריה</button>
+        </div>
       </form>
     </div>
 
     <div class="cat-edit-list">
       <% categoriesList.forEach(function(c){ %>
         <div class="cat-edit-row" style="--cat-color: <%= c.color || '#a855f7' %>">
-          <form method="post" action="/admin/categories/<%= c.id %>/edit" class="row-form" style="flex:1">
-            <input type="text" name="icon" value="<%= c.icon || '' %>" style="width:60px;text-align:center">
-            <input type="text" name="name" value="<%= c.name %>">
-            <input type="text" name="slug" value="<%= c.slug %>">
+          <div class="cat-thumb-preview">
+            <% if (c.image_url) { %>
+              <img src="<%= c.image_url %>" alt="">
+            <% } else if (c.icon) { %>
+              <span class="cat-thumb-emoji"><%= c.icon %></span>
+            <% } else { %>
+              <span class="cat-thumb-emoji">✦</span>
+            <% } %>
+          </div>
+          <form method="post" action="/admin/categories/<%= c.id %>/edit" enctype="multipart/form-data" class="cat-edit-form">
+            <input type="text" name="icon" value="<%= c.icon || '' %>" placeholder="🚗" style="width:60px;text-align:center" title="אמוג'י">
+            <input type="text" name="name" value="<%= c.name %>" placeholder="שם">
+            <input type="text" name="slug" value="<%= c.slug %>" placeholder="slug">
             <input type="color" name="color" value="<%= c.color || '#a855f7' %>">
             <input type="number" name="sort_order" value="<%= c.sort_order %>" style="width:70px">
+            <input type="file" name="image" accept="image/*" title="החלף תמונה">
+            <input type="hidden" name="image_url" value="<%= c.image_url || '' %>">
             <button class="btn btn-ghost btn-sm" type="submit">שמור</button>
           </form>
           <form method="post" action="/admin/categories/<%= c.id %>/delete" onsubmit="return confirm('למחוק קטגוריה?')">
