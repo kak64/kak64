@@ -328,6 +328,13 @@ const Q = {
   addUserPoints: db.prepare(`UPDATE users SET points = points + ? WHERE id = ?`),
 
   listCategories: db.prepare('SELECT * FROM categories ORDER BY sort_order, name'),
+  listCategoriesWithCounts: db.prepare(`
+    SELECT c.*, COUNT(p.id) AS product_count
+    FROM categories c
+    LEFT JOIN products p ON p.category_id = c.id AND p.active = 1
+    GROUP BY c.id
+    ORDER BY c.sort_order, c.name
+  `),
   getCategoryBySlug: db.prepare('SELECT * FROM categories WHERE slug = ?'),
   getCategoryById: db.prepare('SELECT * FROM categories WHERE id = ?'),
   insertCategory: db.prepare(`INSERT INTO categories (slug, name, icon, color, sort_order) VALUES (?,?,?,?,?)`),
@@ -455,6 +462,7 @@ module.exports = {
 
   // categories
   listCategories: () => Q.listCategories.all(),
+  listCategoriesWithCounts: () => Q.listCategoriesWithCounts.all(),
   getCategoryBySlug: s => Q.getCategoryBySlug.get(s),
   getCategoryById: id => Q.getCategoryById.get(id),
   createCategory: (d) => Q.insertCategory.run(d.slug, d.name, d.icon || null, d.color || null, d.sort_order || 0),

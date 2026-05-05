@@ -49,7 +49,7 @@ app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   res.locals.flash = req.session.flash || null;
   delete req.session.flash;
-  res.locals.categories = db.listCategories();
+  res.locals.categories = db.listCategoriesWithCounts();
   res.locals.announcement = db.getSetting('announcement_bar') || '';
   res.locals.announcementLink = db.getSetting('announcement_link') || '';
   res.locals.discordInviteGlobal = db.getSetting('discord_invite') || '';

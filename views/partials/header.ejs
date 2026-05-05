@@ -41,15 +41,6 @@
         <input type="search" name="q" placeholder="חפשו רכב, נשק, חבילה..." value="<%= typeof q !== 'undefined' ? q : '' %>">
       </form>
 
-      <nav class="primary-nav">
-        <a href="/" class="<%= currentPath === '/' ? 'active' : '' %>">בית</a>
-        <% (categories || []).slice(0, 6).forEach(function(c){ %>
-          <a href="/category/<%= c.slug %>" class="<%= currentPath === '/category/' + c.slug ? 'active' : '' %>" style="--cat-color: <%= c.color || '#a855f7' %>">
-            <span class="nav-icon"><%= c.icon || '✦' %></span><%= c.name %>
-          </a>
-        <% }); %>
-      </nav>
-
       <div class="header-actions">
         <% if (user) { %>
           <a href="/wishlist" class="cart-btn" title="מועדפים">

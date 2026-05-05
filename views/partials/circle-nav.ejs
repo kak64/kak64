@@ -1,14 +1,30 @@
-<nav class="circle-nav" aria-label="קטגוריות">
-  <a href="/" class="circle-item all <%= currentPath === '/' ? 'active' : '' %>">
-    <span class="circle-disc"><span class="circle-icon">✦</span></span>
-    <span class="circle-label">הכל</span>
-  </a>
-  <% (categoriesAll || categories || []).forEach(function(c){ %>
-    <a href="<%= currentPath === '/' ? '#cat-' + c.slug : '/category/' + c.slug %>"
-       class="circle-item <%= currentPath === '/category/' + c.slug ? 'active' : '' %>"
-       style="--cat-color: <%= c.color || '#a855f7' %>">
-      <span class="circle-disc"><span class="circle-icon"><%= c.icon || '✦' %></span></span>
-      <span class="circle-label"><%= c.name %></span>
+<%
+  var cats = (typeof categoriesAll !== 'undefined' && categoriesAll) ? categoriesAll : (categories || []);
+  var totalProducts = cats.reduce(function(s, c){ return s + (c.product_count || 0); }, 0);
+%>
+<section class="circle-nav-shell" aria-label="קטגוריות">
+  <div class="circle-nav-track">
+    <a href="/" class="circle-item all <%= currentPath === '/' ? 'active' : '' %>">
+      <span class="circle-disc">
+        <span class="circle-icon">✦</span>
+        <span class="circle-ring" aria-hidden="true"></span>
+      </span>
+      <span class="circle-label">הכל</span>
+      <% if (totalProducts) { %><span class="circle-count"><%= totalProducts %></span><% } %>
     </a>
-  <% }); %>
-</nav>
+    <% cats.forEach(function(c){ %>
+      <a href="<%= currentPath === '/' ? '#cat-' + c.slug : '/category/' + c.slug %>"
+         class="circle-item <%= currentPath === '/category/' + c.slug ? 'active' : '' %>"
+         style="--cat-color: <%= c.color || '#a855f7' %>">
+        <span class="circle-disc">
+          <span class="circle-icon"><%= c.icon || '✦' %></span>
+          <span class="circle-ring" aria-hidden="true"></span>
+        </span>
+        <span class="circle-label"><%= c.name %></span>
+        <% if (c.product_count !== undefined && c.product_count > 0) { %>
+          <span class="circle-count"><%= c.product_count %></span>
+        <% } %>
+      </a>
+    <% }); %>
+  </div>
+</section>

@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/', (req, res) => {
   const products = db.listProducts();
-  const categories = db.listCategories();
+  const categories = db.listCategoriesWithCounts();
   const featured = db.listFeaturedProducts();
   const bestSellers = db.listBestSellers();
   const flashDeals = db.listFlashDeals();
