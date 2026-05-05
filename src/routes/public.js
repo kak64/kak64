@@ -12,14 +12,20 @@ router.get('/', (req, res) => {
   const testimonials = db.listTestimonials();
   const faqs = db.listFaq();
   const activity = db.recentItemsForActivity(15);
+  const topBuyers = db.topBuyersThisMonth(5);
+  const monthlyGoal = Number(db.getSetting('monthly_goal') || 0);
+  const monthlySales = db.salesThisMonth();
   res.render('home', {
     title: 'Infinity IL — חנות',
     products, categoriesAll: categories,
     featured, bestSellers, flashDeals, testimonials, faqs, activity,
+    topBuyers, monthlyGoal, monthlySales,
     siteName: db.getSetting('site_name'),
     siteSubtitle: db.getSetting('site_subtitle'),
     discordInvite: db.getSetting('discord_invite'),
     heroTagline: db.getSetting('hero_tagline'),
+    heroImageUrl: db.getSetting('hero_image_url'),
+    monthlyGoalLabel: db.getSetting('monthly_goal_label') || 'יעד חודשי',
     fivemServerName: db.getSetting('fivem_server_name')
   });
 });

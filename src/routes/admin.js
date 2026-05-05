@@ -243,6 +243,7 @@ router.post('/faq/:id/delete', (req, res) => {
 router.get('/settings', (req, res) => {
   const allKeys = [
     'site_name', 'site_subtitle', 'discord_invite', 'hero_tagline',
+    'hero_image_url', 'monthly_goal', 'monthly_goal_label',
     'announcement_bar', 'announcement_link',
     'discord_webhook_url', 'fivem_endpoint', 'fivem_server_name',
     'extra_fee', 'discount_codes',
@@ -253,7 +254,10 @@ router.get('/settings', (req, res) => {
   res.render('admin/settings', { title: 'הגדרות', settingsMap });
 });
 
-router.post('/settings', (req, res) => {
+router.post('/settings', upload.single('hero_image'), (req, res) => {
+  if (req.file) {
+    db.setSetting('hero_image_url', '/uploads/' + req.file.filename);
+  }
   Object.keys(req.body).forEach(k => db.setSetting(k, req.body[k] || ''));
   flash(req, 'success', 'ההגדרות נשמרו');
   res.redirect('/admin/settings');

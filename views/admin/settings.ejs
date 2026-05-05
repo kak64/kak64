@@ -3,7 +3,7 @@
   <%- include('_sidebar') %>
   <main class="dash-main">
     <h1 class="page-title">הגדרות</h1>
-    <form method="post" action="/admin/settings" class="card">
+    <form method="post" action="/admin/settings" enctype="multipart/form-data" class="card">
       <h3>אתר</h3>
       <label>שם האתר</label>
       <input type="text" name="site_name" value="<%= settingsMap.site_name %>">
@@ -13,6 +13,19 @@
 
       <label>טקסט גיבור (Hero)</label>
       <input type="text" name="hero_tagline" value="<%= settingsMap.hero_tagline %>">
+
+      <label>באנר ראשי (תמונה)</label>
+      <input type="file" name="hero_image" accept="image/*">
+      <% if (settingsMap.hero_image_url) { %>
+        <img src="<%= settingsMap.hero_image_url %>" style="margin-top:8px;max-width:280px;border-radius:10px">
+      <% } %>
+
+      <hr>
+      <h3>יעד חודשי (סרגל התקדמות בעמוד הבית)</h3>
+      <label>תווית היעד</label>
+      <input type="text" name="monthly_goal_label" value="<%= settingsMap.monthly_goal_label %>">
+      <label>סכום היעד (₪) — השאירו 0 כדי להסתיר</label>
+      <input type="number" name="monthly_goal" value="<%= settingsMap.monthly_goal %>">
 
       <hr>
       <h3>פס הכרזה (מופיע למעלה בכל עמוד)</h3>

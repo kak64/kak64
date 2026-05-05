@@ -1,21 +1,27 @@
 <%- include('partials/header') %>
 
-<section class="page-head" style="--cat-color: <%= category.color || '#a855f7' %>">
-  <div class="page-head-icon"><%= category.icon || '✦' %></div>
-  <div>
-    <h1 class="page-title"><%= category.name %></h1>
-    <p class="page-sub"><%= products.length %> מוצרים בקטגוריה</p>
-  </div>
-</section>
+<div class="store-layout">
+  <%- include('partials/store-sidebar', { categoriesAll: categories }) %>
 
-<% if (!products.length) { %>
-  <p class="empty">אין מוצרים בקטגוריה כרגע.</p>
-<% } else { %>
-  <div class="product-grid product-grid-large">
-    <% products.forEach(function(product){ %>
-      <%- include('partials/product-card', { product: product }) %>
-    <% }); %>
-  </div>
-<% } %>
+  <main class="store-main">
+    <section class="page-head" style="--cat-color: <%= category.color || '#a855f7' %>">
+      <div class="page-head-icon"><%= category.icon || '✦' %></div>
+      <div>
+        <h1 class="page-title" style="margin:0"><%= category.name %></h1>
+        <p class="page-sub"><%= products.length %> מוצרים בקטגוריה</p>
+      </div>
+    </section>
+
+    <% if (!products.length) { %>
+      <p class="empty">אין מוצרים בקטגוריה כרגע.</p>
+    <% } else { %>
+      <div class="product-grid product-grid-large">
+        <% products.forEach(function(product){ %>
+          <%- include('partials/product-card', { product: product }) %>
+        <% }); %>
+      </div>
+    <% } %>
+  </main>
+</div>
 
 <%- include('partials/footer') %>

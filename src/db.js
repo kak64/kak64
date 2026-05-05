@@ -243,6 +243,9 @@ function seed() {
     ins.run('points_per_currency', '1');
     ins.run('points_redeem_rate', '100');
     ins.run('referral_bonus', '10');
+    ins.run('hero_image_url', '');
+    ins.run('monthly_goal', '5000');
+    ins.run('monthly_goal_label', 'יעד חודשי');
   }
 
   // Seed testimonials
@@ -493,6 +496,23 @@ module.exports = {
   // activity feed
   recentItemsForActivity: (limit = 12) => Q.recentItemsForActivity.all(limit),
   recentPaidOrders: (limit = 8) => Q.recentPaidOrders.all(limit),
+
+  // leaderboard (top buyers in last 30 days)
+  topBuyersThisMonth: (limit = 5) => db.prepare(`
+    SELECT u.id, u.username, u.avatar_url, SUM(o.total) AS total_spent, COUNT(o.id) AS order_count
+    FROM orders o JOIN users u ON o.user_id = u.id
+    WHERE o.status = 'paid' AND o.created_at >= datetime('now', '-30 days')
+    GROUP BY u.id
+    ORDER BY total_spent DESC
+    LIMIT ?
+  `).all(limit),
+
+  // monthly revenue (this calendar month)
+  salesThisMonth: () => db.prepare(`
+    SELECT COALESCE(SUM(total), 0) AS total
+    FROM orders
+    WHERE status = 'paid' AND created_at >= date('now', 'start of month')
+  `).get().total,
 
   // orders
   createOrder: (userId, items, total, paymentMethod, transactionId = null, notes = null, pointsEarned = 0) => {

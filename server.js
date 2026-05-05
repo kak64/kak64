@@ -53,6 +53,14 @@ app.use((req, res, next) => {
   res.locals.announcement = db.getSetting('announcement_bar') || '';
   res.locals.announcementLink = db.getSetting('announcement_link') || '';
   res.locals.discordInviteGlobal = db.getSetting('discord_invite') || '';
+  // Sidebar-shared globals (available on every page)
+  res.locals.discordInvite = db.getSetting('discord_invite') || '';
+  res.locals.fivemServerName = db.getSetting('fivem_server_name') || '';
+  res.locals.monthlyGoal = Number(db.getSetting('monthly_goal') || 0);
+  res.locals.monthlyGoalLabel = db.getSetting('monthly_goal_label') || 'יעד חודשי';
+  res.locals.monthlySales = db.salesThisMonth();
+  res.locals.topBuyers = db.topBuyersThisMonth(5);
+  res.locals.activity = db.recentItemsForActivity(8);
   next();
 });
 
