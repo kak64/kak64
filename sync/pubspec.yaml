@@ -1,4 +1,4 @@
-name: sync
+name: sync_app
 description: Sync — a location-based app for real-time human connection.
 publish_to: "none"
 version: 0.1.0+1

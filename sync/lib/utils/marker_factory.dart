@@ -44,7 +44,7 @@ class GlowMarkerFactory {
     final pic = recorder.endRecording();
     final img = await pic.toImage(size.toInt(), size.toInt());
     final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-    return BitmapDescriptor.fromBytes(
+    return BitmapDescriptor.bytes(
       Uint8List.view(bytes!.buffer),
     );
   }

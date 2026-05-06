@@ -50,7 +50,7 @@ class SyncCategorySheet extends StatelessWidget {
             style: TextStyle(color: AppColors.mutedGrey, fontSize: 14),
           ),
           const SizedBox(height: 28),
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _Tile(

@@ -137,7 +137,6 @@ class _MapScreenState extends State<MapScreen> {
             initialCameraPosition: CameraPosition(target: _camera, zoom: 14),
             onMapCreated: (c) {
               _mapController = c;
-              if (_mapStyle != null) c.setMapStyle(_mapStyle);
               c.animateCamera(CameraUpdate.newLatLng(_camera));
             },
             style: _mapStyle,
