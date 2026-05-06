@@ -1,0 +1,42 @@
+name: sync
+description: Sync — a location-based app for real-time human connection.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Maps & location
+  google_maps_flutter: ^2.6.1
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
+
+  # Firebase
+  firebase_core: ^2.30.1
+  cloud_firestore: ^4.17.2
+  firebase_auth: ^4.19.5
+
+  # UI
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  cupertino_icons: ^1.0.8
+
+  # Utilities
+  rxdart: ^0.27.7
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_lints: ^3.0.2
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/map_style_dark.json
+    - assets/markers/

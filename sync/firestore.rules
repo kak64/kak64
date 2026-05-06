@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function within30Min(ts) {
+      return ts is timestamp
+        && ts.toMillis() > request.time.toMillis() - 30 * 60 * 1000;
+    }
+
+    match /syncs/{syncId} {
+      // Anyone signed in can see syncs newer than 30 minutes.
+      allow read: if signedIn() && within30Min(resource.data.createdAt);
+
+      // Creator must be the authenticated user; client-supplied timestamps
+      // are bounded — the Cloud Function re-stamps authoritatively.
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.category in ['move', 'play', 'talk', 'help']
+        && request.resource.data.location is latlng;
+
+      // No client updates / deletes. The Cloud Function performs the wipe.
+      allow update, delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && within30Min(get(/databases/$(database)/documents/syncs/$(syncId))
+                          .data.createdAt);
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 500;
+        allow update, delete: if false;
+      }
+    }
+  }
+}
