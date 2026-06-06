@@ -1,0 +1,15 @@
+{
+  "name": "יחד — מנהלים הכול ביחד",
+  "short_name": "יחד",
+  "description": "מרחב משותף לניהול רשימות, משימות וקבוצות — הכול ביחד, במקום אחד.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f2fb",
+  "theme_color": "#6c5ce7",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

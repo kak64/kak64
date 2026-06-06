@@ -1,64 +1,77 @@
-# KAK64 Hosting Panel
+# יחד — מנהלים הכול ביחד 🤝
 
-פאנל ניהול אחסון בעברית מעל VMware ESXi.
+אפליקציית ווב (PWA) בעברית לניהול **מרחבים משותפים**: בית, שותפים לדירה, זוג,
+צוות או טיול. במקום אפליקציה נעולה על תרחיש אחד — **כל קבוצה יוצרת מרחב משלה
+ובונה בו רשימות חופשיות** (קניות, מטלות, רעיונות, אריזה, הוצאות... מה
+שרוצים), עם **דאשבורד סיכום** חכם שמראה את התמונה המלאה: כמה נעשה, מה נשאר,
+ומי הכי תורם.
 
-A Hebrew (RTL) hosting company website with user registration/login, server
-ordering, billing, support tickets and an admin panel — built on top of a
-VMware ESXi host.
+## תכונות
 
-## Features
+- **מרחבים משותפים גמישים** — בוחרים סוג (בית / שותפים / זוג / צוות / טיול /
+  אחר), וכל מרחב מקבל קוד הזמנה לשיתוף.
+- **רשימות חופשיות** — יוצרים כל רשימה שרוצים, עם אייקון וצבע משלכם. כל פריט
+  ניתן לסימון כבוצע, מחיקה ועריכה.
+- **דאשבורד סיכום** 📊 — טבעת אחוז השלמה, פתוחים/הושלמו/השבוע, התקדמות לכל
+  רשימה, **טבלת תרומות** (מי השלים הכי הרבה) ופיד פעילות בזמן אמת.
+- **הקלטה קולית** 🎤 — אומרים "חלב, ביצים ולחם" והפריטים מתווספים אוטומטית
+  (Web Speech API, עברית), עם נפילה חיננית להקלדה.
+- **שיתוף וחברים** — הזמנה בקוד, ניהול חברים, בעל מרחב.
+- **התחברות והרשמה** עם הצפנת סיסמאות (bcrypt) ו‑JWT.
+- **RTL מלא**, ניתנת להתקנה למסך הבית (PWA) ועובדת גם offline.
 
-- **דף הבית, חבילות, אודות, צור קשר, תנאי שימוש** (public site)
-- **הרשמה והתחברות** with bcrypt password hashing
-- **אזור אישי (Dashboard)**: סקירה, השרתים שלי, הזמנת שרת, חשבוניות, פניות תמיכה, פרופיל
-- **לוח ניהול (Admin)**: משתמשים, חבילות, שרתים, פניות תמיכה, סטטיסטיקות
-- **שילוב ESXi**: יצירה / הפעלה / כיבוי / אתחול / מחיקה של מכונות וירטואליות
-- **RTL מלא** עם פונט עברי
-- בסיס נתונים SQLite (קובץ אחד, ללא תלות חיצונית)
-
-## Quick start
+## הרצה מהירה
 
 ```bash
-cp .env.example .env
-# Edit .env — set SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, and ESXi credentials
 npm install
-npm start
+npm run serve     # build של ה-client + הרצת השרת על http://localhost:3001
 ```
 
-Open http://localhost:3000
+אין צורך בהגדרות ידניות — בריצה הראשונה נוצר מפתח אבטחה אוטומטית ובסיס נתונים
+SQLite בנתיב `db/yachad.sqlite`.
 
-The first run creates the SQLite DB at `db/data.sqlite`, seeds default plans,
-and creates an admin user from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+> **Windows:** אפשר פשוט ללחוץ פעמיים על `run.bat` (מתקין, בונה ומפעיל).
 
-## ESXi integration
+### פיתוח (hot reload)
 
-`src/esxi.js` provides power-on / power-off / reboot / destroy via the
-ESXi REST API. The `provisionVm` function is intentionally left as a TODO —
-provisioning a VM via the ESXi API requires choosing a strategy:
-clone-from-template, OVF deploy, or PowerCLI/govc. Implement it according to
-your environment.
-
-When ESXi credentials are not set in `.env`, the system falls back to a
-mocked mode so you can demo the full flow locally.
-
-## Project structure
-
-```
-server.js              # Express bootstrap
-src/db.js              # SQLite schema + seed
-src/esxi.js            # ESXi REST client
-src/middleware.js      # auth helpers
-src/routes/            # public, auth, dashboard, servers, billing, tickets, admin
-views/                 # Hebrew RTL EJS templates
-public/css/style.css   # styling
+```bash
+npm run dev       # API על 3001 + Vite על 5173 (עם proxy ל-/api)
 ```
 
-## Production checklist
+## מבנה הפרויקט
 
-- [ ] Strong `SESSION_SECRET`
-- [ ] HTTPS reverse proxy (nginx / Caddy)
-- [ ] Real payment provider (Tranzila / iCount / Stripe)
-- [ ] Email sending for ticket replies / invoices
-- [ ] Implement `esxi.provisionVm` for real VM provisioning
-- [ ] Switch session store to Redis for multi-instance
-- [ ] Backups for `db/data.sqlite`
+```
+server.js              # Express bootstrap + הגשת ה-client הבנוי
+src/
+  db.js                # סכמת SQLite (spaces, lists, items, members, activity)
+  auth.js              # JWT + middleware (authRequired, spaceMember)
+  routes/
+    auth.js            # הרשמה / התחברות / פרופיל
+    spaces.js          # מרחבים, חברים, הזמנות, ודאשבורד הסיכום
+    lists.js           # רשימות בתוך מרחב
+    items.js           # פריטים בתוך רשימה
+client/
+  src/
+    App.jsx            # ניווט: דאשבורד / רשימות / פרטי רשימה / הגדרות
+    screens/           # Auth, Onboarding, Dashboard, Lists, ListDetail, Settings
+    components/        # Avatar, TabBar, Sheet, Toast, VoiceModal, ProgressRing
+    lib/               # icons, util (סוגי מרחב, תבניות רשימה), usePoll
+```
+
+## מודל הנתונים
+
+- `users` → `spaces` (מרחב משותף, owner + invite_code)
+- `members` (מי שייך לאיזה מרחב, role: owner/member)
+- `lists` (רשימות בתוך מרחב — title/emoji/color חופשיים)
+- `items` (פריטים בתוך רשימה, done/done_by למעקב תרומות)
+- `activity` (פיד: מי עשה מה ומתי)
+
+הדאשבורד (`GET /api/spaces/:id/dashboard`) מאחד את הכול: אחוז השלמה, התקדמות
+לכל רשימה, ספירת "השבוע", תרומות לפי חבר, ופעילות אחרונה.
+
+## רשימת בדיקות לפרודקשן
+
+- [ ] `JWT_SECRET` חזק (נוצר אוטומטית, אפשר לקבוע ידנית ב‑`.env`)
+- [ ] HTTPS — חובה להקלטה קולית ולהתקנת PWA
+- [ ] שדרוג סנכרון מ‑polling ל‑WebSocket / SSE
+- [ ] גיבויים ל‑`db/yachad.sqlite`
