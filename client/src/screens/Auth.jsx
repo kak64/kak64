@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, auth } from '../api.js';
 
 export default function Auth({ onAuth }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', username: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -28,9 +28,9 @@ export default function Auth({ onAuth }) {
   return (
     <div className="auth">
       <div className="brand">
-        <img className="logo" src="/icon.svg" alt="Homly" />
-        <h1>Homly</h1>
-        <p>כל הבית במקום אחד</p>
+        <img className="logo" src="/icon.svg" alt="יחד" />
+        <h1>יחד</h1>
+        <p>מנהלים הכול ביחד — במרחב אחד משותף</p>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -39,12 +39,12 @@ export default function Auth({ onAuth }) {
         {mode === 'register' && (
           <div className="field">
             <label>שם מלא</label>
-            <input className="input" value={form.name} onChange={set('name')} placeholder="ישראל ישראלי" autoComplete="name" />
+            <input className="input" value={form.name} onChange={set('name')} placeholder="דנה כהן" autoComplete="name" />
           </div>
         )}
         <div className="field">
           <label>שם משתמש</label>
-          <input className="input" value={form.username} onChange={set('username')} placeholder="israelisraeli" dir="ltr" style={{ textAlign: 'left' }} autoComplete="username" />
+          <input className="input" value={form.username} onChange={set('username')} placeholder="danakohen" dir="ltr" style={{ textAlign: 'left' }} autoComplete="username" />
         </div>
         {mode === 'register' && (
           <div className="field">

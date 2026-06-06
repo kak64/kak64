@@ -5,7 +5,7 @@ import { signToken, authRequired } from '../auth.js';
 
 const router = Router();
 
-const COLORS = ['#ef8e4a', '#5b8def', '#34c759', '#ff9f0a', '#af52de', '#ff375f', '#30b0c7', '#ffcc00'];
+const COLORS = ['#6c5ce7', '#0aa6b8', '#e84393', '#00b894', '#fdcb6e', '#e17055', '#0984e3', '#a55eea'];
 const randomColor = () => COLORS[Math.floor(Math.random() * COLORS.length)];
 
 function publicUser(u) {
@@ -65,7 +65,6 @@ router.patch('/me', authRequired, (req, res) => {
 });
 
 router.delete('/me', authRequired, (req, res) => {
-  // Re-assign / cascade: homes owned by the user are deleted with them.
   db.prepare('DELETE FROM users WHERE id = ?').run(req.user.id);
   res.json({ ok: true });
 });

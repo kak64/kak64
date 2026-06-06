@@ -5,10 +5,8 @@ export function initials(name = '') {
   return parts[0][0] + parts[parts.length - 1][0];
 }
 
-// Relative time in Hebrew, matching the app's "לפני שעה" / "לפני 9 שע׳" feel.
 export function relativeTime(iso) {
   if (!iso) return '';
-  // SQLite stores UTC "YYYY-MM-DD HH:MM:SS"; normalize to ISO.
   const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z');
   const sec = Math.floor((Date.now() - d.getTime()) / 1000);
   if (sec < 45) return 'הרגע';
@@ -30,29 +28,59 @@ export function todayLabel() {
 
 export function greeting() {
   const h = new Date().getHours();
-  if (h < 6) return { text: 'לילה טוב', emoji: '🌙' };
-  if (h < 12) return { text: 'בוקר טוב', emoji: '☀️' };
-  if (h < 18) return { text: 'צהריים טובים', emoji: '🌤️' };
-  if (h < 22) return { text: 'ערב טוב', emoji: '🌆' };
-  return { text: 'לילה טוב', emoji: '🌙' };
+  if (h < 6) return 'לילה טוב';
+  if (h < 12) return 'בוקר טוב';
+  if (h < 18) return 'צהריים טובים';
+  if (h < 22) return 'ערב טוב';
+  return 'לילה טוב';
 }
 
-// Shopping categories used for grouping + the add sheet.
-export const CATEGORIES = ['מוצרי חלב', 'פירות וירקות', 'בשר ודגים', 'מאפים', 'ניקיון', 'יבשים', 'קפואים', 'אחר'];
+// Space types — the user picks what kind of shared space this is.
+export const SPACE_TYPES = [
+  { type: 'home', label: 'בית / משפחה', emoji: '🏠' },
+  { type: 'roommates', label: 'שותפים לדירה', emoji: '🏘️' },
+  { type: 'couple', label: 'זוג', emoji: '💞' },
+  { type: 'team', label: 'צוות', emoji: '🚀' },
+  { type: 'trip', label: 'טיול', emoji: '✈️' },
+  { type: 'custom', label: 'אחר', emoji: '✨' },
+];
 
-// Naive keyword-based category guess (used for voice + quick add).
-const KEYWORDS = {
-  'מוצרי חלב': ['חלב', 'גבינה', 'יוגורט', 'קוטג', 'שמנת', 'חמאה', 'ביצים', 'ביצה'],
-  'פירות וירקות': ['בננה', 'תפוח', 'עגבני', 'מלפפון', 'גזר', 'בצל', 'תפוז', 'לימון', 'אבוקדו', 'חסה', 'תפוח אדמה'],
-  'בשר ודגים': ['עוף', 'בשר', 'דג', 'סלמון', 'הודו', 'נקניק', 'שניצל'],
-  'מאפים': ['לחם', 'לחמני', 'פיתה', 'בורקס', 'עוגה', 'קרואסון'],
-  'ניקיון': ['סבון', 'אקונומיקה', 'נייר טואלט', 'מגבונים', 'שקיות זבל', 'אבקת כביסה', 'מרכך'],
-  'קפואים': ['קפוא', 'גלידה', 'אפונה'],
+// Starter list templates suggested when creating a space, by type.
+export const STARTERS = {
+  home: [
+    { title: 'קניות לבית', emoji: '🛒', color: '#0fb9a6' },
+    { title: 'מטלות הבית', emoji: '🧹', color: '#6c5ce7' },
+  ],
+  roommates: [
+    { title: 'קניות משותפות', emoji: '🛒', color: '#0fb9a6' },
+    { title: 'תורנויות ניקיון', emoji: '🧽', color: '#6c5ce7' },
+    { title: 'הוצאות', emoji: '💸', color: '#e84393' },
+  ],
+  couple: [
+    { title: 'לעשות ביחד', emoji: '💑', color: '#e84393' },
+    { title: 'רעיונות לדייט', emoji: '🍷', color: '#a05cf0' },
+  ],
+  team: [
+    { title: 'משימות', emoji: '✅', color: '#6c5ce7' },
+    { title: 'רעיונות', emoji: '💡', color: '#fdcb6e' },
+  ],
+  trip: [
+    { title: 'אריזה', emoji: '🧳', color: '#18a0c4' },
+    { title: 'מקומות לבקר', emoji: '📍', color: '#e17055' },
+  ],
+  custom: [{ title: 'הרשימה הראשונה שלי', emoji: '📝', color: '#6c5ce7' }],
 };
-export function guessCategory(name = '') {
-  const n = name.trim();
-  for (const [cat, words] of Object.entries(KEYWORDS)) {
-    if (words.some((w) => n.includes(w))) return cat;
-  }
-  return 'אחר';
-}
+
+// Free choice of emoji + color for any new list.
+export const LIST_EMOJIS = ['📝', '🛒', '✅', '🧹', '💸', '💡', '🧳', '🍳', '🎁', '🏋️', '📚', '🎬', '🐶', '🌱', '🔧', '🎉', '☕', '🧾', '📍', '🍷', '🧽', '🛠️'];
+export const COLORS = ['#6c5ce7', '#0fb9a6', '#e84393', '#18a0c4', '#fdcb6e', '#e17055', '#a05cf0', '#00b894'];
+
+// Hebrew labels for activity feed actions.
+export const ACTION_LABEL = {
+  added: 'הוסיף',
+  done: 'סימן כבוצע',
+  reopened: 'החזיר',
+  removed: 'הסיר',
+  created_list: 'יצר רשימה',
+  removed_list: 'מחק רשימה',
+};

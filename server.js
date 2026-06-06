@@ -26,10 +26,9 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change-this-to-a-long
 
 const express = (await import('express')).default;
 const { default: authRoutes } = await import('./src/routes/auth.js');
-const { default: homeRoutes } = await import('./src/routes/homes.js');
-const { default: shoppingRoutes } = await import('./src/routes/shopping.js');
-const { default: taskRoutes } = await import('./src/routes/tasks.js');
-const { default: activityRoutes } = await import('./src/routes/activity.js');
+const { default: spaceRoutes } = await import('./src/routes/spaces.js');
+const { default: listRoutes } = await import('./src/routes/lists.js');
+const { default: itemRoutes } = await import('./src/routes/items.js');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -37,10 +36,9 @@ app.use(express.json());
 
 // API
 app.use('/api/auth', authRoutes);
-app.use('/api/homes', homeRoutes);
-app.use('/api/homes/:homeId/shopping', shoppingRoutes);
-app.use('/api/homes/:homeId/tasks', taskRoutes);
-app.use('/api/homes/:homeId/activity', activityRoutes);
+app.use('/api/spaces', spaceRoutes);
+app.use('/api/spaces/:spaceId/lists', listRoutes);
+app.use('/api/spaces/:spaceId/lists/:listId/items', itemRoutes);
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 // Serve the built client (after `npm run build`).
@@ -57,4 +55,4 @@ if (fs.existsSync(dist)) {
 app.use('/api', (_req, res) => res.status(404).json({ error: 'לא נמצא' }));
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Homly server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Yachad server running on http://localhost:${PORT}`));

@@ -1,9 +1,8 @@
 import Icon from '../lib/icons.jsx';
 
 const TABS = [
-  { id: 'tasks', icon: 'tasks' },
-  { id: 'shopping', icon: 'cart' },
-  { id: 'home', icon: 'home' },
+  { id: 'dashboard', icon: 'chart', label: 'סיכום' },
+  { id: 'lists', icon: 'grid', label: 'רשימות' },
 ];
 
 export default function TabBar({ active, onChange }) {
@@ -15,9 +14,9 @@ export default function TabBar({ active, onChange }) {
             key={t.id}
             className={`tab ${active === t.id ? 'active' : ''}`}
             onClick={() => onChange(t.id)}
-            aria-label={t.id}
           >
-            <Icon name={t.icon} size={24} />
+            <Icon name={t.icon} size={22} />
+            <span className="tl">{t.label}</span>
           </button>
         ))}
       </div>

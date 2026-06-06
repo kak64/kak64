@@ -4,94 +4,81 @@ import { ToastProvider } from './components/Toast.jsx';
 import TabBar from './components/TabBar.jsx';
 import Auth from './screens/Auth.jsx';
 import Onboarding from './screens/Onboarding.jsx';
-import Home from './screens/Home.jsx';
-import Shopping from './screens/Shopping.jsx';
-import Tasks from './screens/Tasks.jsx';
+import Dashboard from './screens/Dashboard.jsx';
+import Lists from './screens/Lists.jsx';
+import ListDetail from './screens/ListDetail.jsx';
 import Settings from './screens/Settings.jsx';
 
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [user, setUser] = useState(null);
-  const [home, setHome] = useState(null);
-  const [hasHome, setHasHome] = useState(null); // null=unknown, false=none
-  const [tab, setTab] = useState('home');
+  const [space, setSpace] = useState(null);
+  const [hasSpace, setHasSpace] = useState(null);
+  const [tab, setTab] = useState('dashboard');
+  const [openListId, setOpenListId] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // boot: restore session + first home
   useEffect(() => {
     (async () => {
       if (!auth.token) { setBooting(false); return; }
       try {
         const { user } = await api('/auth/me');
         setUser(user);
-        await loadFirstHome();
-      } catch {
-        auth.clear();
-      } finally {
-        setBooting(false);
-      }
+        await loadFirstSpace();
+      } catch { auth.clear(); } finally { setBooting(false); }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadFirstHome() {
-    const { homes } = await api('/homes');
-    if (homes.length) { setHome(homes[0]); setHasHome(true); }
-    else { setHome(null); setHasHome(false); }
+  async function loadFirstSpace() {
+    const { spaces } = await api('/spaces');
+    if (spaces.length) { setSpace(spaces[0]); setHasSpace(true); }
+    else { setSpace(null); setHasSpace(false); }
   }
 
-  const onAuth = async (u) => {
-    setUser(u);
-    await loadFirstHome();
-  };
-
+  const onAuth = async (u) => { setUser(u); await loadFirstSpace(); };
   const onLogout = () => {
     auth.clear();
-    setUser(null); setHome(null); setHasHome(null); setTab('home'); setSettingsOpen(false);
+    setUser(null); setSpace(null); setHasSpace(null); setTab('dashboard'); setOpenListId(null); setSettingsOpen(false);
   };
-
-  const onHomeGone = async () => {
-    setSettingsOpen(false);
-    setTab('home');
-    await loadFirstHome();
+  const onSpaceGone = async () => {
+    setSettingsOpen(false); setOpenListId(null); setTab('dashboard');
+    await loadFirstSpace();
   };
+  const openList = (id) => { setOpenListId(id); };
 
   if (booting) return <div className="app"><div className="spinner" /></div>;
-
   if (!user) return <ToastProvider><div className="app"><Auth onAuth={onAuth} /></div></ToastProvider>;
-
-  if (hasHome === false)
-    return (
-      <ToastProvider>
-        <div className="app">
-          <Onboarding user={user} onReady={(h) => { setHome(h); setHasHome(true); }} />
-        </div>
-      </ToastProvider>
-    );
-
-  if (!home) return <div className="app"><div className="spinner" /></div>;
+  if (hasSpace === false)
+    return <ToastProvider><div className="app"><Onboarding user={user} onReady={(sp) => { setSpace(sp); setHasSpace(true); }} /></div></ToastProvider>;
+  if (!space) return <div className="app"><div className="spinner" /></div>;
 
   return (
     <ToastProvider>
       <div className="app">
         {settingsOpen ? (
           <Settings
-            user={user}
-            home={home}
+            user={user} space={space}
             onClose={() => setSettingsOpen(false)}
-            onUser={setUser}
-            onLogout={onLogout}
-            onHomeGone={onHomeGone}
-            onHomeChanged={(h) => setHome((prev) => ({ ...prev, ...h }))}
+            onUser={setUser} onLogout={onLogout}
+            onSpaceGone={onSpaceGone}
+            onSpaceChanged={(sp) => setSpace((p) => ({ ...p, ...sp }))}
           />
+        ) : openListId ? (
+          <ListDetail space={space} listId={openListId} onBack={() => setOpenListId(null)} />
         ) : (
           <>
-            {tab === 'home' && (
-              <Home user={user} home={home} onOpenTab={setTab} onOpenSettings={() => setSettingsOpen(true)} onHome={setHome} />
+            {tab === 'dashboard' && (
+              <Dashboard
+                user={user} space={space}
+                onOpenSettings={() => setSettingsOpen(true)}
+                onOpenList={openList}
+                onOpenLists={() => setTab('lists')}
+                onSpace={setSpace}
+              />
             )}
-            {tab === 'shopping' && <Shopping home={home} onBack={() => setTab('home')} />}
-            {tab === 'tasks' && <Tasks home={home} onBack={() => setTab('home')} />}
-            <TabBar active={tab} onChange={setTab} />
+            {tab === 'lists' && <Lists space={space} onOpenList={openList} />}
+            <TabBar active={tab} onChange={(t) => { setOpenListId(null); setTab(t); }} />
           </>
         )}
       </div>

@@ -1,5 +1,5 @@
 // Minimal offline-friendly service worker (app shell cache).
-const CACHE = 'homly-v1';
+const CACHE = 'yachad-v1';
 const SHELL = ['/', '/icon.svg', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {

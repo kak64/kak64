@@ -1,14 +1,14 @@
 {
-  "name": "Homly — כל הבית במקום אחד",
-  "short_name": "Homly",
-  "description": "רשימת קניות, משימות ומשפחה משותפים — הבית כולו במקום אחד.",
+  "name": "יחד — מנהלים הכול ביחד",
+  "short_name": "יחד",
+  "description": "מרחב משותף לניהול רשימות, משימות וקבוצות — הכול ביחד, במקום אחד.",
   "lang": "he",
   "dir": "rtl",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#fbf1e6",
-  "theme_color": "#ef8e4a",
+  "background_color": "#f3f2fb",
+  "theme_color": "#6c5ce7",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]

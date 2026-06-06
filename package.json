@@ -1,7 +1,7 @@
 {
-  "name": "homly",
+  "name": "yachad",
   "version": "1.0.0",
-  "description": "Homly — ניהול הבית במקום אחד. רשימת קניות, משימות ומשפחה משותפים.",
+  "description": "יחד — מרחב משותף לניהול רשימות, משימות וקבוצות. הכול ביחד, במקום אחד.",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",

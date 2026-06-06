@@ -20,7 +20,7 @@ export default function Avatar({ user, size = 38, ring }) {
   );
 }
 
-export function AvatarStack({ members = [], size = 34, max = 3, ringColor = '#f3934a' }) {
+export function AvatarStack({ members = [], size = 34, max = 3, ringColor = '#fff' }) {
   const shown = members.slice(0, max);
   const extra = members.length - shown.length;
   return (

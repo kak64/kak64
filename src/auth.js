@@ -22,16 +22,16 @@ export function authRequired(req, res, next) {
   }
 }
 
-// Ensures the current user is a member of :homeId (param). Attaches req.home + req.membership.
-export function homeMember(req, res, next) {
-  const homeId = Number(req.params.homeId);
-  const home = db.prepare('SELECT * FROM homes WHERE id = ?').get(homeId);
-  if (!home) return res.status(404).json({ error: 'בית לא נמצא' });
+// Ensures the current user is a member of :spaceId. Attaches req.space + req.membership.
+export function spaceMember(req, res, next) {
+  const spaceId = Number(req.params.spaceId);
+  const space = db.prepare('SELECT * FROM spaces WHERE id = ?').get(spaceId);
+  if (!space) return res.status(404).json({ error: 'מרחב לא נמצא' });
   const membership = db
-    .prepare('SELECT * FROM members WHERE home_id = ? AND user_id = ?')
-    .get(homeId, req.user.id);
-  if (!membership) return res.status(403).json({ error: 'אין לך גישה לבית הזה' });
-  req.home = home;
+    .prepare('SELECT * FROM members WHERE space_id = ? AND user_id = ?')
+    .get(spaceId, req.user.id);
+  if (!membership) return res.status(403).json({ error: 'אין לך גישה למרחב הזה' });
+  req.space = space;
   req.membership = membership;
   next();
 }
