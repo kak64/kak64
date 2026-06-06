@@ -1,64 +1,97 @@
-# KAK64 Hosting Panel
+# Homly — כל הבית במקום אחד 🏡
 
-פאנל ניהול אחסון בעברית מעל VMware ESXi.
+אפליקציית ווב (PWA) בעברית לניהול משק הבית: **רשימת קניות משותפת, משימות
+ומשפחה — במקום אחד**. במקום לנהל את הבית בקבוצת וואטסאפ, לכל בית יש רשימה
+אחת משותפת. כל אחד מוסיף מהטלפון שלו, רואים מי הוסיף מה, והכול מתעדכן מיד אצל
+כולם.
 
-A Hebrew (RTL) hosting company website with user registration/login, server
-ordering, billing, support tickets and an admin panel — built on top of a
-VMware ESXi host.
+נבנתה בהשראת הרעיון של Homly — עם מראה iOS, RTL מלא, והקלטה קולית להוספת
+פריטים.
 
-## Features
+## תכונות
 
-- **דף הבית, חבילות, אודות, צור קשר, תנאי שימוש** (public site)
-- **הרשמה והתחברות** with bcrypt password hashing
-- **אזור אישי (Dashboard)**: סקירה, השרתים שלי, הזמנת שרת, חשבוניות, פניות תמיכה, פרופיל
-- **לוח ניהול (Admin)**: משתמשים, חבילות, שרתים, פניות תמיכה, סטטיסטיקות
-- **שילוב ESXi**: יצירה / הפעלה / כיבוי / אתחול / מחיקה של מכונות וירטואליות
-- **RTL מלא** עם פונט עברי
-- בסיס נתונים SQLite (קובץ אחד, ללא תלות חיצונית)
+- **רשימת קניות משותפת** — הוספה, סימון כנקנה, מחיקה, קיבוץ אוטומטי לפי
+  מחלקות (חלב, ירקות, ניקיון...) וניקוי פריטים שהושלמו.
+- **רשימת משימות** — משימות לבית עם תזכורות (תאריך ושעה), כמו "לשלם ארנונה".
+- **הקלטה קולית** 🎤 — אומרים "חלב, ביצים ולחם" והפריטים מתווספים אוטומטית
+  (Web Speech API, עברית). יש נפילה חיננית להקלדה בדפדפנים שאינם תומכים.
+- **בית משותף** — הזמנת בני משפחה בקוד הצטרפות, ניהול חברים, בעל בית.
+- **פיד עדכונים** — "מי הוסיף / סימן מה ומתי", בזמן אמת.
+- **התחברות והרשמה** עם הצפנת סיסמאות (bcrypt) ו‑JWT.
+- **RTL מלא**, ניתנת להתקנה למסך הבית (PWA) ועובדת גם offline (app shell).
 
-## Quick start
+## הרצה מהירה
 
 ```bash
-cp .env.example .env
-# Edit .env — set SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, and ESXi credentials
+cp .env.example .env       # ערכו את JWT_SECRET
 npm install
-npm start
+npm run serve              # build של ה-client + הרצת השרת
 ```
 
-Open http://localhost:3000
+פתחו http://localhost:3001
 
-The first run creates the SQLite DB at `db/data.sqlite`, seeds default plans,
-and creates an admin user from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+בריצה הראשונה נוצר בסיס נתונים SQLite בנתיב `db/homly.sqlite`.
 
-## ESXi integration
+### פיתוח (hot reload)
 
-`src/esxi.js` provides power-on / power-off / reboot / destroy via the
-ESXi REST API. The `provisionVm` function is intentionally left as a TODO —
-provisioning a VM via the ESXi API requires choosing a strategy:
-clone-from-template, OVF deploy, or PowerCLI/govc. Implement it according to
-your environment.
-
-When ESXi credentials are not set in `.env`, the system falls back to a
-mocked mode so you can demo the full flow locally.
-
-## Project structure
-
-```
-server.js              # Express bootstrap
-src/db.js              # SQLite schema + seed
-src/esxi.js            # ESXi REST client
-src/middleware.js      # auth helpers
-src/routes/            # public, auth, dashboard, servers, billing, tickets, admin
-views/                 # Hebrew RTL EJS templates
-public/css/style.css   # styling
+```bash
+npm run dev
 ```
 
-## Production checklist
+מריץ במקביל את שרת ה‑API (פורט 3001) ואת Vite (פורט 5173, עם proxy ל‑`/api`).
+פתחו את http://localhost:5173
 
-- [ ] Strong `SESSION_SECRET`
-- [ ] HTTPS reverse proxy (nginx / Caddy)
-- [ ] Real payment provider (Tranzila / iCount / Stripe)
-- [ ] Email sending for ticket replies / invoices
-- [ ] Implement `esxi.provisionVm` for real VM provisioning
-- [ ] Switch session store to Redis for multi-instance
-- [ ] Backups for `db/data.sqlite`
+> 💡 הקלטה קולית דורשת מיקרופון ועובדת בדפדפנים מבוססי Chromium. ב‑iOS Safari
+> כדאי לגשת דרך HTTPS כדי לאפשר הרשאת מיקרופון.
+
+## מבנה הפרויקט
+
+```
+server.js              # Express bootstrap + הגשת ה-client הבנוי
+src/
+  db.js                # סכמת SQLite + עזר לוג פעילות
+  auth.js              # JWT + middleware הרשאות (authRequired, homeMember)
+  routes/
+    auth.js            # הרשמה / התחברות / פרופיל
+    homes.js           # יצירת בית, הצטרפות בקוד, חברים, הזמנות
+    shopping.js        # רשימת קניות
+    tasks.js           # רשימת משימות
+    activity.js        # פיד עדכונים
+client/
+  index.html
+  public/              # manifest, אייקון, service worker
+  src/
+    App.jsx            # ניווט ראשי + מצב התחברות
+    api.js             # עטיפת fetch + אחסון token
+    screens/           # Auth, Onboarding, Home, Shopping, Tasks, Settings
+    components/        # Avatar, TabBar, Sheet, Toast, VoiceModal
+    lib/               # icons, util, usePoll
+vite.config.js
+```
+
+## ארכיטקטורה בקצרה
+
+- **Backend**: Node + Express, בסיס נתונים SQLite (`better-sqlite3`). אימות
+  מבוסס JWT (90 יום), סיסמאות מוצפנות ב‑bcrypt.
+- **Frontend**: React (Vite), ללא router חיצוני — ניווט מבוסס state עם tab bar
+  בסגנון iOS. סנכרון בין בני הבית באמצעות polling (`usePoll`) עם עצירה כשהטאב
+  מוסתר ורענון ב‑focus.
+- **מודל נתונים**: `users`, `homes`, `members` (role: owner/member),
+  `shopping_items`, `tasks`, `activity`. כל הרשימות משויכות ל‑`home_id`,
+  והגישה נאכפת ע"י `homeMember`.
+
+## משתני סביבה (`.env`)
+
+| משתנה        | תיאור                                   | ברירת מחדל         |
+| ------------ | --------------------------------------- | ------------------ |
+| `PORT`       | פורט השרת                               | `3001`             |
+| `JWT_SECRET` | מפתח לחתימת אסימוני התחברות — **החליפו** | —                  |
+| `DB_PATH`    | נתיב קובץ ה‑SQLite                       | `db/homly.sqlite`  |
+
+## רשימת בדיקות לפרודקשן
+
+- [ ] `JWT_SECRET` חזק ואקראי
+- [ ] HTTPS (nginx / Caddy) — חובה להקלטה קולית ולהתקנת PWA
+- [ ] שדרוג סנכרון מ‑polling ל‑WebSocket / SSE לעדכון מיידי
+- [ ] תזכורות אמיתיות (Web Push) למשימות עם תאריך יעד
+- [ ] גיבויים ל‑`db/homly.sqlite`

@@ -1,0 +1,15 @@
+{
+  "name": "Homly — כל הבית במקום אחד",
+  "short_name": "Homly",
+  "description": "רשימת קניות, משימות ומשפחה משותפים — הבית כולו במקום אחד.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf1e6",
+  "theme_color": "#ef8e4a",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
