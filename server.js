@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 // --- Minimal .env loader (no external dependency) ---
@@ -9,6 +10,18 @@ if (fs.existsSync(envPath)) {
     const m = line.match(/^\s*([\w.]+)\s*=\s*(.*)\s*$/);
     if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
   }
+}
+
+// Zero-config: if no real JWT secret is set, generate one and persist it to
+// .env so logins survive restarts. Lets the app run with a plain `npm start`
+// on any OS without manual setup.
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change-this-to-a-long-random-string') {
+  const secret = crypto.randomBytes(32).toString('hex');
+  process.env.JWT_SECRET = secret;
+  try {
+    const prev = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8').replace(/^\s*JWT_SECRET=.*$/m, '').trim() : '';
+    fs.writeFileSync(envPath, `${prev ? prev + '\n' : ''}JWT_SECRET=${secret}\n`);
+  } catch { /* read-only fs — keep the in-memory secret for this run */ }
 }
 
 const express = (await import('express')).default;
