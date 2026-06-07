@@ -389,10 +389,10 @@ end)
 
 -- מקש F3: פתיחת העיגול. ox_lib רושם את הפקודה '+ox_lib-radial',
 -- ולכן אנו פשוט מפעילים אותה כדי לפתוח את התפריט הרדיאלי.
+-- מי שאינו עובד מד"א - המקש כלל אינו מגיב ואין לו שום אופציה בעיגול.
 RegisterCommand('emsmenu', function()
     if not IsAmbulance() then
-        ESX.ShowNotification('~r~התפריט זמין לעובדי מד"א בלבד.')
-        return
+        return -- ללא התראה, ללא פעולה - האופציה לא קיימת עבורו
     end
     ExecuteCommand('+ox_lib-radial')
 end, false)
@@ -403,8 +403,7 @@ RegisterKeyMapping('emsmenu', 'פתיחת תפריט מד"א (עיגול)', 'key
 --==============================================================--
 RegisterCommand('checkvital', function()
     if not IsAmbulance() then
-        ESX.ShowNotification('~r~הפקודה זמינה לעובדי מד"א בלבד.')
-        return
+        return -- הפקודה אינה זמינה למי שאינו עובד מד"א (ללא תגובה)
     end
 
     local targetServerId = GetClosestPatient()
