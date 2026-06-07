@@ -230,110 +230,173 @@ local function RunMedicProgress(label, duration)
 end
 
 --==============================================================--
---   4) תפריט טיפול רפואי - כפתורי אופציות (פצעים/החייאה/מוות)    --
+--   4) תפריט רדיאלי (עגול) - מקש F3, אופציות שנפתחות בתוך העגול  --
 --==============================================================--
-function OpenTreatmentMenu()
-    if not IsAmbulance() then
-        ESX.ShowNotification('~r~התפריט זמין לעובדי מד"א בלבד.')
-        return
-    end
+-- כל פעולה מאתרת את המטופל הקרוב ברגע הבחירה.
 
+local function ActionCheckVitals()
     local targetServerId = GetClosestPatient()
     if not targetServerId then
         ESX.ShowNotification('~r~אין מטופל בטווח. התקרב לאדם הפצוע.')
         return
     end
+    if RunMedicProgress('בודק מדדים רפואיים...', 4000) then
+        TriggerServerEvent('ems:requestVitals', targetServerId)
+    else
+        ESX.ShowNotification('~y~הבדיקה בוטלה.')
+    end
+end
 
-    lib.registerContext({
-        id = 'ems_treatment',
-        title = 'תפריט טיפול רפואי - מד"א',
-        options = {
+local function ActionTreatWound(woundType)
+    local targetServerId = GetClosestPatient()
+    if not targetServerId then
+        ESX.ShowNotification('~r~אין מטופל בטווח. התקרב לאדם הפצוע.')
+        return
+    end
+    local label, duration
+    if woundType == 'minor' then
+        label, duration = 'מטפל בפצעים קלים...', 6000
+    else
+        label, duration = 'מטפל בפצעים קשים...', 12000
+    end
+    if RunMedicProgress(label, duration) then
+        TriggerServerEvent('ems:treatWound', targetServerId, woundType)
+    else
+        ESX.ShowNotification('~y~הטיפול בוטל.')
+    end
+end
+
+local function ActionCPR()
+    local targetServerId = GetClosestPatient()
+    if not targetServerId then
+        ESX.ShowNotification('~r~אין מטופל בטווח. התקרב לאדם הפצוע.')
+        return
+    end
+    if RunMedicProgress('מבצע החייאה...', 10000) then
+        TriggerServerEvent('ems:medicRevive', targetServerId)
+    else
+        ESX.ShowNotification('~y~ההחייאה בוטלה.')
+    end
+end
+
+local function ActionBackup()
+    TriggerServerEvent('ems:medicBackup', GetEntityCoords(PlayerPedId()))
+end
+
+local function ActionDeclareDeath()
+    local targetServerId = GetClosestPatient()
+    if not targetServerId then
+        ESX.ShowNotification('~r~אין מטופל בטווח. התקרב לאדם הפצוע.')
+        return
+    end
+    local confirm = lib.alertDialog({
+        header = 'אישור קביעת מוות',
+        content = 'האם אתה בטוח שברצונך לקבוע את מות המטופל? פעולה זו תשגר אותו לבית החולים.',
+        centered = true,
+        cancel = true
+    })
+    if confirm ~= 'confirm' then return end
+    if RunMedicProgress('קובע מוות קליני...', 5000) then
+        TriggerServerEvent('ems:medicDeclareDeath', targetServerId)
+    else
+        ESX.ShowNotification('~y~הפעולה בוטלה.')
+    end
+end
+
+-- רישום תת-העיגול של טיפול בפצעים (נפתח בתוך העיגול בלחיצה)
+CreateThread(function()
+    lib.registerRadial({
+        id = 'ems_wounds_radial',
+        items = {
             {
-                title = 'בדיקת מדדים',
-                description = 'מדידת דופק, לחץ דם ורוויון חמצן',
-                icon = 'stethoscope',
-                onSelect = function()
-                    if RunMedicProgress('בודק מדדים רפואיים...', 4000) then
-                        TriggerServerEvent('ems:requestVitals', targetServerId)
-                    else
-                        ESX.ShowNotification('~y~הבדיקה בוטלה.')
-                    end
-                end
-            },
-            {
-                title = 'טיפול בפצעים קלים',
-                description = 'חבישה ושחזור חלקי של הבריאות',
+                id = 'ems_wound_minor',
                 icon = 'bandage',
-                onSelect = function()
-                    if RunMedicProgress('מטפל בפצעים קלים...', 6000) then
-                        TriggerServerEvent('ems:treatWound', targetServerId, 'minor')
-                    else
-                        ESX.ShowNotification('~y~הטיפול בוטל.')
-                    end
-                end
+                label = 'פצעים קלים',
+                onSelect = function() ActionTreatWound('minor') end
             },
             {
-                title = 'טיפול בפצעים קשים',
-                description = 'ייצוב, עצירת דימום ושחזור מלא',
+                id = 'ems_wound_severe',
                 icon = 'kit-medical',
-                onSelect = function()
-                    if RunMedicProgress('מטפל בפצעים קשים...', 12000) then
-                        TriggerServerEvent('ems:treatWound', targetServerId, 'severe')
-                    else
-                        ESX.ShowNotification('~y~הטיפול בוטל.')
-                    end
-                end
-            },
-            {
-                title = 'החייאה (CPR)',
-                description = 'החזרת מטופל מחוסר הכרה',
-                icon = 'heart-pulse',
-                onSelect = function()
-                    if RunMedicProgress('מבצע החייאה...', 10000) then
-                        TriggerServerEvent('ems:medicRevive', targetServerId)
-                    else
-                        ESX.ShowNotification('~y~ההחייאה בוטלה.')
-                    end
-                end
-            },
-            {
-                title = 'קשר / קריאה לתגבור',
-                description = 'שליחת מיקומך ליחידות מד"א נוספות',
-                icon = 'tower-broadcast',
-                onSelect = function()
-                    TriggerServerEvent('ems:medicBackup', GetEntityCoords(PlayerPedId()))
-                end
-            },
-            {
-                title = 'קביעת מוות',
-                description = '~r~פעולה בלתי הפיכה - שיגור המטופל לבית החולים',
-                icon = 'skull',
-                onSelect = function()
-                    local confirm = lib.alertDialog({
-                        header = 'אישור קביעת מוות',
-                        content = 'האם אתה בטוח שברצונך לקבוע את מות המטופל? פעולה זו תשגר אותו לבית החולים.',
-                        centered = true,
-                        cancel = true
-                    })
-                    if confirm ~= 'confirm' then return end
-
-                    if RunMedicProgress('קובע מוות קליני...', 5000) then
-                        TriggerServerEvent('ems:medicDeclareDeath', targetServerId)
-                    else
-                        ESX.ShowNotification('~y~הפעולה בוטלה.')
-                    end
-                end
+                label = 'פצעים קשים',
+                onSelect = function() ActionTreatWound('severe') end
             }
         }
     })
-    lib.showContext('ems_treatment')
+end)
+
+-- הוספת/הסרת אופציות מד"א מהעיגול הראשי לפי משרה ומשמרת
+local emsRadialItems = {
+    {
+        id = 'ems_vitals',
+        icon = 'stethoscope',
+        label = 'בדיקת מדדים',
+        onSelect = ActionCheckVitals
+    },
+    {
+        id = 'ems_wounds',
+        icon = 'briefcase-medical',
+        label = 'טיפול בפצעים',
+        menu = 'ems_wounds_radial' -- לחיצה פותחת תת-עיגול בתוך העיגול
+    },
+    {
+        id = 'ems_cpr',
+        icon = 'heart-pulse',
+        label = 'החייאה',
+        onSelect = ActionCPR
+    },
+    {
+        id = 'ems_backup',
+        icon = 'tower-broadcast',
+        label = 'קשר / תגבור',
+        onSelect = ActionBackup
+    },
+    {
+        id = 'ems_death',
+        icon = 'skull',
+        label = 'קביעת מוות',
+        onSelect = ActionDeclareDeath
+    }
+}
+
+local emsRadialActive = false
+function RefreshEmsRadial()
+    if IsAmbulance() then
+        if not emsRadialActive then
+            lib.addRadialItem(emsRadialItems)
+            emsRadialActive = true
+        end
+    else
+        if emsRadialActive then
+            for _, item in ipairs(emsRadialItems) do
+                lib.removeRadialItem(item.id)
+            end
+            emsRadialActive = false
+        end
+    end
 end
 
--- פקודה + מקש קיצור לפתיחת תפריט הטיפול (ברירת מחדל: F6)
+-- עדכון העיגול בכל שינוי משרה / טעינת שחקן
+RegisterNetEvent('esx:setJob', function()
+    RefreshEmsRadial()
+end)
+AddEventHandler('esx:playerLoaded', function()
+    RefreshEmsRadial()
+end)
+CreateThread(function()
+    Wait(2000) -- המתנה לטעינת נתוני השחקן
+    RefreshEmsRadial()
+end)
+
+-- מקש F3: פתיחת העיגול. ox_lib רושם את הפקודה '+ox_lib-radial',
+-- ולכן אנו פשוט מפעילים אותה כדי לפתוח את התפריט הרדיאלי.
 RegisterCommand('emsmenu', function()
-    OpenTreatmentMenu()
+    if not IsAmbulance() then
+        ESX.ShowNotification('~r~התפריט זמין לעובדי מד"א בלבד.')
+        return
+    end
+    ExecuteCommand('+ox_lib-radial')
 end, false)
-RegisterKeyMapping('emsmenu', 'תפריט טיפול רפואי (מד"א)', 'keyboard', 'F6')
+RegisterKeyMapping('emsmenu', 'פתיחת תפריט מד"א (עיגול)', 'keyboard', 'F3')
 
 --==============================================================--
 --          פקודת בדיקת מדדים מהירה (/checkvital) - מד"א בלבד     --
