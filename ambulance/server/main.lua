@@ -301,15 +301,114 @@ RegisterNetEvent('ems:buyItem', function(itemName, amount)
 end)
 
 --==============================================================--
+--              חלוקת משכורות במהלך המשמרת (Paycheck)             --
+--==============================================================--
+local currentPayCode = nil   -- הקוד הפעיל לסבב התשלום הנוכחי (nil = אין סבב)
+local payClaimed = {}        -- [serverId] = true עבור מי שכבר אסף בסבב זה
+
+-- הנפקת סבב משכורת חדש: קוד אקראי + שידור לכל עובדי מד"א המחוברים
+local function IssuePaycheck()
+    local players = ESX.GetExtendedPlayers('job', Config.JobName)
+
+    -- אם אין אף עובד מד"א מחובר - אין צורך בסבב
+    if not players or next(players) == nil then
+        currentPayCode = nil
+        return
+    end
+
+    currentPayCode = math.random(Config.Salary.codeMin, Config.Salary.codeMax)
+    payClaimed = {}
+
+    for _, xMedic in pairs(players) do
+        TriggerClientEvent('chat:addMessage', xMedic.source, {
+            color = { 30, 144, 255 },
+            multiline = true,
+            args = {
+                'מד"א - שכר',
+                ('התקבלה חלוקת משכורת! הקלד ~ /pc %d ~ תוך %d דקות לקבלת המשכורת שלך לפי דרגתך.')
+                    :format(currentPayCode, Config.Salary.interval)
+            }
+        })
+    end
+end
+
+-- לולאת חלוקה אוטומטית בכל פרק זמן מוגדר
+CreateThread(function()
+    if not Config.Salary.enabled then return end
+    -- אתחול גנרטור המספרים האקראיים
+    math.randomseed(os.time())
+    math.random(); math.random()
+
+    while true do
+        Wait(Config.Salary.interval * 60000)
+        IssuePaycheck()
+    end
+end)
+
+-- פקודת אדמין: הנפקת סבב משכורת מיידי (שימושי לבדיקות)
+ESX.RegisterCommand('forcepay', 'admin', function(xPlayer, args, showError)
+    if not Config.Salary.enabled then
+        if showError then showError('מערכת המשכורות מושבתת ב-config.') end
+        return
+    end
+    IssuePaycheck()
+end, true, { help = 'הנפקת סבב חלוקת משכורת מיידי לעובדי מד"א' })
+
+-- פקודת איסוף המשכורת: /pc <קוד>
+RegisterCommand('pc', function(playerId, args)
+    local xPlayer = ESX.GetPlayerFromId(playerId)
+    if not xPlayer or xPlayer.job.name ~= Config.JobName then
+        return -- אינו עובד מד"א - הפקודה לא קיימת עבורו
+    end
+
+    if not currentPayCode then
+        TriggerClientEvent('esx:showNotification', playerId, '~y~אין כעת חלוקת משכורת פעילה.')
+        return
+    end
+
+    local entered = tonumber(args[1])
+    if not entered then
+        TriggerClientEvent('esx:showNotification', playerId, '~r~שימוש נכון: /pc [קוד]')
+        return
+    end
+
+    if entered ~= currentPayCode then
+        TriggerClientEvent('esx:showNotification', playerId, '~r~קוד שגוי. בדוק את הקוד בצ\'אט.')
+        return
+    end
+
+    if payClaimed[playerId] then
+        TriggerClientEvent('esx:showNotification', playerId, '~y~כבר קיבלת את המשכורת בסבב זה.')
+        return
+    end
+
+    local grade = xPlayer.job.grade
+    local amount = Config.Salary.amounts[grade] or 0
+    if amount <= 0 then
+        TriggerClientEvent('esx:showNotification', playerId, '~y~לא הוגדרה משכורת לדרגתך.')
+        return
+    end
+
+    payClaimed[playerId] = true
+    xPlayer.addAccountMoney(Config.Salary.account, amount)
+
+    local gradeLabel = xPlayer.job.grade_label or ''
+    TriggerClientEvent('esx:showNotification', playerId,
+        ('~g~המשכורת התקבלה!~s~ סך ~y~$%d~s~ הועבר לחשבונך (%s).'):format(amount, gradeLabel))
+end, false)
+
+--==============================================================--
 --                       ניקוי בעת התנתקות                        --
 --==============================================================--
 AddEventHandler('esx:playerDropped', function(playerId)
     KnockoutPlayers[playerId] = nil
+    payClaimed[playerId] = nil
 end)
 
 AddEventHandler('playerDropped', function()
     local src = source
     KnockoutPlayers[src] = nil
+    payClaimed[src] = nil
 end)
 
 --==============================================================--
