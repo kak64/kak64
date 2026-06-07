@@ -50,15 +50,11 @@ RegisterNetEvent('ems:distressSignal', function(coords)
 end)
 
 --==============================================================--
---          קביעת מוות: שעון שרת אמיתי + שידור גלובלי             --
+--      פונקציה משותפת: קביעת מוות (שעון שרת + שידור + שיגור)     --
 --==============================================================--
-RegisterNetEvent('ems:declareDeath', function()
-    local src = source
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer then return end
-
-    -- חייב להיות במצב עילפון כדי לקבוע מוות
-    if not KnockoutPlayers[src] then return end
+-- declaredBy = nil לקביעה עצמית, או xMedic לקביעה ע"י עובד מד"א
+local function DeclareDeathFor(xPlayer, declaredBy)
+    if not xPlayer then return false end
 
     local name = GetPlayerDisplayName(xPlayer)
 
@@ -76,8 +72,8 @@ RegisterNetEvent('ems:declareDeath', function()
         args = { 'מד"א', message }
     })
 
-    -- החייאה: ניקוי מצב, איפוס מזומן, שיגור לבית חולים
-    KnockoutPlayers[src] = nil
+    -- ניקוי מצב העילפון
+    KnockoutPlayers[xPlayer.source] = nil
 
     -- איפוס מזומן ל-0
     local cash = xPlayer.getAccount('money')
@@ -85,12 +81,50 @@ RegisterNetEvent('ems:declareDeath', function()
         xPlayer.removeAccountMoney('money', cash.money)
     end
 
-    -- החייאה + טלפורט (teleport=true)
-    TriggerClientEvent('ems:revive', src, true)
+    -- החייאה + שיגור לבית החולים (teleport=true)
+    TriggerClientEvent('ems:revive', xPlayer.source, true)
+
+    -- משוב לעובד מד"א שביצע את הקביעה
+    if declaredBy then
+        TriggerClientEvent('esx:showNotification', declaredBy.source, '~r~קבעת את מותו של ' .. name .. '.')
+    end
+
+    return true
+end
+
+--==============================================================--
+--             קביעת מוות עצמית ([E] במצב עילפון)                 --
+--==============================================================--
+RegisterNetEvent('ems:declareDeath', function()
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if not xPlayer then return end
+
+    -- חייב להיות במצב עילפון כדי לקבוע מוות עצמית
+    if not KnockoutPlayers[src] then return end
+
+    DeclareDeathFor(xPlayer, nil)
 end)
 
 --==============================================================--
---               החייאה ידנית ע"י עובד מד"א                       --
+--           קביעת מוות ע"י עובד מד"א (מתפריט הטיפול)            --
+--==============================================================--
+RegisterNetEvent('ems:medicDeclareDeath', function(targetServerId)
+    local src = source
+    local xMedic = ESX.GetPlayerFromId(src)
+    if not xMedic or xMedic.job.name ~= Config.JobName then return end
+
+    local xTarget = ESX.GetPlayerFromId(targetServerId)
+    if not xTarget then
+        TriggerClientEvent('esx:showNotification', src, '~r~לא נמצא מטופל.')
+        return
+    end
+
+    DeclareDeathFor(xTarget, xMedic)
+end)
+
+--==============================================================--
+--          החייאה / החייאת חירום (CPR) ע"י עובד מד"א            --
 --==============================================================--
 RegisterNetEvent('ems:medicRevive', function(targetServerId)
     local src = source
@@ -100,10 +134,69 @@ RegisterNetEvent('ems:medicRevive', function(targetServerId)
     local xTarget = ESX.GetPlayerFromId(targetServerId)
     if not xTarget then return end
 
+    if not KnockoutPlayers[targetServerId] then
+        TriggerClientEvent('esx:showNotification', src, '~y~המטופל אינו במצב חוסר הכרה.')
+        return
+    end
+
     KnockoutPlayers[targetServerId] = nil
     -- החייאה במקום (ללא טלפורט)
     TriggerClientEvent('ems:revive', targetServerId, false)
-    TriggerClientEvent('esx:showNotification', src, '~g~ביצעת החייאה למטופל.')
+    TriggerClientEvent('esx:showNotification', src, '~g~ביצעת החייאה מוצלחת למטופל.')
+    TriggerClientEvent('esx:showNotification', targetServerId, '~g~הוחזרת להכרה ע"י צוות מד"א.')
+end)
+
+--==============================================================--
+--             טיפול בפצעים (קלים / קשים) ע"י עובד מד"א           --
+--==============================================================--
+RegisterNetEvent('ems:treatWound', function(targetServerId, woundType)
+    local src = source
+    local xMedic = ESX.GetPlayerFromId(src)
+    if not xMedic or xMedic.job.name ~= Config.JobName then return end
+
+    local xTarget = ESX.GetPlayerFromId(targetServerId)
+    if not xTarget then
+        TriggerClientEvent('esx:showNotification', src, '~r~לא נמצא מטופל.')
+        return
+    end
+
+    -- לא ניתן לחבוש מטופל מחוסר הכרה - יש לבצע החייאה תחילה
+    if KnockoutPlayers[targetServerId] then
+        TriggerClientEvent('esx:showNotification', src, '~r~המטופל מחוסר הכרה - בצע החייאה תחילה.')
+        return
+    end
+
+    local healAmount, label
+    if woundType == 'minor' then
+        healAmount = 50   -- שחזור חלקי (~25HP)
+        label = 'פצעים קלים'
+    else -- 'severe'
+        healAmount = 200  -- שחזור מלא + עצירת דימום
+        label = 'פצעים קשים'
+    end
+
+    TriggerClientEvent('ems:applyHeal', targetServerId, healAmount, woundType == 'severe')
+    TriggerClientEvent('esx:showNotification', src, '~g~טיפלת ב' .. label .. ' של המטופל.')
+    TriggerClientEvent('esx:showNotification', targetServerId, '~g~צוות מד"א טיפל בפצעיך.')
+end)
+
+--==============================================================--
+--          קשר / קריאה לתגבור - מד"א ליחידות מד"א נוספות        --
+--==============================================================--
+RegisterNetEvent('ems:medicBackup', function(coords)
+    local src = source
+    local xMedic = ESX.GetPlayerFromId(src)
+    if not xMedic or xMedic.job.name ~= Config.JobName then return end
+
+    local name = GetPlayerDisplayName(xMedic)
+
+    local players = ESX.GetExtendedPlayers('job', Config.JobName)
+    for _, xOther in pairs(players) do
+        if xOther.source ~= src then
+            TriggerClientEvent('ems:receiveDistress', xOther.source, coords, 'תגבור ל' .. name)
+        end
+    end
+    TriggerClientEvent('esx:showNotification', src, '~b~קריאה לתגבור נשלחה ליחידות מד"א.')
 end)
 
 --==============================================================--

@@ -204,7 +204,139 @@ function SpawnEmergencyVehicle(vehData)
 end
 
 --==============================================================--
---          4) פקודת בדיקת מדדים (/checkvital) - מד"א בלבד        --
+--          עזר: איתור המטופל הקרוב ביותר בטווח טיפול             --
+--==============================================================--
+local function GetClosestPatient()
+    local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
+    if closestPlayer == -1 or closestDistance == -1 or closestDistance > Config.CheckVitalDistance then
+        return nil
+    end
+    return GetPlayerServerId(closestPlayer)
+end
+
+--==============================================================--
+--          עזר: הרצת פס התקדמות טיפולי (ox_lib)                  --
+--==============================================================--
+local function RunMedicProgress(label, duration)
+    return lib.progressCircle({
+        duration = duration,
+        label = label,
+        position = 'bottom',
+        useWhileDead = false,
+        canCancel = true,
+        disable = { move = true, car = true, combat = true },
+        anim = { dict = 'amb@medic@standing@kneel@base', clip = 'base' }
+    })
+end
+
+--==============================================================--
+--   4) תפריט טיפול רפואי - כפתורי אופציות (פצעים/החייאה/מוות)    --
+--==============================================================--
+function OpenTreatmentMenu()
+    if not IsAmbulance() then
+        ESX.ShowNotification('~r~התפריט זמין לעובדי מד"א בלבד.')
+        return
+    end
+
+    local targetServerId = GetClosestPatient()
+    if not targetServerId then
+        ESX.ShowNotification('~r~אין מטופל בטווח. התקרב לאדם הפצוע.')
+        return
+    end
+
+    lib.registerContext({
+        id = 'ems_treatment',
+        title = 'תפריט טיפול רפואי - מד"א',
+        options = {
+            {
+                title = 'בדיקת מדדים',
+                description = 'מדידת דופק, לחץ דם ורוויון חמצן',
+                icon = 'stethoscope',
+                onSelect = function()
+                    if RunMedicProgress('בודק מדדים רפואיים...', 4000) then
+                        TriggerServerEvent('ems:requestVitals', targetServerId)
+                    else
+                        ESX.ShowNotification('~y~הבדיקה בוטלה.')
+                    end
+                end
+            },
+            {
+                title = 'טיפול בפצעים קלים',
+                description = 'חבישה ושחזור חלקי של הבריאות',
+                icon = 'bandage',
+                onSelect = function()
+                    if RunMedicProgress('מטפל בפצעים קלים...', 6000) then
+                        TriggerServerEvent('ems:treatWound', targetServerId, 'minor')
+                    else
+                        ESX.ShowNotification('~y~הטיפול בוטל.')
+                    end
+                end
+            },
+            {
+                title = 'טיפול בפצעים קשים',
+                description = 'ייצוב, עצירת דימום ושחזור מלא',
+                icon = 'kit-medical',
+                onSelect = function()
+                    if RunMedicProgress('מטפל בפצעים קשים...', 12000) then
+                        TriggerServerEvent('ems:treatWound', targetServerId, 'severe')
+                    else
+                        ESX.ShowNotification('~y~הטיפול בוטל.')
+                    end
+                end
+            },
+            {
+                title = 'החייאה (CPR)',
+                description = 'החזרת מטופל מחוסר הכרה',
+                icon = 'heart-pulse',
+                onSelect = function()
+                    if RunMedicProgress('מבצע החייאה...', 10000) then
+                        TriggerServerEvent('ems:medicRevive', targetServerId)
+                    else
+                        ESX.ShowNotification('~y~ההחייאה בוטלה.')
+                    end
+                end
+            },
+            {
+                title = 'קשר / קריאה לתגבור',
+                description = 'שליחת מיקומך ליחידות מד"א נוספות',
+                icon = 'tower-broadcast',
+                onSelect = function()
+                    TriggerServerEvent('ems:medicBackup', GetEntityCoords(PlayerPedId()))
+                end
+            },
+            {
+                title = 'קביעת מוות',
+                description = '~r~פעולה בלתי הפיכה - שיגור המטופל לבית החולים',
+                icon = 'skull',
+                onSelect = function()
+                    local confirm = lib.alertDialog({
+                        header = 'אישור קביעת מוות',
+                        content = 'האם אתה בטוח שברצונך לקבוע את מות המטופל? פעולה זו תשגר אותו לבית החולים.',
+                        centered = true,
+                        cancel = true
+                    })
+                    if confirm ~= 'confirm' then return end
+
+                    if RunMedicProgress('קובע מוות קליני...', 5000) then
+                        TriggerServerEvent('ems:medicDeclareDeath', targetServerId)
+                    else
+                        ESX.ShowNotification('~y~הפעולה בוטלה.')
+                    end
+                end
+            }
+        }
+    })
+    lib.showContext('ems_treatment')
+end
+
+-- פקודה + מקש קיצור לפתיחת תפריט הטיפול (ברירת מחדל: F6)
+RegisterCommand('emsmenu', function()
+    OpenTreatmentMenu()
+end, false)
+RegisterKeyMapping('emsmenu', 'תפריט טיפול רפואי (מד"א)', 'keyboard', 'F6')
+
+--==============================================================--
+--          פקודת בדיקת מדדים מהירה (/checkvital) - מד"א בלבד     --
 --==============================================================--
 RegisterCommand('checkvital', function()
     if not IsAmbulance() then
@@ -212,73 +344,91 @@ RegisterCommand('checkvital', function()
         return
     end
 
-    -- מאתרים את השחקן הקרוב ביותר בטווח
-    local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
-
-    if closestPlayer == -1 or closestDistance == -1 or closestDistance > Config.CheckVitalDistance then
+    local targetServerId = GetClosestPatient()
+    if not targetServerId then
         ESX.ShowNotification('~r~אין מטופל בטווח. התקרב לאדם הפצוע.')
         return
     end
 
-    local targetServerId = GetPlayerServerId(closestPlayer)
-
-    -- פס התקדמות מעגלי של ox_lib
-    local success = lib.progressCircle({
-        duration = 4000,
-        label = 'בודק מדדים רפואיים...',
-        position = 'bottom',
-        useWhileDead = false,
-        canCancel = true,
-        disable = {
-            move = true,
-            car = true,
-            combat = true
-        },
-        anim = {
-            dict = 'amb@medic@standing@kneel@base',
-            clip = 'base'
-        }
-    })
-
-    if not success then
+    if RunMedicProgress('בודק מדדים רפואיים...', 4000) then
+        TriggerServerEvent('ems:requestVitals', targetServerId)
+    else
         ESX.ShowNotification('~y~בדיקת המדדים בוטלה.')
-        return
     end
-
-    -- מבקשים מהשרת לחשב מדדים דינמיים לפי מצב המטופל
-    TriggerServerEvent('ems:requestVitals', targetServerId)
 end, false)
 
 -- מקש קיצור מומלץ (ניתן לשנות בהגדרות המשחק)
 RegisterKeyMapping('checkvital', 'בדיקת מדדים רפואיים (מד"א)', 'keyboard', 'H')
 
 --==============================================================--
---           הצגת המדדים בצ'אט עובד מד"א (יפה ומסודר)            --
+--    תצוגת מדדים אדומה בפינה השמאלית-תחתונה (HUD מתמשך)         --
+--==============================================================--
+local VitalsHud = nil       -- טבלת הנתונים להצגה (nil = לא מציגים)
+local VitalsHudExpiry = 0   -- GetGameTimer() עד מתי להציג
+
+-- ציור שורת טקסט בודדת מיושרת לשמאל בצבע אדום
+local function DrawVitalLine(text, x, y, scale, r, g, b)
+    SetTextFont(4)
+    SetTextScale(scale, scale)
+    SetTextColour(r, g, b, 255)
+    SetTextDropshadow(0, 0, 0, 0, 255)
+    SetTextEdge(1, 0, 0, 0, 205)
+    SetTextDropShadow()
+    SetTextOutline()
+    SetTextWrap(0.0, 1.0) -- יישור לשמאל
+    SetTextEntry('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    DrawText(x, y)
+end
+
+-- לולאת ה-HUD: ישנה כשאין מה להציג (Resmon ≈ 0.00ms)
+CreateThread(function()
+    while true do
+        local sleep = 800
+        if VitalsHud and GetGameTimer() < VitalsHudExpiry then
+            sleep = 0
+            local d = VitalsHud
+            local x = 0.015            -- צמוד לשמאל
+            local baseY = 0.74         -- חלק תחתון של המסך
+            local lineH = 0.030
+            local s = 0.40
+
+            -- צבעי דגש: אדום עז למצב קריטי, אדום בהיר ליציב
+            local hr, hg, hb = 255, 40, 40
+
+            DrawVitalLine('~ דו"ח רפואי - מד"א ~', x, baseY, s + 0.04, hr, hg, hb)
+            DrawVitalLine('מטופל: ' .. d.name,            x, baseY + lineH * 1, s, hr, hg, hb)
+            DrawVitalLine('דופק: ' .. d.pulse .. ' BPM',  x, baseY + lineH * 2, s, hr, hg, hb)
+            DrawVitalLine('לחץ דם: ' .. d.bpSys .. '/' .. d.bpDia, x, baseY + lineH * 3, s, hr, hg, hb)
+            DrawVitalLine('חמצן: ' .. d.spo2 .. '%',      x, baseY + lineH * 4, s, hr, hg, hb)
+            DrawVitalLine('מצב: ' .. (d.isCritical and 'קריטי / חוסר הכרה' or 'יציב'), x, baseY + lineH * 5, s, hr, hg, hb)
+        end
+        Wait(sleep)
+    end
+end)
+
+--==============================================================--
+--           קבלת מדדים מהשרת -> הצגה ב-HUD (15 שניות)           --
 --==============================================================--
 RegisterNetEvent('ems:showVitals', function(data)
-    local statusColor = data.isCritical and '^1' or '^2'
-    local statusText  = data.isCritical and 'מצב קריטי / חוסר הכרה' or 'יציב'
+    VitalsHud = data
+    VitalsHudExpiry = GetGameTimer() + 15000 -- מוצג 15 שניות
+    ESX.ShowNotification('~r~דו"ח רפואי התקבל - ראה בפינה השמאלית התחתונה.')
+end)
 
-    TriggerEvent('chat:addMessage', {
-        multiline = true,
-        args = {
-            'דו"ח רפואי',
-            ('^7----------------------------------------\n'
-            .. '^7שם המטופל: ^5%s\n'
-            .. '^7דופק: %s%d BPM^7\n'
-            .. '^7לחץ דם: %s%d/%d^7\n'
-            .. '^7רוויון חמצן: %s%d%%^7\n'
-            .. '^7מצב כללי: %s%s^7\n'
-            .. '^7----------------------------------------')
-            :format(
-                data.name,
-                statusColor, data.pulse,
-                statusColor, data.bpSys, data.bpDia,
-                statusColor, data.spo2,
-                statusColor, statusText
-            )
-        }
-    })
+--==============================================================--
+--        קבלת טיפול: החלת בריאות על המטופל (בצד הלקוח שלו)       --
+--==============================================================--
+RegisterNetEvent('ems:applyHeal', function(amount, stopBleeding)
+    local ped = PlayerPedId()
+    local maxHealth = GetEntityMaxHealth(ped)
+    local newHealth = math.min(GetEntityHealth(ped) + amount, maxHealth)
+    SetEntityHealth(ped, newHealth)
+
+    if stopBleeding then
+        ClearPedBloodDamage(ped)
+        ResetPedVisibleDamage(ped)
+    end
 end)
 
 --==============================================================--
