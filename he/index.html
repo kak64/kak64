@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="he">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Verge-il | משחק תפקידים FiveM ברמה גבוהה</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="../assets/tailwind.config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;700&amp;family=JetBrains+Mono:wght@700&amp;family=Assistant:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface font-he selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant/30">
+<div class="flex justify-between items-center px-margin max-w-[1440px] mx-auto h-[72px]">
+<div class="flex items-center gap-sm">
+<img alt="Verge-il Logo" class="h-10 w-10 object-contain" src="../assets/logo.svg"/>
+<span class="font-headline-md text-headline-md font-black tracking-tighter text-primary">Verge-il</span>
+</div>
+<div class="hidden md:flex items-center gap-lg">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-body-md text-body-md" href="index.html">בית</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="rules.html">חוקים</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="store.html">חנות</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="forum.html">פורום</a>
+</div>
+<div class="flex items-center gap-md">
+<a class="hidden sm:inline-flex items-center text-on-surface-variant hover:text-primary transition-colors font-label-caps text-label-caps" href="../index.html">EN</a>
+<div class="hidden lg:flex items-center bg-surface-container px-sm py-xs rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-32 text-on-surface placeholder:text-on-surface-variant" placeholder="חיפוש..." type="text"/>
+</div>
+<div class="flex items-center gap-sm text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-primary">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary">account_circle</span>
+</div>
+<button class="bg-primary text-on-primary font-bold px-md py-xs rounded-sm active:scale-95 transition-all hover:shadow-[0_0_15px_rgba(183,109,255,0.4)]">
+                התחברות
+            </button>
+</div>
+</div>
+</nav>
+<main class="pt-[72px]">
+<!-- Hero Section -->
+<section class="relative min-h-[90vh] flex items-center overflow-hidden">
+<div class="absolute inset-0 z-0">
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10"></div>
+<div class="absolute inset-0 bg-black/40 z-10"></div>
+<img class="w-full h-full object-cover" alt="תמונה קולנועית של רכב ספורט בעיר בלילה" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5AgjozJRWCWuL8HYUQ29qKk1AhlkuKV_1-DKjovnMCoRWonL0oENNrwy4DZsoY_cndeLbQUhDGaPobziKcmTyCvLfPqCHCnOCs2q2KgPss4cUXPuGnlQnQZWZW-p2AhkJXw1u1v_tQhLauUZ8Kykf3JqaQ01lk8enskjDNtxwZ5OgA1w7vSnUnk4YWqml-_Ls8hxn5cRRReGdceubhs0oEUdRKfL0WJJopLHTQYHLtD4BTXzgdfBzxpQdz55xOPd16TPKcuy7Nns"/>
+</div>
+<div class="relative z-20 px-margin max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-xl items-center w-full">
+<div class="lg:col-span-7 space-y-md">
+<div class="inline-flex items-center gap-sm bg-primary/10 border border-primary/20 px-sm py-1 rounded-full">
+<span class="flex h-2 w-2 rounded-full bg-primary status-pulse"></span>
+<span class="font-label-caps text-label-caps text-primary uppercase tracking-widest">עונה 4 באוויר</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-white max-w-2xl">
+<span class="text-primary">להתפתח</span> מעבר לרגיל
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+                חוו את פסגת משחקי התפקידים בסיכון גבוה. צרו בריתות, שלטו בעולם התחתון ובנו את המורשת שלכם במערכת האקולוגית המתוחכמת ביותר בלוס סנטוס.
+            </p>
+<div class="flex flex-wrap gap-md pt-base">
+<button class="bg-primary-container text-on-primary-container font-bold px-lg py-sm rounded-sm flex items-center gap-sm hover:scale-105 transition-transform">
+                    הצטרף לשרת <span class="material-symbols-outlined transform rotate-180">play_arrow</span>
+</button>
+<a class="border border-secondary text-secondary font-bold px-lg py-sm rounded-sm hover:bg-secondary/10 transition-colors" href="rules.html">
+                    צפה בחוקים
+                </a>
+</div>
+</div>
+<!-- Server Status Widget -->
+<div class="lg:col-span-5">
+<div class="glass-panel p-md rounded-xl border-r-4 border-r-primary flex flex-col gap-md">
+<div class="flex justify-between items-center border-b border-outline-variant/20 pb-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant">מצב שרת</span>
+<span class="text-primary font-bold text-sm">מחובר</span>
+</div>
+<div class="space-y-sm">
+<div class="flex justify-between items-end">
+<span class="font-body-md text-on-surface">שחקנים מחוברים</span>
+<span class="font-headline-md text-primary" dir="ltr">128 / 256</span>
+</div>
+<div class="h-1 bg-surface-container-highest w-full rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-l from-primary to-secondary w-1/2"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div class="bg-surface-container-low p-sm rounded-lg border border-outline-variant/10">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-xs text-right">זמן פעילות</p>
+<p class="font-headline-md text-white text-right" dir="ltr">99.8%</p>
+</div>
+<div class="bg-surface-container-low p-sm rounded-lg border border-outline-variant/10">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-xs text-right">דילוי (Latency)</p>
+<p class="font-headline-md text-secondary text-right" dir="ltr">24ms</p>
+</div>
+</div>
+<div class="flex items-center gap-sm pt-xs">
+<span class="material-symbols-outlined text-tertiary">groups</span>
+<span class="text-sm text-on-surface-variant">הצטרף ל-12,400+ חברים בדיסקורד</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Community Highlights & News -->
+<section class="py-xl px-margin max-w-[1440px] mx-auto">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-lg gap-md">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-white mb-xs">דיווחי שטח</h2>
+<p class="text-on-surface-variant font-body-md">המודיעין האחרון מרחובות Verge-il.</p>
+</div>
+<a class="text-primary font-bold font-label-caps text-label-caps flex items-center gap-xs hover:underline" href="forum.html">
+            צפה בכל החדשות <span class="material-symbols-outlined text-sm transform rotate-180">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="group cursor-pointer">
+<div class="relative h-64 mb-md rounded-lg overflow-hidden border border-outline-variant/20 neon-border-hover transition-all">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="מרכז בקרה טכנולוגי" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDts8ObGYw9ILhLkc13CRSC5vDobvedBRLchkO9dkg_l2m3ghhjay1NMqrGYJC1ZBjNgMU6w6dT2jZVm1pTiqTdBxjxl6grBLHcSdFDQr279TH2bNLMzxX1XGlsebfLnloMsok6lT3_vqFKzdOh_k_NLj_gfrsw1oRwU-MgKV5K_ScF0rLQHru-fdA1_oOrX0GQCfX9QzyYC7dQiiBOufdLQT5X5UpSTILIE0w8NcSlj5uL3u5AP1z8CDr_SBSmiyaRIju_dWE--i4"/>
+<div class="absolute top-sm right-sm">
+<span class="bg-surface-container-highest/90 backdrop-blur-md px-sm py-1 rounded-sm text-[10px] font-label-caps border border-primary/30 text-primary">עדכון</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-label-caps text-[11px] mb-xs">15 במרץ, 2024</p>
+<h3 class="font-headline-md text-white mb-sm group-hover:text-primary transition-colors">עליית הסינדיקט</h3>
+<p class="text-on-surface-variant font-body-md line-clamp-2">מכניקות סיעה חדשות כאן. גלו כיצד עדכון הסינדיקט מעצב מחדש את לוחמת השטחים ברחבי העיר.</p>
+</div>
+<div class="group cursor-pointer">
+<div class="relative h-64 mb-md rounded-lg overflow-hidden border border-outline-variant/20 neon-border-hover transition-all">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="רשת נתונים דיגיטלית" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCbBquKUHkcH91E1adthaewGPkiGGei4wpZosk_iNocy-r0X4s3XOFwC4CYHL-2fr-aawTrsSFTehVmITMPPNWBhp3ke_iBin5trvOugUX1m2YUNNDYXCrHSh3Tc96Vvxpc9trKYMjdBw5eMix58UmPfKnoP2mW2fWQ0bdM0pXbidxt93jwFpPolJ90f8fiu7qe5j4Ox9owsRDxIYZn9j8uPuYsp3GCvk2LEua-TwsnEEn1IwKI9EMKf7_jSHWeTrS94XY94wPIPI"/>
+<div class="absolute top-sm right-sm">
+<span class="bg-surface-container-highest/90 backdrop-blur-md px-sm py-1 rounded-sm text-[10px] font-label-caps border border-secondary/30 text-secondary">אירוע</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-label-caps text-[11px] mb-xs">12 במרץ, 2024</p>
+<h3 class="font-headline-md text-white mb-sm group-hover:text-secondary transition-colors">מבחני המעגל המחתרתי</h3>
+<p class="text-on-surface-variant font-body-md line-clamp-2">מרוצי רחוב בסיכון גבוה מגיעים לרמה חדשה עם השקת מסלולי לילה לא חוקיים ובריכות הימורים מותאמות.</p>
+</div>
+<div class="group cursor-pointer">
+<div class="relative h-64 mb-md rounded-lg overflow-hidden border border-outline-variant/20 neon-border-hover transition-all">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="חומרת מחשב מתקדמת" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCS9l7LYLlrPFzfvJWKwkCiMKjdJprY5bn-gl82rdxFYYKLYz5I2WW9pTboIBdiQ6ZRUctJ4HL1D9PugqL3n6zD3GqMX1hnqNHT4c6UKAwEDhfKdJrD31J4RxfG_jff6B_Y4_aI313p9O0nqsaTtgbuAK8dx_D5jPKWckNnY34TV7uqruyN0V819WjIVbNqOpNBJTcqovV4N-iRVKF6WG5AGlhQdC-A1VzsFfDttps_ZVerW_USPc8kbG2AhTeNPnhpUXGvpvd1sww"/>
+<div class="absolute top-sm right-sm">
+<span class="bg-surface-container-highest/90 backdrop-blur-md px-sm py-1 rounded-sm text-[10px] font-label-caps border border-tertiary/30 text-tertiary">קהילה</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-label-caps text-[11px] mb-xs">10 במרץ, 2024</p>
+<h3 class="font-headline-md text-white mb-sm group-hover:text-tertiary transition-colors">זרקור קהילתי: משטרה</h3>
+<p class="text-on-surface-variant font-body-md line-clamp-2">צלילה עמוקה לתוך נהלי מחלקת המשטרה המשופרים ומערכות משחק התפקידים החדשות של הבלשים.</p>
+</div>
+</div>
+</section>
+<!-- Call to Action Banner -->
+<section class="py-xl px-margin">
+<div class="max-w-[1440px] mx-auto bg-surface-container-high rounded-xl p-lg relative overflow-hidden group">
+<div class="absolute left-0 top-0 w-1/3 h-full opacity-10 group-hover:opacity-20 transition-opacity flex items-center justify-center">
+<img alt="Logo Background" class="w-2/3 h-2/3 object-contain -rotate-12 scale-150" src="../assets/logo.svg"/>
+</div>
+<div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-lg">
+<div class="max-w-2xl">
+<h2 class="font-headline-lg text-headline-lg text-white mb-sm">מוכנים להשאיר חותם?</h2>
+<p class="text-on-surface-variant font-body-lg">הצטרפו לקהילת FiveM הפעילה ביותר שבה לפעולות שלכם יש השלכות והסיפור שלכם קובע. נדרשת הגשת מועמדות לשחקני תפקידים רציניים בלבד.</p>
+</div>
+<div class="flex flex-col gap-sm w-full md:w-auto">
+<button class="bg-primary text-on-primary font-bold px-lg py-sm rounded-sm hover:shadow-[0_0_20px_rgba(183,109,255,0.5)] transition-all">
+                    הגש מועמדות להצטרפות
+                </button>
+<button class="flex items-center justify-center gap-sm bg-[#5865F2] text-white font-bold px-lg py-sm rounded-sm hover:brightness-110 transition-all">
+<span class="material-symbols-outlined">forum</span> דיסקורד
+                </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest w-full py-xl border-t border-outline-variant/20">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin gap-md max-w-[1440px] mx-auto">
+<div class="flex flex-col items-center md:items-start gap-xs">
+<div class="flex items-center gap-sm">
+<img alt="Verge-il Logo" class="h-8 w-8 grayscale brightness-50" src="../assets/logo.svg"/>
+<span class="font-headline-md text-headline-md text-primary">Verge-il</span>
+</div>
+<p class="text-on-surface-variant text-[11px] font-label-caps">© 2024 קהילת Verge-il FiveM. משחקי תפקידים בסיכון גבוה.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-md">
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-secondary-container transition-all hover:underline" href="#">דיסקורד</a>
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-secondary-container transition-all hover:underline" href="#">תמיכה</a>
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-secondary-container transition-all hover:underline" href="#">תנאי שימוש</a>
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-secondary-container transition-all hover:underline" href="#">מדיניות פרטיות</a>
+</div>
+<div class="flex gap-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">share</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">language</span>
+</a>
+</div>
+</div>
+</footer>
+<div class="fixed pointer-events-none w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 z-[-1] transition-opacity duration-300" id="cursor-glow"></div>
+<script src="../assets/cursor-glow.js"></script>
+</body>
+</html>

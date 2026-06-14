@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Verge-il | Community Forum</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/tailwind.config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Sora:wght@600;700;800&amp;family=JetBrains+Mono:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="assets/style.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary/30">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant/30 h-[72px]">
+<div class="flex justify-between items-center px-margin max-w-[1440px] mx-auto h-full">
+<div class="flex items-center gap-md">
+<img alt="Verge-il Logo" class="h-10 w-10 object-contain" src="assets/logo.svg"/>
+<span class="font-headline-md text-headline-md font-black tracking-tighter text-primary">Verge-il</span>
+</div>
+<div class="hidden md:flex gap-lg items-center">
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="index.html">Home</a>
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="rules.html">Rules</a>
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="store.html">Store</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1" href="forum.html">Forum</a>
+</div>
+<div class="flex items-center gap-md">
+<a class="hidden sm:inline-flex items-center text-on-surface-variant hover:text-primary transition-colors font-label-caps text-label-caps" href="he/forum.html">עברית</a>
+<div class="hidden md:flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">account_circle</span>
+</div>
+<button class="bg-primary text-on-primary font-label-caps px-md py-xs rounded-sm hover:brightness-110 active:scale-95 transition-all">
+                    Connect
+                </button>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="pt-[120px] pb-xl px-margin max-w-[1440px] mx-auto">
+<!-- Forum Header -->
+<header class="mb-lg flex flex-col md:flex-row justify-between items-end gap-md">
+<div>
+<h1 class="font-headline-xl text-headline-xl text-primary mb-xs">Community Forum</h1>
+<p class="text-on-surface-variant font-body-lg max-w-2xl">The official command center for Verge-il players. Engage in high-stakes strategy, faction politics, and community updates.</p>
+</div>
+<div class="flex gap-sm">
+<div class="bg-surface-container border border-outline-variant/30 flex items-center px-sm py-xs rounded-sm">
+<span class="material-symbols-outlined text-on-surface-variant mr-xs text-[20px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder:text-outline w-48" placeholder="Search threads..." type="text"/>
+</div>
+<button class="bg-secondary-container text-white font-label-caps px-md py-xs rounded-sm flex items-center gap-xs hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    New Thread
+                </button>
+</div>
+</header>
+<!-- Bento Grid Stats / Announcements -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-md mb-lg">
+<div class="md:col-span-2 glass-card p-md border-t-2 border-primary rounded-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-md opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[120px]">campaign</span>
+</div>
+<div class="relative z-10">
+<span class="text-primary font-label-caps mb-xs block">Featured Announcement</span>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-sm">Patch 4.2: Neon Underworld Expansion</h2>
+<p class="text-on-surface-variant mb-md max-w-lg">New heist mechanics, faction territories, and performance optimizations are now live in the city.</p>
+<button class="text-primary font-label-caps flex items-center gap-xs hover:underline">
+                        READ CHANGELOG <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="glass-card p-md flex flex-col justify-between border-t-2 border-secondary rounded-sm">
+<div>
+<span class="text-secondary font-label-caps mb-xs block">Community Vitality</span>
+<div class="flex items-end gap-sm mb-xs">
+<span class="font-headline-xl text-headline-xl leading-none">1,248</span>
+<span class="text-secondary mb-xs flex items-center font-label-caps text-[10px]">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +12%
+                        </span>
+</div>
+<p class="text-on-surface-variant text-xs font-label-caps">Active citizens in last 24h</p>
+</div>
+<div class="mt-md pt-md border-t border-outline-variant/20">
+<div class="flex justify-between text-xs font-label-caps text-outline mb-xs">
+<span>Server Capacity</span>
+<span>82%</span>
+</div>
+<div class="h-1 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-secondary w-[82%]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Forum Categories -->
+<div class="space-y-lg">
+<!-- Category Group: Official -->
+<div class="glass-card rounded-sm overflow-hidden">
+<div class="bg-surface-container-high px-md py-sm border-b border-outline-variant/30 flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">security</span>
+<h3 class="font-label-caps text-on-surface tracking-widest">OFFICIAL CHANNELS</h3>
+</div>
+<div class="divide-y divide-outline-variant/20">
+<!-- Announcements -->
+<div class="category-row p-md grid grid-cols-12 gap-md items-center transition-all">
+<div class="col-span-12 md:col-span-6 flex gap-md items-center">
+<div class="w-12 h-12 rounded-sm bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[28px]">campaign</span>
+</div>
+<div>
+<h4 class="font-headline-md text-[18px] text-on-surface hover:text-primary cursor-pointer">Announcements</h4>
+<p class="text-on-surface-variant text-sm">Official news, server updates, and patch notes directly from the dev team.</p>
+</div>
+</div>
+<div class="col-span-6 md:col-span-2 text-center md:border-x border-outline-variant/20">
+<span class="block font-headline-md text-[18px]">154</span>
+<span class="text-outline text-xs font-label-caps">THREADS</span>
+</div>
+<div class="col-span-6 md:col-span-4 flex items-center gap-sm pl-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant/30 overflow-hidden flex-shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-bkZsF7siSTrYRAQ8PKOFVgLZZWkst9-YSq0YLW4zC7W8S609KAMEefqVw4iIz2G2-jr0F-CQHFesdCZ6xoPxyfVe35dLs7XR45CqYNnwQR3oXQvYqk1SARfYoP0CGPxAbOgB6WH80fQtmME99edSI-Np0Gic2aPABPTxSH2mIukOCZvMPwmoyoeWhhqNFXG-rFNNqeQ8Q3kSvlfGNGgb1uPy_lhrsm2hA0rbrfsgK1SKatJo5Tvo1gTsjJffulw4r5TAFsg7JxU"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm text-on-surface truncate font-semibold hover:text-primary cursor-pointer">Server Status: Maintenance over...</p>
+<p class="text-[11px] text-outline font-label-caps uppercase">by <span class="text-primary">Admin_V</span> • 2h ago</p>
+</div>
+</div>
+</div>
+<!-- Rules & Procedures -->
+<div class="category-row p-md grid grid-cols-12 gap-md items-center transition-all">
+<div class="col-span-12 md:col-span-6 flex gap-md items-center">
+<div class="w-12 h-12 rounded-sm bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[28px]">gavel</span>
+</div>
+<div>
+<h4 class="font-headline-md text-[18px] text-on-surface hover:text-primary cursor-pointer">Rules &amp; Procedures</h4>
+<p class="text-on-surface-variant text-sm">Mandatory reading for all citizens. Failure to comply leads to exile.</p>
+</div>
+</div>
+<div class="col-span-6 md:col-span-2 text-center md:border-x border-outline-variant/20">
+<span class="block font-headline-md text-[18px]">24</span>
+<span class="text-outline text-xs font-label-caps">THREADS</span>
+</div>
+<div class="col-span-6 md:col-span-4 flex items-center gap-sm pl-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant/30 overflow-hidden flex-shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAKVYATMt63NYc-o9YqNWJ9-dK9f4BZDlOgsBPDJmOC4uWCkIlPA1tTwIZAr4jte2EYL3RtnN_erC6v0vuZbnrbv4IlvEBbV2WZmvolTpbhlP-9NONsxPk9gudB4wxFnLGIQYHa2w-q_SAwgbARgCom2M8arUaq8Irc0pp105-1CxvQhl0vOmkWlTLMrLfjEY8VsIvyW146U-Z4Q7Qe-8Itkga09B9zX2XP4ry-MRchtkCzFIFdncMjIj_FgXQWCUL6S_GIAPs5jk"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm text-on-surface truncate font-semibold hover:text-primary cursor-pointer">Updated Roleplay Etiquette...</p>
+<p class="text-[11px] text-outline font-label-caps uppercase">by <span class="text-secondary">Moderator_Z</span> • 1d ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Category Group: Community -->
+<div class="glass-card rounded-sm overflow-hidden">
+<div class="bg-surface-container-high px-md py-sm border-b border-outline-variant/30 flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary">groups</span>
+<h3 class="font-label-caps text-on-surface tracking-widest">COMMUNITY HUB</h3>
+</div>
+<div class="divide-y divide-outline-variant/20">
+<!-- General Discussion -->
+<div class="category-row p-md grid grid-cols-12 gap-md items-center transition-all">
+<div class="col-span-12 md:col-span-6 flex gap-md items-center">
+<div class="w-12 h-12 rounded-sm bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[28px]">forum</span>
+</div>
+<div>
+<h4 class="font-headline-md text-[18px] text-on-surface hover:text-secondary cursor-pointer">General Discussion</h4>
+<p class="text-on-surface-variant text-sm">Chat about anything city-related. High-stakes gossip starts here.</p>
+</div>
+</div>
+<div class="col-span-6 md:col-span-2 text-center md:border-x border-outline-variant/20">
+<span class="block font-headline-md text-[18px]">4,821</span>
+<span class="text-outline text-xs font-label-caps">THREADS</span>
+</div>
+<div class="col-span-6 md:col-span-4 flex items-center gap-sm pl-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant/30 overflow-hidden flex-shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNdrAnFg5ILX7wKRh95IRUIAKwAVqpeZF1_TJWkI_E3B8Wcjph-_8b-M0hG3WSthg9uIosAUZqr6lL5TRBuIcYr6n2DfTkKalVGqEIAqAFAWSOZYcRL01kN7GpTH09zB6_Ymy00llggClODGu8gwQwuwKzgCI2yGJv_eyP5otPz7oquFWy1a85StzOPS9Mnmv7u9boqvofjUDgp7guXTcWX1z1QKTJIiR1VHOupJEoIq1oz25E4wjsfy9a7Xb7NisMpEcos2KmdEk"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm text-on-surface truncate font-semibold hover:text-primary cursor-pointer">Best vehicle for street races?</p>
+<p class="text-[11px] text-outline font-label-caps uppercase">by <span class="text-on-surface">ApexPredator</span> • 15m ago</p>
+</div>
+</div>
+</div>
+<!-- Faction Recruitment -->
+<div class="category-row p-md grid grid-cols-12 gap-md items-center transition-all">
+<div class="col-span-12 md:col-span-6 flex gap-md items-center">
+<div class="w-12 h-12 rounded-sm bg-tertiary-container/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[28px]">group_add</span>
+</div>
+<div>
+<h4 class="font-headline-md text-[18px] text-on-surface hover:text-tertiary cursor-pointer">Faction Recruitment</h4>
+<p class="text-on-surface-variant text-sm">Find your crew. Form syndicates, gangs, or legal corporate entities.</p>
+</div>
+</div>
+<div class="col-span-6 md:col-span-2 text-center md:border-x border-outline-variant/20">
+<span class="block font-headline-md text-[18px]">892</span>
+<span class="text-outline text-xs font-label-caps">THREADS</span>
+</div>
+<div class="col-span-6 md:col-span-4 flex items-center gap-sm pl-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant/30 overflow-hidden flex-shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnnuEDFCG7iBsZ946ZjQbZo9Itxv058GpGhzUyJ0cL2SxDadfBmhD9vZOBpR3R4VZN_13nZt60ECnNwXcCXk4kYd0RXOF0MSrAGYrJ4-0yDsLVDIVqhbl1dK5k1vsdgD9nd3IjKArks0ruKv9F39O0hFF_AcC6jrcGiDh7RAv5O3s654WSTvsU31h9eWOs9UUKPVCcJdR7JyTmVaTYp38KEaDHx7jjZ9Cva0xqdgBZ3cnkH6NLlmW0rTGQM1mHsmxJ06I1zNmjIDo"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm text-on-surface truncate font-semibold hover:text-primary cursor-pointer">[Recruiting] V-Core Syndicate...</p>
+<p class="text-[11px] text-outline font-label-caps uppercase">by <span class="text-tertiary">Neon_Ghost</span> • 45m ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Category Group: Support -->
+<div class="glass-card rounded-sm overflow-hidden">
+<div class="bg-surface-container-high px-md py-sm border-b border-outline-variant/30 flex items-center gap-sm">
+<span class="material-symbols-outlined text-error">bug_report</span>
+<h3 class="font-label-caps text-on-surface tracking-widest">SUPPORT &amp; TECHNICAL</h3>
+</div>
+<div class="divide-y divide-outline-variant/20">
+<!-- Bug Reports -->
+<div class="category-row p-md grid grid-cols-12 gap-md items-center transition-all">
+<div class="col-span-12 md:col-span-6 flex gap-md items-center">
+<div class="w-12 h-12 rounded-sm bg-error/10 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[28px]">pest_control</span>
+</div>
+<div>
+<div class="flex items-center gap-xs">
+<h4 class="font-headline-md text-[18px] text-on-surface hover:text-error cursor-pointer">Bug Reports</h4>
+<span class="bg-error-container text-on-error-container text-[9px] font-label-caps px-xs py-[2px] rounded-full animate-pulse">LIVE FIXING</span>
+</div>
+<p class="text-on-surface-variant text-sm">Spotted a glitch? Report it here so our technicians can purge the code.</p>
+</div>
+</div>
+<div class="col-span-6 md:col-span-2 text-center md:border-x border-outline-variant/20">
+<span class="block font-headline-md text-[18px]">1,102</span>
+<span class="text-outline text-xs font-label-caps">THREADS</span>
+</div>
+<div class="col-span-6 md:col-span-4 flex items-center gap-sm pl-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant/30 overflow-hidden flex-shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDokVrcGRf5R5vDgJyhUsiePVTfU6SQF_jZM79eu8JjN2fYET75U5_nAOM-d7DR7HorNFnxgIKHXlVZ8mlP1zSgKD8tvCjMEKp6TKi-SWdkUA6WMUcF2rA5_wbfZf5ceb8USfX4DVOc-sJwi3kguTObs8xt0egZThIPVgHcCdeWH_1sMdiSxLbrML1AJ_4FHE_WGrKBVAVtPi_WkGiDFgPwrsgg3NMQAwQrNm_aOGG0ox5lrRkQ8lQeDZmhYsTUJe-IH9J9CTmfS08"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm text-on-surface truncate font-semibold hover:text-primary cursor-pointer">Visual glitch near Legion Square...</p>
+<p class="text-[11px] text-outline font-label-caps uppercase">by <span class="text-error">TheJanitor</span> • 1h ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-xl border-t border-outline-variant/20 bg-surface-container-lowest">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin gap-md max-w-[1440px] mx-auto">
+<div class="flex flex-col items-center md:items-start gap-xs">
+<span class="font-headline-md text-headline-md text-primary">Verge-il</span>
+<p class="text-on-surface-variant text-sm font-body-md opacity-60">© 2024 Verge-il FiveM Community. High-Stakes Roleplay.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-md">
+<a class="text-on-surface-variant font-label-caps hover:text-secondary-container hover:underline transition-all" href="#">Discord</a>
+<a class="text-on-surface-variant font-label-caps hover:text-secondary-container hover:underline transition-all" href="#">Support</a>
+<a class="text-on-surface-variant font-label-caps hover:text-secondary-container hover:underline transition-all" href="#">Terms of Service</a>
+<a class="text-on-surface-variant font-label-caps hover:text-secondary-container hover:underline transition-all" href="#">Privacy Policy</a>
+</div>
+</div>
+</footer>
+<script src="assets/forum.js"></script>
+</body>
+</html>

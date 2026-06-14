@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rules | Verge-il FiveM Community</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/tailwind.config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Sora:wght@600;700;800&amp;family=JetBrains+Mono:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="assets/style.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary/30">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant/30 h-[72px]">
+<div class="flex justify-between items-center px-margin max-w-[1440px] mx-auto h-full">
+<div class="flex items-center gap-md">
+<img alt="Verge-il Logo" class="h-10 w-10 object-contain" src="assets/logo.svg"/>
+<span class="font-headline-md text-headline-md font-black tracking-tighter text-primary">Verge-il</span>
+</div>
+<div class="hidden md:flex items-center gap-lg">
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="index.html">Home</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1" href="rules.html">Rules</a>
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="store.html">Store</a>
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="forum.html">Forum</a>
+</div>
+<div class="flex items-center gap-md">
+<a class="hidden sm:inline-flex items-center text-on-surface-variant hover:text-primary transition-colors font-label-caps text-label-caps" href="he/rules.html">עברית</a>
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="bg-surface-container border border-outline/20 rounded-lg pl-10 pr-4 py-2 text-body-md focus:outline-none focus:border-primary w-64 transition-all" placeholder="Search rules..." type="text"/>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined">account_circle</span></button>
+<button class="bg-primary text-on-primary font-label-caps px-md py-2 rounded-sm hover:opacity-90 active:scale-95 transition-all">Connect</button>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="pt-[120px] pb-xl px-margin max-w-[1200px] mx-auto min-h-screen">
+<!-- Header Section -->
+<header class="mb-lg">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<div class="flex items-center gap-xs text-primary mb-2">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span class="font-label-caps uppercase tracking-widest text-[10px]">Regulation Directive 04-B</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface">Community Rules</h1>
+<p class="text-on-surface-variant max-w-2xl mt-4 text-body-lg">
+                        Adherence to these guidelines ensures a high-quality roleplay experience for all operators within the Verge-il sector. Ignorance is not a valid defense.
+                    </p>
+</div>
+<div class="bg-surface-container-high p-4 rounded-xl border border-outline-variant/30 flex items-center gap-4">
+<div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">priority_high</span>
+</div>
+<div>
+<div class="text-on-surface font-bold">Last Updated</div>
+<div class="text-on-surface-variant font-label-caps">OCT 24, 2024</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Search Mobile / Quick Filter -->
+<div class="md:hidden mb-md">
+<input class="w-full bg-surface-container border border-outline/20 rounded-lg px-4 py-3 text-body-md focus:outline-none focus:border-primary" placeholder="Search directives..." type="text"/>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Side Navigation Links -->
+<aside class="lg:col-span-3">
+<div class="sticky top-[100px] flex flex-col gap-2">
+<button class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold text-left transition-all" onclick="scrollToSection('general')">
+<span class="material-symbols-outlined">public</span>
+                        General Conduct
+                    </button>
+<button class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-high text-on-surface-variant text-left transition-all" onclick="scrollToSection('roleplay')">
+<span class="material-symbols-outlined">theater_comedy</span>
+                        Roleplay Quality
+                    </button>
+<button class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-high text-on-surface-variant text-left transition-all" onclick="scrollToSection('combat')">
+<span class="material-symbols-outlined">military_tech</span>
+                        Combat &amp; Conflict
+                    </button>
+<button class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container-high text-on-surface-variant text-left transition-all" onclick="scrollToSection('enforcement')">
+<span class="material-symbols-outlined">security</span>
+                        Enforcement Policy
+                    </button>
+</div>
+</aside>
+<!-- Rules Content -->
+<div class="lg:col-span-9 space-y-lg">
+<!-- General Section -->
+<section class="scroll-mt-[100px]" id="general">
+<div class="flex items-center gap-sm mb-md">
+<h2 class="font-headline-lg text-headline-lg text-primary">01. General Conduct</h2>
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+</div>
+<div class="space-y-4">
+<div class="accordion-item glass-panel rounded-xl overflow-hidden border-l-4 border-l-primary/50 transition-all duration-300">
+<button class="w-full px-md py-4 flex items-center justify-between text-left" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-4">
+<span class="text-primary font-label-caps text-lg">1.1</span>
+<span class="font-bold text-on-surface">Community Respect</span>
+</div>
+<span class="material-symbols-outlined arrow-icon transition-transform">expand_more</span>
+</button>
+<div class="accordion-content">
+<div class="p-md pt-0 text-on-surface-variant leading-relaxed">
+                                    Harassment, hate speech, or excessive toxicity toward any community member is strictly prohibited. Verge-il is an inclusive high-stakes environment where rivalries remain in-character. Any Out-of-Character (OOC) toxicity will result in an immediate permanent ban.
+                                </div>
+</div>
+</div>
+<div class="accordion-item glass-panel rounded-xl overflow-hidden border-l-4 border-l-primary/50 transition-all duration-300">
+<button class="w-full px-md py-4 flex items-center justify-between text-left" onclick="toggleAccordion(this)">
+<div class="flex items-center gap-4">
+<span class="text-primary font-label-caps text-lg">1.2</span>
+<span class="font-bold text-on-surface">Cheating &amp; Exploiting</span>
+</div>
+<span class="material-symbols-outlined arrow-icon transition-transform">expand_more</span>
+</button>
+<div class="accordion-content">
+<div class="p-md pt-0 text-on-surface-variant leading-relaxed">
+                                    Using third-party software, macros, or exploiting game engine bugs for a competitive advantage is forbidden. This includes crosshairs not provided by the server, "powergaming" mechanical systems, and lag switching.
+                                </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Roleplay Section -->
+<section class="scroll-mt-[100px]" id="roleplay">
+<div class="flex items-center gap-sm mb-md">
+<h2 class="font-headline-lg text-headline-lg text-secondary">02. Roleplay Quality</h2>
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="bg-surface-container-low p-md rounded-xl border border-outline/10 rule-card transition-all">
+<div class="flex justify-between items-start mb-4">
+<span class="bg-secondary/10 text-secondary font-label-caps px-2 py-1 rounded text-[10px]">CRITICAL</span>
+<span class="material-symbols-outlined text-secondary">psychology</span>
+</div>
+<h3 class="font-bold text-lg mb-2">Powergaming (PG)</h3>
+<p class="text-on-surface-variant text-sm">Performing actions that are physically impossible or forcing roleplay outcomes on others without giving them a chance to react. Your character is not a superhero.</p>
+</div>
+<div class="bg-surface-container-low p-md rounded-xl border border-outline/10 rule-card transition-all">
+<div class="flex justify-between items-start mb-4">
+<span class="bg-secondary/10 text-secondary font-label-caps px-2 py-1 rounded text-[10px]">CRITICAL</span>
+<span class="material-symbols-outlined text-secondary">account_tree</span>
+</div>
+<h3 class="font-bold text-lg mb-2">Metagaming (MG)</h3>
+<p class="text-on-surface-variant text-sm">Using information your character would not know in-game (Stream info, Discord logs, OOC chat) to influence IC decisions. Keep it separate.</p>
+</div>
+<div class="bg-surface-container-low p-md rounded-xl border border-outline/10 rule-card transition-all">
+<div class="flex justify-between items-start mb-4">
+<span class="bg-secondary/10 text-secondary font-label-caps px-2 py-1 rounded text-[10px]">MANDATORY</span>
+<span class="material-symbols-outlined text-secondary">emergency</span>
+</div>
+<h3 class="font-bold text-lg mb-2">Value of Life (NVL)</h3>
+<p class="text-on-surface-variant text-sm">You must act as if your character's life is their most precious asset. Running into a group of 5 armed men with only a knife is NVL and reportable.</p>
+</div>
+<div class="bg-surface-container-low p-md rounded-xl border border-outline/10 rule-card transition-all">
+<div class="flex justify-between items-start mb-4">
+<span class="bg-secondary/10 text-secondary font-label-caps px-2 py-1 rounded text-[10px]">MANDATORY</span>
+<span class="material-symbols-outlined text-secondary">sensor_occupied</span>
+</div>
+<h3 class="font-bold text-lg mb-2">Character Integrity</h3>
+<p class="text-on-surface-variant text-sm">Stay in character at all times. If a rule break occurs, finish the scenario and report it later. Do not break immersion to complain.</p>
+</div>
+</div>
+</section>
+<!-- Combat Section -->
+<section class="scroll-mt-[100px]" id="combat">
+<div class="flex items-center gap-sm mb-md">
+<h2 class="font-headline-lg text-headline-lg text-tertiary-container">03. Combat &amp; Conflict</h2>
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+</div>
+<div class="glass-panel rounded-xl p-md border border-tertiary-container/20">
+<div class="flex flex-col gap-md">
+<div class="flex gap-md border-b border-outline-variant/20 pb-md">
+<div class="text-tertiary-container font-label-caps text-xl shrink-0">3.1</div>
+<div>
+<h4 class="font-bold text-on-surface mb-1">Random Deathmatch (RDM)</h4>
+<p class="text-on-surface-variant">Attacking or killing another player without a valid, high-quality roleplay reason and prior initiation. "I wanted your car" is not initiation.</p>
+</div>
+</div>
+<div class="flex gap-md border-b border-outline-variant/20 pb-md">
+<div class="text-tertiary-container font-label-caps text-xl shrink-0">3.2</div>
+<div>
+<h4 class="font-bold text-on-surface mb-1">Vehicle Deathmatch (VDM)</h4>
+<p class="text-on-surface-variant">Using a vehicle as a primary weapon to ram or kill players. Vehicles should only be used for transportation or tactical cover.</p>
+</div>
+</div>
+<div class="flex gap-md">
+<div class="text-tertiary-container font-label-caps text-xl shrink-0">3.3</div>
+<div>
+<h4 class="font-bold text-on-surface mb-1">Combat Logging</h4>
+<p class="text-on-surface-variant">Disconnecting from the server to avoid a combat situation, police arrest, or medical roleplay. Log checks are automatic.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Enforcement Section -->
+<section class="scroll-mt-[100px]" id="enforcement">
+<div class="flex items-center gap-sm mb-md">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">04. Enforcement Policy</h2>
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+</div>
+<div class="bg-surface-container-highest p-md rounded-sm border-l-4 border-primary">
+<div class="flex items-start gap-md">
+<span class="material-symbols-outlined text-primary text-[40px]">security</span>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-2">Staff Authority</h4>
+<p class="text-on-surface-variant mb-4">Verge-il administrators have final say in all disputes. We follow a "Three Strikes" policy for minor infractions, while major violations result in permanent de-authorization.</p>
+<div class="flex flex-wrap gap-sm">
+<button class="bg-surface p-3 border border-outline/20 rounded hover:border-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">report</span>
+<span class="font-label-caps text-[12px]">Submit Report</span>
+</button>
+<button class="bg-surface p-3 border border-outline/20 rounded hover:border-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">gavel</span>
+<span class="font-label-caps text-[12px]">Appeal Ban</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant/20 py-xl">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin max-w-[1440px] mx-auto gap-md">
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="font-headline-md text-headline-md text-primary">Verge-il</span>
+<p class="font-label-caps text-on-surface-variant text-[10px]">© 2024 Verge-il FiveM Community. High-Stakes Roleplay.</p>
+</div>
+<div class="flex gap-lg">
+<a class="text-on-surface-variant font-label-caps hover:text-secondary-container hover:underline transition-all" href="#">Discord</a>
+<a class="text-on-surface-variant font-label-caps hover:text-secondary-container hover:underline transition-all" href="#">Support</a>
+<a class="text-on-surface-variant font-label-caps hover:text-secondary-container hover:underline transition-all" href="#">Terms of Service</a>
+<a class="text-on-surface-variant font-label-caps hover:text-secondary-container hover:underline transition-all" href="#">Privacy Policy</a>
+</div>
+</div>
+</footer>
+<script src="assets/rules.js"></script>
+</body>
+</html>

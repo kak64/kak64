@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="he">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Verge-il | חנות יוקרה</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="../assets/tailwind.config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@700&amp;family=Assistant:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="../assets/style.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-surface font-he font-body-md selection:bg-primary/30 selection:text-primary overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="bg-surface/80 backdrop-blur-md fixed top-0 w-full z-50 border-b border-outline-variant/30">
+<div class="flex justify-between items-center px-margin max-w-[1440px] mx-auto h-[72px]">
+<div class="flex items-center gap-md">
+<img alt="Verge-il Logo" class="h-10 w-10 object-contain" src="../assets/logo.svg"/>
+<span class="font-headline-md text-headline-md font-black tracking-tighter text-primary">Verge-il</span>
+</div>
+<nav class="hidden md:flex items-center gap-lg">
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="index.html">בית</a>
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="rules.html">חוקים</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1" href="store.html">חנות</a>
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="forum.html">פורום</a>
+</nav>
+<div class="flex items-center gap-md">
+<a class="hidden sm:inline-flex items-center text-on-surface-variant hover:text-primary transition-colors font-label-caps text-label-caps" href="../store.html">EN</a>
+<button class="relative p-2 text-on-surface-variant hover:text-primary transition-colors" onclick="toggleCart()">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="absolute -top-1 -right-1 bg-primary text-on-primary-container text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center" id="cart-count">0</span>
+</button>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">account_circle</span>
+<button class="bg-primary text-on-primary font-label-caps text-label-caps px-md py-xs rounded hover:brightness-110 active:scale-95 transition-all">התחברות</button>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[120px] pb-xl px-margin max-w-[1440px] mx-auto">
+<!-- Hero Store Section -->
+<section class="mb-xl text-center space-y-md">
+<h1 class="font-headline-xl text-headline-xl text-on-surface">הנשקייה והנכסים</h1>
+<p class="text-on-surface-variant max-w-2xl mx-auto text-body-lg">תמכו בקהילה ושדרגו את חווית ה-Roleplay שלכם עם דרגות בלעדיות, רכבי ביצועים ושיפורים כלכליים.</p>
+<!-- Category Chips -->
+<div class="flex flex-wrap justify-center gap-sm pt-md">
+<button class="px-md py-xs rounded-full border border-primary bg-primary/10 text-primary font-label-caps text-label-caps">כל הפריטים</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-on-surface-variant hover:border-primary/50 transition-colors font-label-caps text-label-caps">דרגות VIP</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-on-surface-variant hover:border-primary/50 transition-colors font-label-caps text-label-caps">חבילות רכבים</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-on-surface-variant hover:border-primary/50 transition-colors font-label-caps text-label-caps">מטבע</button>
+<button class="px-md py-xs rounded-full border border-outline-variant text-on-surface-variant hover:border-primary/50 transition-colors font-label-caps text-label-caps">נכסים מותאמים</button>
+</div>
+</section>
+<!-- Bento Grid Products -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
+<!-- VIP Rank Card -->
+<div class="glass-card flex flex-col group overflow-hidden">
+<div class="h-48 overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="סמל כתר עתידני זוהר בסגול ניאון." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkeNoMAnEknlmBY3b16C0OAZ1D8X9AuftTdg2OMt12WwlDgWTVeZ0PyKjtky4kWEDm85pRoke8UkGFfOjRAJ7WQ3jhQOdYDs_TevzL_jIP0BI0Nhp0nDgwKS-yWwQqafnqeyoBxS58WWqViitWMIzPhQ9rKRuj6CSEbeb9t6P5xQvpd55BzAmzxEDAAllq7oRusCx07nNDIQ4MmsC1gIQCoE6T-UsIN6sDhyMrzQJNx5oYAH70RCCNhEckzcmuhJkCzrjHctB_3YQ"/>
+<div class="absolute top-xs right-xs bg-primary text-on-primary-container px-sm py-1 font-label-caps text-[10px] uppercase">הכי נמכר</div>
+</div>
+<div class="p-md flex flex-col flex-grow">
+<h3 class="font-headline-md text-on-surface mb-xs">דרגת VIP עילית</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 mb-md">קבלו עדיפות בתור, תפקידי דיסקורד מותאמים ופרסים חודשיים בלעדיים לשחקן המסור.</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-label-caps text-primary text-headline-md">$24.99<span class="text-xs text-on-surface-variant">/חודש</span></span>
+<button class="glow-button bg-primary-container text-on-primary-container p-2 rounded-lg flex items-center justify-center" onclick="addToCart('דרגת VIP עילית', 24.99)">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Vehicle Pack Card -->
+<div class="glass-card flex flex-col group overflow-hidden">
+<div class="h-48 overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="רכב-על שחור מט על רחוב עירוני מואר בניאון בלילה." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOjqY9lHF_rdoWAud3UK0LM-GhBVF4jLXH6rNBYuDesTbm0hheN0hTkjOpzIEqYqZaeYnFIRWOi4rkn283IV44sJYKZffLUSwB9iK0JiBhrN4HzDmQ-YyFOYWrxfiDsFt4ZiwDw28U_qXV1DBzMW4gf2lVaj4hdKO31LI555sEpbWJ2QrsZF86rAuPD_ADSuoQbe71nmchGlKXSeVPKAccAtyf4_SUsVUj2sEbjNx3WjagtpsY_8BZsKBJy_vOWEVPBdFVpTQgJiY"/>
+<div class="absolute top-xs right-xs bg-secondary-container text-on-secondary-container px-sm py-1 font-label-caps text-[10px] uppercase">חדש בחנות</div>
+</div>
+<div class="p-md flex flex-col flex-grow">
+<h3 class="font-headline-md text-on-surface mb-xs">חבילת רכבי-על</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 mb-md">חמישה רכבי ביצועים במהדורה מוגבלת הכוללים צלילי מנוע ועיצובים בלעדיים.</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-label-caps text-primary text-headline-md">$49.99</span>
+<button class="glow-button bg-primary-container text-on-primary-container p-2 rounded-lg flex items-center justify-center" onclick="addToCart('חבילת רכבי-על', 49.99)">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Currency Card -->
+<div class="glass-card flex flex-col group overflow-hidden">
+<div class="h-48 overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="ערימת אסימוני מטבע דיגיטליים עתידניים עם דפוסי מעגלים בניאון." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEDG-m4NnNo_X394ibXm95_cxW682fKX7i7mUsF2YjsssJEM_7oar-LPdG96K3kwt_0vZVqSOslCXz9J_bQzRMrOHhOdSI9lEN56UXfbvGLJzqXljctGtLwp6p-EXxC-8MgI7FVSYy184kpxjd8nVpHVYnwxor59wnCj6iliaO6nHxewCxjnIHOWlyqeS4bnUWK_sGenIwl3NU34aGiIFFAKjPJM2B2MXIHj5i7eVINZW1pkd_mjqwp-aUDwwSZiR1kJai7C5o93w"/>
+</div>
+<div class="p-md flex flex-col flex-grow">
+<h3 class="font-headline-md text-on-surface mb-xs">1 מיליון קרדיטים</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 mb-md">הזרקת הון מיידית כדי להתניע את אימפריית הפשע או המיזם הלגיטימי שלך.</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-label-caps text-primary text-headline-md">$15.00</span>
+<button class="glow-button bg-primary-container text-on-primary-container p-2 rounded-lg flex items-center justify-center" onclick="addToCart('1 מיליון קרדיטים', 15.00)">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Legend Pack Card -->
+<div class="glass-card flex flex-col group overflow-hidden">
+<div class="h-48 border-b-2 border-primary overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="קסדה טקטית עתידנית ומערכת שריון עם מגיני סגול זוהרים." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfKiLwqbR3kXSGl82DSJpgjgG9NeYlUqLJNL9nh9TQrkYix8ipFqReIpcvXQ92TYKzg7m1s44gF49kMG1DWyczzVoKFrAbEStJMrzMLwZUsE5pNuXOEfrbeXCwK3dgGaBe4v-dva_BsmG-8twOzDFepbmpiTy-91g2N6RRn9B386Bax-SNsbya8TP9P9dQDpT50C5k8qNHlOvACE9b0Ne3dmzamz3X_7YIt1Z_RWerR9_bQuU6sC9BXxlqDDe58gnyCA75m2HBiWk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
+<div class="absolute bottom-xs right-md text-primary font-bold text-xs uppercase tracking-widest">אגדי</div>
+</div>
+<div class="p-md flex flex-col flex-grow">
+<h3 class="font-headline-md text-on-surface mb-xs">חבילת מייסדים</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 mb-md">חבילת התמיכה האולטימטיבית: VIP קבוע, כל הרכבים הקיימים, ולוחית רישוי מותאמת אישית וייחודית.</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-label-caps text-primary text-headline-md">$199.99</span>
+<button class="glow-button bg-primary-container text-on-primary-container p-2 rounded-lg flex items-center justify-center" onclick="addToCart('חבילת מייסדים', 199.99)">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Starter Rank Card -->
+<div class="glass-card flex flex-col group overflow-hidden">
+<div class="h-48 overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="מקלדת מכנית ועכבר זוהרים בתאורת RGB סגולה עמוקה." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAD683PrKAzJwW4kbvs7ln7YhLY5U7rxTwdw9lNleyEsj7I-RqA6ZG0WeZHJG6vIUrWKmh6MrIDHlotiYzrBmkErV_tXZZEF2jOyWmSkVrlOyFvKYcqg9n87qbHThrqcX6R6TxwIlqg9C8n1vIXxf9TYsAhzh_pM3Ug8RYzim6VXal2P4-h8yad25STedkVHEkkYMiT5ms4HM7xG1CKW2fpFKYEAye6hvXg5XQ4uS1uODk7q_emLZz-BMMbo8cWp3J8IcJquvEmAFU"/>
+</div>
+<div class="p-md flex flex-col flex-grow">
+<h3 class="font-headline-md text-on-surface mb-xs">דרגת התחלה</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 mb-md">הטבות בסיסיות הכוללות קידומת צ'אט ייחודית ותעדוף בתור רמה 1.</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-label-caps text-primary text-headline-md">$9.99</span>
+<button class="glow-button bg-primary-container text-on-primary-container p-2 rounded-lg flex items-center justify-center" onclick="addToCart('דרגת התחלה', 9.99)">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Custom Plate Card -->
+<div class="glass-card flex flex-col group overflow-hidden">
+<div class="h-48 overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="ליבת שרת נתונים זוהרת עם חוטי אור כחולים וסגולים." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDY-hG5mE688sVqaV93E54EauEYKZsIfcKsnaEfc9iA8Nv4SDy4aOMw6C_4qpe0BT2tspqXqUHwXPKUuYD6bEM4XY1z7XE_9IxotoIFLQCFm-ULrPuTA-qIzny1vHG3nv6reiaxyMIudTzrV6baNU3iihYH-Scbqs1HlP9RkuXA19JhKlXXicGMJvW3EJo8IHVctPZyFxjmnSqjwDrXEWy6crfV3aW2Qv5f4k0ofvL7OHcf46xrqhxrpAFZv1L3SmU--FhFmY60OaY"/>
+</div>
+<div class="p-md flex flex-col flex-grow">
+<h3 class="font-headline-md text-on-surface mb-xs">לוחית מותאמת</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 mb-md">בלטו בשטח עם לוחית רישוי בטקסט וצבע מותאמים אישית עבור אחד מהרכבים הפרטיים שלכם.</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-label-caps text-primary text-headline-md">$5.00</span>
+<button class="glow-button bg-primary-container text-on-primary-container p-2 rounded-lg flex items-center justify-center" onclick="addToCart('לוחית מותאמת', 5.00)">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Cart Drawer Sidebar -->
+<div class="cart-drawer fixed top-0 left-0 w-full md:w-[400px] h-full bg-surface-container-high z-[60] border-r border-outline-variant shadow-2xl flex flex-col" id="cart-drawer">
+<div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface">
+<h2 class="font-headline-md text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">shopping_bag</span>
+            סל הקניות שלך
+        </h2>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors" onclick="toggleCart()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-grow overflow-y-auto p-md space-y-md" id="cart-items">
+<div class="flex flex-col items-center justify-center h-full text-center space-y-md py-xl" id="empty-cart">
+<span class="material-symbols-outlined text-6xl text-outline-variant">shopping_cart_off</span>
+<p class="text-on-surface-variant">סל הקניות שלך ריק כרגע. לך תביא איזה לוט!</p>
+</div>
+</div>
+<div class="p-md border-t border-outline-variant space-y-md bg-surface">
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant font-label-caps">סכום כולל</span>
+<span class="font-headline-md text-primary" id="cart-total">$0.00</span>
+</div>
+<button class="w-full py-md bg-primary text-on-primary font-bold tracking-widest uppercase hover:brightness-110 active:scale-95 transition-all glow-button rounded">
+            לתשלום עכשיו
+        </button>
+<p class="text-[10px] text-center text-on-surface-variant uppercase tracking-tighter">עסקאות בטוחות ומאובטחות דרך Tebex</p>
+</div>
+</div>
+<!-- Overlay -->
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] hidden transition-opacity duration-300" id="cart-overlay" onclick="toggleCart()"></div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant/20 w-full py-xl px-margin">
+<div class="flex flex-col md:flex-row-reverse justify-between items-center gap-md max-w-[1440px] mx-auto">
+<div class="flex flex-col items-center md:items-end gap-xs">
+<span class="font-headline-md text-headline-md text-primary">Verge-il</span>
+<p class="font-label-caps text-label-caps text-on-surface-variant">© 2024 קהילת Verge-il FiveM. משחק תפקידים בסיכון גבוה.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-md">
+<a class="text-on-surface-variant hover:text-secondary-container transition-all hover:underline font-label-caps text-label-caps" href="#">דיסקורד</a>
+<a class="text-on-surface-variant hover:text-secondary-container transition-all hover:underline font-label-caps text-label-caps" href="#">תמיכה</a>
+<a class="text-on-surface-variant hover:text-secondary-container transition-all hover:underline font-label-caps text-label-caps" href="#">תנאי שימוש</a>
+<a class="text-on-surface-variant hover:text-secondary-container transition-all hover:underline font-label-caps text-label-caps" href="#">מדיניות פרטיות</a>
+</div>
+</div>
+</footer>
+<script>
+window.STORE_I18N = {
+    empty: 'סל הקניות שלך ריק כרגע. לך תביא איזה לוט!',
+    added: (name) => `הוספת את ${name} לסל!`,
+    emptyIcon: 'shopping_cart_off'
+};
+</script>
+<script src="../assets/store.js"></script>
+</body>
+</html>

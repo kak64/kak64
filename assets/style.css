@@ -1,0 +1,132 @@
+/* Shared styles for the Verge-il static site. */
+
+body {
+    background-color: #0A0A0A;
+    color: #e5e2e1;
+    overflow-x: hidden;
+}
+
+/* Hebrew (RTL) pages opt into the Assistant font via .font-he on <body>. */
+.font-he {
+    font-family: 'Assistant', 'Inter', sans-serif;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Glass surfaces */
+.glass-panel {
+    background: rgba(30, 30, 30, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+    background: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(51, 51, 51, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    border-color: #ddb7ff;
+    box-shadow: 0 0 20px rgba(183, 109, 255, 0.15);
+    transform: translateY(-4px);
+}
+
+/* Glow / neon accents */
+.neon-glow-primary {
+    box-shadow: 0 0 20px rgba(183, 109, 255, 0.2);
+}
+
+.neon-border-hover:hover {
+    border-color: #ddb7ff;
+    box-shadow: 0 0 15px rgba(221, 183, 255, 0.3);
+}
+
+.glow-button {
+    transition: all 0.2s ease;
+}
+
+.glow-button:hover {
+    box-shadow: 0 0 15px rgba(221, 183, 255, 0.4);
+}
+
+.hero-gradient {
+    background: radial-gradient(circle at center, rgba(183, 109, 255, 0.15) 0%, rgba(10, 10, 10, 0) 70%);
+}
+
+/* Status pulse */
+.status-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
+}
+
+/* Rules page cards */
+.rule-card:hover {
+    border-color: #ddb7ff;
+    box-shadow: 0 0 20px rgba(221, 183, 255, 0.1);
+}
+
+/* Rules page accordion */
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.accordion-active .accordion-content {
+    max-height: 1000px;
+}
+
+.accordion-active .arrow-icon {
+    transform: rotate(180deg);
+}
+
+/* Forum category rows */
+.category-row:hover {
+    background: rgba(221, 183, 255, 0.03);
+    border-left: 2px solid #ddb7ff;
+}
+
+html[dir="rtl"] .category-row:hover {
+    border-left: none;
+    border-right: 2px solid #ddb7ff;
+}
+
+/* Store cart drawer */
+.cart-drawer {
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[dir="rtl"] .cart-drawer {
+    transform: translateX(-100%);
+}
+
+.cart-drawer.open {
+    transform: translateX(0) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #131313;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #353534;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ddb7ff;
+}

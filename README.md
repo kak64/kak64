@@ -1,64 +1,57 @@
-# KAK64 Hosting Panel
+# Verge-il — Static Site
 
-פאנל ניהול אחסון בעברית מעל VMware ESXi.
+A static, multi-page marketing/community site for **Verge-il**, a high-stakes
+FiveM roleplay community. Built from design mockups as plain HTML + Tailwind
+(Play CDN), with full English (LTR) and Hebrew (RTL) versions.
 
-A Hebrew (RTL) hosting company website with user registration/login, server
-ordering, billing, support tickets and an admin panel — built on top of a
-VMware ESXi host.
+## Pages
 
-## Features
+| Page  | English          | Hebrew (RTL)        |
+| ----- | ---------------- | ------------------- |
+| Home  | `index.html`     | `he/index.html`     |
+| Rules | `rules.html`     | `he/rules.html`     |
+| Store | `store.html`     | `he/store.html`     |
+| Forum | `forum.html`     | `he/forum.html`     |
 
-- **דף הבית, חבילות, אודות, צור קשר, תנאי שימוש** (public site)
-- **הרשמה והתחברות** with bcrypt password hashing
-- **אזור אישי (Dashboard)**: סקירה, השרתים שלי, הזמנת שרת, חשבוניות, פניות תמיכה, פרופיל
-- **לוח ניהול (Admin)**: משתמשים, חבילות, שרתים, פניות תמיכה, סטטיסטיקות
-- **שילוב ESXi**: יצירה / הפעלה / כיבוי / אתחול / מחיקה של מכונות וירטואליות
-- **RTL מלא** עם פונט עברי
-- בסיס נתונים SQLite (קובץ אחד, ללא תלות חיצונית)
+The top nav links the four pages together, and a language toggle in the nav
+switches between the English and Hebrew versions of the current page.
 
-## Quick start
+## Structure
+
+```
+index.html, rules.html, store.html, forum.html   # English (LTR) pages
+he/                                               # Hebrew (RTL) pages
+assets/
+  logo.svg              # shared SVG logo mark
+  style.css             # shared component styles (glass, neon, accordion, cart…)
+  tailwind.config.js    # shared Tailwind Play CDN theme (colors, spacing, fonts)
+  cursor-glow.js        # Home: cursor glow + button press micro-interactions
+  rules.js              # Rules: accordion + sidebar scroll navigation
+  store.js              # Store: cart drawer add/remove (i18n via window.STORE_I18N)
+  forum.js              # Forum: category row hover micro-interaction
+```
+
+Everything is shared across pages via `assets/` so there's a single source of
+truth for the theme, styles, and interactive behavior.
+
+## Run locally
+
+No build step — it's static files. Serve the folder with any static server:
 
 ```bash
-cp .env.example .env
-# Edit .env — set SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, and ESXi credentials
-npm install
-npm start
+python3 -m http.server 8000
+# then open http://localhost:8000
 ```
 
-Open http://localhost:3000
+Opening `index.html` directly via `file://` also works, though a local server
+is recommended so relative paths and the Tailwind CDN behave consistently.
 
-The first run creates the SQLite DB at `db/data.sqlite`, seeds default plans,
-and creates an admin user from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+## Notes
 
-## ESXi integration
-
-`src/esxi.js` provides power-on / power-off / reboot / destroy via the
-ESXi REST API. The `provisionVm` function is intentionally left as a TODO —
-provisioning a VM via the ESXi API requires choosing a strategy:
-clone-from-template, OVF deploy, or PowerCLI/govc. Implement it according to
-your environment.
-
-When ESXi credentials are not set in `.env`, the system falls back to a
-mocked mode so you can demo the full flow locally.
-
-## Project structure
-
-```
-server.js              # Express bootstrap
-src/db.js              # SQLite schema + seed
-src/esxi.js            # ESXi REST client
-src/middleware.js      # auth helpers
-src/routes/            # public, auth, dashboard, servers, billing, tickets, admin
-views/                 # Hebrew RTL EJS templates
-public/css/style.css   # styling
-```
-
-## Production checklist
-
-- [ ] Strong `SESSION_SECRET`
-- [ ] HTTPS reverse proxy (nginx / Caddy)
-- [ ] Real payment provider (Tranzila / iCount / Stripe)
-- [ ] Email sending for ticket replies / invoices
-- [ ] Implement `esxi.provisionVm` for real VM provisioning
-- [ ] Switch session store to Redis for multi-instance
-- [ ] Backups for `db/data.sqlite`
+- Styling uses the **Tailwind Play CDN** (`cdn.tailwindcss.com`) with a shared
+  theme config in `assets/tailwind.config.js`. For production you'd typically
+  compile Tailwind to a static stylesheet instead of using the CDN.
+- Fonts (Sora, Inter, JetBrains Mono, Assistant for Hebrew) and Material Symbols
+  load from Google Fonts.
+- Hero/card/avatar imagery is referenced from remote URLs; swap these for local
+  assets when finalizing.
