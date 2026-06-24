@@ -1,6 +1,5 @@
 node_modules/
+dist/
 .env
-db/*.sqlite
-db/*.sqlite-journal
 *.log
 .DS_Store
