@@ -1,7 +1,11 @@
 import type {
+  BudgetMap,
   CalendarEvent,
+  Expense,
   FamilyDocument,
+  FamilyTask,
   FinancePortfolio,
+  KidWallet,
   ShoppingItem,
   VaultPassword,
 } from '../types';
@@ -73,4 +77,61 @@ export const MOCK_PASSWORDS: VaultPassword[] = [
   { id: uid('pw'), label: 'חשבון Google משפחתי', username: 'family.cohen@gmail.com', password: 'Sup3r$ecret!', url: 'accounts.google.com' },
   { id: uid('pw'), label: 'נטפליקס', username: 'cohen.family', password: 'Netfl1x#2025', url: 'netflix.com' },
   { id: uid('pw'), label: 'חברת החשמל', username: '0501234567', password: 'Elect!c-7788' },
+];
+
+// ===== משימות =====
+export const MOCK_TASKS: FamilyTask[] = [
+  { id: uid('tk'), title: 'לחדש ביטוח רכב', category: 'סידורים', assignee: 'אבא', done: false, createdAt: new Date().toISOString() },
+  { id: uid('tk'), title: 'לקנות מתנה ליום הולדת', category: 'ילדים', assignee: 'אמא', done: false, dueAt: inDays(3), createdAt: new Date().toISOString() },
+  { id: uid('tk'), title: 'לתאם איש מקצוע לדוד שמש', category: 'בית', assignee: 'אבא', done: false, createdAt: new Date().toISOString() },
+  { id: uid('tk'), title: 'להחתים על טופס טיול', category: 'ילדים', assignee: 'אמא', done: true, createdAt: new Date().toISOString() },
+  { id: uid('tk'), title: 'לשלם ארנונה', category: 'סידורים', assignee: 'משותף', done: false, dueAt: inDays(5), createdAt: new Date().toISOString() },
+];
+
+// ===== הוצאות =====
+export const MOCK_EXPENSES: Expense[] = [
+  { id: uid('ex'), title: 'קניות שבועיות', amount: 640, category: 'סופר/מזון', payer: 'אמא', createdAt: inDays(-2) },
+  { id: uid('ex'), title: 'חשבון חשמל', amount: 380, category: 'חשבונות', payer: 'משותף', createdAt: inDays(-4) },
+  { id: uid('ex'), title: 'חוג כדורסל', amount: 250, category: 'חינוך/חוגים', payer: 'אבא', createdAt: inDays(-6) },
+  { id: uid('ex'), title: 'דלק', amount: 300, category: 'רכב/תחבורה', payer: 'אבא', createdAt: inDays(-7) },
+  { id: uid('ex'), title: 'מסעדה', amount: 220, category: 'פנאי', payer: 'משותף', createdAt: inDays(-9) },
+  { id: uid('ex'), title: 'סופר - חלב ולחם', amount: 95, category: 'סופר/מזון', payer: 'אבא', createdAt: inDays(-1) },
+];
+
+/** תקציב חודשי לכל קטגוריה (₪) */
+export const EXPENSE_BUDGET: BudgetMap = {
+  'סופר/מזון': 2500,
+  'חשבונות': 1800,
+  'חינוך/חוגים': 1200,
+  'פנאי': 1000,
+  'רכב/תחבורה': 1500,
+};
+
+// ===== ארנק ילדים =====
+export const MOCK_KIDS: KidWallet[] = [
+  {
+    id: uid('kid'),
+    name: 'יואב',
+    avatarColor: 'from-cyan-400 to-blue-500',
+    balance: 120,
+    monthlyAllowance: 50,
+    lastAllowanceAt: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+    transactions: [
+      { id: uid('ktx'), type: 'deposit', amount: 50, label: 'דמי כיס חודשיים', category: 'allowance', createdAt: inDays(-20) },
+      { id: uid('ktx'), type: 'spend', amount: 15, label: 'גלידה', category: 'food', createdAt: inDays(-5) },
+      { id: uid('ktx'), type: 'spend', amount: 30, label: 'משחק במחשב', category: 'games', createdAt: inDays(-2) },
+    ],
+  },
+  {
+    id: uid('kid'),
+    name: 'נועה',
+    avatarColor: 'from-pink-400 to-purple-500',
+    balance: 85,
+    monthlyAllowance: 50,
+    lastAllowanceAt: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+    transactions: [
+      { id: uid('ktx'), type: 'deposit', amount: 50, label: 'דמי כיס חודשיים', category: 'allowance', createdAt: inDays(-20) },
+      { id: uid('ktx'), type: 'spend', amount: 25, label: 'כרטיס לסרט', category: 'movie', createdAt: inDays(-8) },
+    ],
+  },
 ];

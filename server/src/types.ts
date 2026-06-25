@@ -77,3 +77,49 @@ export interface AiResponse {
   reply: string;
   action: AiAction;
 }
+
+export type FamilyMember = 'אבא' | 'אמא' | 'משותף' | 'נועה' | 'יואב';
+export type TaskCategory = 'סידורים' | 'ילדים' | 'בית';
+
+export interface FamilyTask {
+  id: string;
+  title: string;
+  category: TaskCategory;
+  assignee: FamilyMember;
+  done: boolean;
+  dueAt?: string;
+  createdAt: string;
+}
+
+export type ExpenseCategory = 'סופר/מזון' | 'חשבונות' | 'חינוך/חוגים' | 'פנאי' | 'רכב/תחבורה';
+export type Payer = 'אבא' | 'אמא' | 'משותף';
+
+export interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  category: ExpenseCategory;
+  payer: Payer;
+  createdAt: string;
+}
+
+export type KidTxCategory = 'food' | 'movie' | 'games' | 'toys' | 'allowance' | 'other';
+
+export interface KidTransaction {
+  id: string;
+  type: 'deposit' | 'spend';
+  amount: number;
+  label: string;
+  category: KidTxCategory;
+  createdAt: string;
+}
+
+export interface KidWallet {
+  id: string;
+  name: string;
+  avatarColor: string;
+  balance: number;
+  monthlyAllowance: number;
+  lastAllowanceAt: string;
+  transactions: KidTransaction[];
+}

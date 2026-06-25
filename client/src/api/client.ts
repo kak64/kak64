@@ -1,17 +1,23 @@
 import type {
   AiResponse,
   CalendarEvent,
+  Expense,
   FamilyDocument,
+  FamilyTask,
   FinancePortfolio,
+  KidWallet,
   ShoppingItem,
   VaultPassword,
 } from '../types';
 import {
   MOCK_DOCUMENTS,
   MOCK_EVENTS,
+  MOCK_EXPENSES,
   MOCK_FINANCE,
+  MOCK_KIDS,
   MOCK_PASSWORDS,
   MOCK_SHOPPING,
+  MOCK_TASKS,
 } from '../data/mock';
 import { localAiAnswer } from './localAi';
 
@@ -62,6 +68,39 @@ export const api = {
   // ----- כספת -----
   getDocuments: () => withFallback(() => request<FamilyDocument[]>('/api/documents'), MOCK_DOCUMENTS),
   getPasswords: () => withFallback(() => request<VaultPassword[]>('/api/passwords'), MOCK_PASSWORDS),
+
+  // ----- משימות -----
+  getTasks: () => withFallback(() => request<FamilyTask[]>('/api/tasks'), MOCK_TASKS),
+  addTask: (task: Omit<FamilyTask, 'id' | 'createdAt' | 'done'>) =>
+    withFallback(
+      () => request<FamilyTask>('/api/tasks', { method: 'POST', body: JSON.stringify(task) }),
+      null,
+    ),
+  toggleTask: (id: string) =>
+    withFallback(
+      () => request<FamilyTask>(`/api/tasks/${id}/toggle`, { method: 'PATCH' }),
+      null,
+    ),
+
+  // ----- הוצאות -----
+  getExpenses: () => withFallback(() => request<Expense[]>('/api/expenses'), MOCK_EXPENSES),
+  addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) =>
+    withFallback(
+      () => request<Expense>('/api/expenses', { method: 'POST', body: JSON.stringify(expense) }),
+      null,
+    ),
+
+  // ----- ארנק ילדים -----
+  getKids: () => withFallback(() => request<KidWallet[]>('/api/kids'), MOCK_KIDS),
+  addKidSpend: (kidId: string, label: string, amount: number, category: string) =>
+    withFallback(
+      () =>
+        request<KidWallet>(`/api/kids/${kidId}/spend`, {
+          method: 'POST',
+          body: JSON.stringify({ label, amount, category }),
+        }),
+      null,
+    ),
 
   // ----- עוזר AI -----
   askAi: (text: string) =>

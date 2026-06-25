@@ -1,6 +1,14 @@
 // ===== טיפוסים משותפים לאפליקציית +family =====
 
-export type TabKey = 'home' | 'shop' | 'calendar' | 'finance' | 'vault';
+export type TabKey =
+  | 'home'
+  | 'shop'
+  | 'calendar'
+  | 'finance'
+  | 'vault'
+  | 'tasks'
+  | 'kids'
+  | 'expenses';
 
 /** מחלקות סופר אפשריות */
 export type Department =
@@ -93,4 +101,83 @@ export type AiAction =
 export interface AiResponse {
   reply: string;
   action: AiAction;
+}
+
+// ===== בני משפחה =====
+export type FamilyMember = 'אבא' | 'אמא' | 'משותף' | 'נועה' | 'יואב';
+
+// ===== משימות (Todo) =====
+export type TaskCategory = 'סידורים' | 'ילדים' | 'בית';
+
+export interface FamilyTask {
+  id: string;
+  title: string;
+  category: TaskCategory;
+  assignee: FamilyMember;
+  done: boolean;
+  dueAt?: string; // ISO — אם קיים, נוצרת גם תזכורת ביומן
+  createdAt: string;
+}
+
+// ===== מעקב הוצאות הורים =====
+export type ExpenseCategory =
+  | 'סופר/מזון'
+  | 'חשבונות'
+  | 'חינוך/חוגים'
+  | 'פנאי'
+  | 'רכב/תחבורה';
+
+export type Payer = 'אבא' | 'אמא' | 'משותף';
+
+export interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  category: ExpenseCategory;
+  payer: Payer;
+  createdAt: string;
+}
+
+/** תקציב חודשי לכל קטגוריה (לחישוב פרוגרס-בר) */
+export type BudgetMap = Record<ExpenseCategory, number>;
+
+// ===== ארנק ילדים (Junior Wallet) =====
+export type KidTxCategory = 'food' | 'movie' | 'games' | 'toys' | 'allowance' | 'other';
+
+export interface KidTransaction {
+  id: string;
+  type: 'deposit' | 'spend';
+  amount: number;
+  label: string;
+  category: KidTxCategory;
+  createdAt: string;
+}
+
+export interface KidWallet {
+  id: string;
+  name: string;
+  avatarColor: string;
+  balance: number;
+  monthlyAllowance: number;
+  /** התאריך (ISO) של ההפקדה החודשית האחרונה — לבדיקת אוטומציה */
+  lastAllowanceAt: string;
+  transactions: KidTransaction[];
+}
+
+// ===== Quick Add — תוצאת ניתוח טקסט חופשי =====
+export type QuickAddKind = 'shopping' | 'task' | 'expense';
+
+export interface QuickAddParseResult {
+  /** שם המוצר לקנייה (אם זוהתה כוונת קנייה) */
+  shoppingName?: string;
+  /** כותרת המשימה */
+  taskTitle?: string;
+  /** מועד יעד למשימה/תזכורת */
+  dueAt?: string;
+  /** תווית עברית קריאה של המועד (למשל: "מחר בבוקר") */
+  dueLabel?: string;
+  /** סכום ההוצאה */
+  amount?: number;
+  /** כותרת ההוצאה */
+  expenseTitle?: string;
 }

@@ -1,4 +1,4 @@
-import { Calendar, Wallet, ShoppingCart, ShieldAlert, Lock } from 'lucide-react';
+import { Calendar, Wallet, ShoppingCart, ShieldAlert, Lock, ListTodo, Coins, TrendingDown } from 'lucide-react';
 import FeatureCard from '../components/FeatureCard';
 import type { FinancePortfolio, TabKey } from '../types';
 
@@ -45,6 +45,24 @@ export default function HomeScreen({ finance, onNavigate }: Props) {
           title="רשימת קניות חכמה"
           description="מוצרים מסודרים אוטומטית לפי מחלקה"
           onClick={() => onNavigate('shop')}
+        />
+        <FeatureCard
+          icon={ListTodo}
+          title="משימות משפחתיות"
+          description="סידורים, ילדים ובית — לפי בן משפחה"
+          onClick={() => onNavigate('tasks')}
+        />
+        <FeatureCard
+          icon={TrendingDown}
+          title="מעקב הוצאות"
+          description="תקציב חודשי לפי קטגוריות ובני משפחה"
+          onClick={() => onNavigate('expenses')}
+        />
+        <FeatureCard
+          icon={Coins}
+          title="ארנק הילדים"
+          description="דמי כיס, הפקדות והוצאות לכל ילד"
+          onClick={() => onNavigate('kids')}
         />
         <FeatureCard
           icon={ShieldAlert}

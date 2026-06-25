@@ -4,16 +4,28 @@ import { categorize } from './lib/categorize.js';
 import {
   seedDocuments,
   seedEvents,
+  seedExpenses,
   seedFinance,
+  seedKids,
   seedPasswords,
   seedShopping,
+  seedTasks,
   uid,
 } from './data/seed.js';
 import type {
   CalendarEvent,
+  Expense,
+  ExpenseCategory,
   FamilyDocument,
+  FamilyMember,
+  FamilyTask,
   FinancePortfolio,
+  KidTransaction,
+  KidTxCategory,
+  KidWallet,
+  Payer,
   ShoppingItem,
+  TaskCategory,
   VaultPassword,
 } from './types.js';
 
@@ -24,6 +36,9 @@ const mem = {
   finance: seedFinance(),
   documents: seedDocuments(),
   passwords: seedPasswords(),
+  tasks: seedTasks(),
+  expenses: seedExpenses(),
+  kids: seedKids(),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,4 +84,67 @@ export const store = {
   getFinance: (): FinancePortfolio => mem.finance,
   getDocuments: (): FamilyDocument[] => mem.documents,
   getPasswords: (): VaultPassword[] => mem.passwords,
+
+  // ----- משימות (in-memory) -----
+  getTasks: (): FamilyTask[] => mem.tasks,
+  addTask: (input: {
+    title: string;
+    category: TaskCategory;
+    assignee: FamilyMember;
+    dueAt?: string;
+  }): FamilyTask => {
+    const task: FamilyTask = {
+      id: uid('tk'),
+      title: input.title,
+      category: input.category,
+      assignee: input.assignee,
+      done: false,
+      dueAt: input.dueAt,
+      createdAt: new Date().toISOString(),
+    };
+    mem.tasks.unshift(task);
+    return task;
+  },
+  toggleTask: (id: string): FamilyTask | null => {
+    const task = mem.tasks.find((t) => t.id === id);
+    if (!task) return null;
+    task.done = !task.done;
+    return task;
+  },
+
+  // ----- הוצאות (in-memory) -----
+  getExpenses: (): Expense[] => mem.expenses,
+  addExpense: (input: {
+    title: string;
+    amount: number;
+    category: ExpenseCategory;
+    payer: Payer;
+  }): Expense => {
+    const expense: Expense = { id: uid('ex'), createdAt: new Date().toISOString(), ...input };
+    mem.expenses.unshift(expense);
+    return expense;
+  },
+
+  // ----- ארנק ילדים (in-memory) -----
+  getKids: (): KidWallet[] => mem.kids,
+  kidSpend: (
+    kidId: string,
+    label: string,
+    amount: number,
+    category: KidTxCategory,
+  ): KidWallet | null => {
+    const kid = mem.kids.find((k) => k.id === kidId);
+    if (!kid) return null;
+    const tx: KidTransaction = {
+      id: uid('ktx'),
+      type: 'spend',
+      amount,
+      label,
+      category,
+      createdAt: new Date().toISOString(),
+    };
+    kid.balance = Math.max(0, kid.balance - amount);
+    kid.transactions.push(tx);
+    return kid;
+  },
 };
