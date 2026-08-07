@@ -3,6 +3,10 @@
 > 🏗️ **BuildCheck AI** — an interactive field-inspection assistant for
 > plumbing completions (בקרת קומפלטים) lives in
 > [`buildcheck-ai/`](buildcheck-ai/README.md).
+>
+> 👷 **BuildCheck Portal** — multi-tenant work-order management (פאנל מנהל
+> אפליקציה / מנהל חברה / עובד, משימות לפי מחוז·אזור·תפקיד, דוחות עם חובת
+> צילום) lives in [`buildcheck-portal/`](buildcheck-portal/README.md).
 
 # KAK64 Hosting Panel
 
