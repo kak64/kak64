@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const CORE_ORDER = ['util.js', 'directory.js', 'logo.js', 'auth.js', 'tasks.js', 'reports.js', 'store.js', 'knowledge.js', 'planstudio.js', 'analytics.js'];
+const CORE_ORDER = ['util.js', 'directory.js', 'logo.js', 'auth.js', 'tasks.js', 'reports.js', 'store.js', 'knowledge.js', 'planstudio.js', 'analytics.js', 'docparse.js', 'docreview.js'];
 
 function strip(src) {
   return src

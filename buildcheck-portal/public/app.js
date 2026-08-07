@@ -20,6 +20,8 @@ import {
 import { createDb, seedDemo, serializeDb, deserializeDb } from '/core/store.js';
 import { askAssistant, assistantIntro } from '/core/knowledge.js';
 import { analyzePixels, buildScanReport, guessProjectName, buildProgram, dispatchProgram } from '/core/planstudio.js';
+import { extractDocxText, extractPdfText } from '/core/docparse.js';
+import { reviewDocument } from '/core/docreview.js';
 import { reportTrend, defectsByCategory, collectDefects, riskScore } from '/core/analytics.js';
 import { buildDefectsCsv, buildFinesCsv, buildReportHtml, buildCertificateHtml } from '/core/reports.js';
 
@@ -1692,18 +1694,39 @@ function renderManagerStudio(content) {
 
 function renderStudioUpload(content) {
   const fileInput = el('input', {
-    type: 'file', accept: 'image/*', style: 'display:none',
+    type: 'file', accept: 'image/*,.pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document', style: 'display:none',
     onchange: (e) => { if (e.target.files[0]) startAnalysis(e.target.files[0]); },
   });
   content.appendChild(el('div', { class: 'card studio-drop' },
     el('div', { class: 'studio-drop-inner' },
       el('div', { class: 'studio-icon', html: '📐' }),
-      el('h3', { text: 'העלה תוכנית לניתוח' }),
-      el('p', { class: 'muted-note', text: 'גרמושקה, תוכנית קומה, חתך או סקיצת 3D — קובץ תמונה (JPG/PNG).' }),
+      el('h3', { text: 'העלה תוכנית או מפרט לניתוח' }),
+      el('p', { class: 'muted-note', text: 'גרמושקה, תוכנית קומה, חתך או סקיצת 3D (JPG/PNG) — או מסמך PDF / Word (DOCX). ה-AI סורק את התוכן ומפיק תוכנית ביקורת.' }),
+      el('div', { class: 'filetype-row' },
+        el('span', { class: 'chip cat', text: '🖼️ תמונה' }),
+        el('span', { class: 'chip cat', text: '📄 PDF' }),
+        el('span', { class: 'chip cat', text: '📝 Word' })),
       fileInput,
-      el('button', { class: 'btn', text: '📎 בחר קובץ תוכנית', onclick: () => fileInput.click() }),
+      el('button', { class: 'btn', text: '📎 בחר קובץ', onclick: () => fileInput.click() }),
       el('button', { class: 'btn secondary small', text: 'דלג — הזן פרטי פרויקט ידנית', onclick: () => { ui.studio = blankProfile(); ui.studio.step = 'profile'; render(); } }))));
 }
+
+function fileKind(file) {
+  const name = (file.name || '').toLowerCase();
+  if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
+  if (name.endsWith('.docx') || file.type.includes('wordprocessingml')) return 'docx';
+  if (file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp)$/.test(name)) return 'image';
+  return 'unknown';
+}
+
+// Browser inflaters for docparse (raw-deflate for ZIP, zlib for PDF Flate).
+async function streamInflate(bytes, format) {
+  const ds = new DecompressionStream(format);
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+const inflateRaw = (b) => streamInflate(b, 'deflate-raw');
+const inflateZlib = (b) => streamInflate(b, 'deflate');
 
 function blankProfile() {
   return {
@@ -1719,24 +1742,47 @@ function blankProfile() {
 }
 
 async function startAnalysis(file) {
-  ui.studio = { step: 'analyzing', filename: file.name };
+  const kind = fileKind(file);
+  ui.studio = { step: 'analyzing', filename: file.name, kind };
   render();
   try {
-    const preview = await compressImage(file, 1000, 0.75);
-    const analysis = await analyzeImageFile(preview);
-    const profile = blankProfile();
-    profile.step = 'profile';
-    profile.analysis = analysis;
-    profile.scan = buildScanReport(analysis);
-    profile.verified = false;
-    profile.preview = preview;
-    profile.projectName = guessProjectName(file.name);
-    // Denser sheets imply more floors — a gentle nudge, fully editable.
-    profile.floors = analysis.complexity >= 4 ? 12 : analysis.complexity >= 3 ? 8 : 5;
-    ui.studio = profile;
+    if (kind === 'image') {
+      const preview = await compressImage(file, 1000, 0.75);
+      const analysis = await analyzeImageFile(preview);
+      const profile = blankProfile();
+      profile.step = 'profile';
+      profile.analysis = analysis;
+      profile.scan = buildScanReport(analysis);
+      profile.verified = false;
+      profile.preview = preview;
+      profile.projectName = guessProjectName(file.name);
+      profile.floors = analysis.complexity >= 4 ? 12 : analysis.complexity >= 3 ? 8 : 5;
+      ui.studio = profile;
+    } else if (kind === 'pdf' || kind === 'docx') {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const text = kind === 'docx'
+        ? await extractDocxText(bytes, { inflateRaw })
+        : await extractPdfText(bytes, { inflate: inflateZlib });
+      const review = reviewDocument({ text, kind, filename: file.name });
+      const profile = blankProfile();
+      profile.step = 'profile';
+      profile.docReview = review;
+      profile.verified = false;
+      profile.projectName = review.profile.projectName;
+      profile.floors = review.profile.floors;
+      profile.apartmentsPerFloor = review.profile.apartmentsPerFloor;
+      profile.hasElevator = review.profile.hasElevator;
+      profile.hasMamad = review.profile.hasMamad;
+      profile.hasRoof = review.profile.hasRoof;
+      profile.categoryIds = review.profile.categoryIds;
+      ui.studio = profile;
+    } else {
+      toast('סוג קובץ לא נתמך — העלה תמונה, PDF או Word', true);
+      ui.studio = null;
+    }
     render();
   } catch (e) {
-    toast('שגיאה בניתוח התמונה: ' + e.message, true);
+    toast('שגיאה בניתוח הקובץ: ' + e.message, true);
     ui.studio = null;
     render();
   }
@@ -1764,16 +1810,74 @@ function analyzeImageFile(dataUrl) {
 }
 
 function renderStudioAnalyzing(content) {
+  const k = ui.studio?.kind;
+  const detail = k === 'pdf' ? 'חילוץ טקסט מה-PDF וזיהוי ישויות' : k === 'docx' ? 'קריאת מסמך Word וזיהוי ישויות' : 'זיהוי סוג השרטוט, צפיפות וקווי מבנה';
   content.appendChild(el('div', { class: 'card studio-analyzing' },
     el('div', { class: 'spinner' }),
-    el('h3', { text: 'מנתח את התוכנית…' }),
-    el('p', { class: 'muted-note', text: 'זיהוי סוג השרטוט, צפיפות וקווי מבנה' })));
+    el('h3', { text: 'מנתח את הקובץ…' }),
+    el('p', { class: 'muted-note', text: detail })));
+}
+
+// Thorough AI review of an extracted PDF/Word document.
+function docReviewCard(review) {
+  const confColor = review.confidence >= 70 ? 'var(--ok)' : review.confidence >= 50 ? 'var(--warn)' : 'var(--err)';
+  const f = review.fields;
+  const card = el('div', { class: 'card' },
+    el('div', { class: 'btn-row' },
+      el('span', { class: 'chip ' + (review.readable ? 'approved' : 'rejected'), text: review.kindLabel }),
+      el('span', { class: 'chip cat', text: `ודאות ${review.confidence}%` }),
+      el('span', { class: 'chip cat', text: `קריאוּת ${review.readability}%` })),
+    el('div', { class: 'confidence-meter' }, el('span', { class: 'cfill', style: `width:${review.confidence}%;background:${confColor}` })));
+
+  // Extracted structured fields.
+  const chips = [];
+  if (f.building) chips.push(`🏢 מבנה ${f.building}`);
+  if (f.maxFloor) chips.push(`🏗️ עד קומה ${f.maxFloor}`);
+  if (f.maxApartment) chips.push(`🚪 עד דירה ${f.maxApartment}`);
+  for (const r of f.rooms) chips.push(`🚻 ${r.name}×${r.count}`);
+  for (const std of f.standards) chips.push(`📏 ${std}`);
+  if (chips.length) {
+    card.appendChild(el('h3', { style: 'margin:0.9rem 0 0.4rem', text: 'נתונים שחולצו מהמסמך' }));
+    card.appendChild(el('div', { class: 'workers-preview' }, chips.map((c) => el('span', { class: 'chip cat', text: c }))));
+  }
+  if (f.dimensions.length) {
+    card.appendChild(el('p', { class: 'muted-note', style: 'margin-top:0.5rem', text: `מידות שזוהו (${f.dimensions.length}): ${f.dimensions.slice(0, 10).join(' · ')}${f.dimensions.length > 10 ? ' …' : ''}` }));
+  }
+
+  card.appendChild(el('h3', { style: 'margin:0.9rem 0 0.5rem', text: 'ממצאי הסקירה' }));
+  const findings = el('div', { class: 'scan-findings' });
+  for (const fi of review.findings) {
+    findings.appendChild(el('div', { class: 'scan-find' }, el('span', { class: 'ic', text: fi.ok ? '✅' : '⚠️' }), el('span', { text: fi.label })));
+  }
+  card.appendChild(findings);
+  for (const w of review.warnings) {
+    card.appendChild(el('div', { class: 'scan-warn', style: 'margin-top:0.5rem' }, el('span', { text: '⚠️' }), el('span', { text: w })));
+  }
+  return card;
+}
+
+// Mandatory human-verification gate — a mis-read of a plan/spec risks fines,
+// so a program can never be dispatched until the manager confirms the review.
+function verifyGate(s, mustVerify) {
+  const list = mustVerify ?? s.docReview?.mustVerify ?? [];
+  return el('div', { class: 'scan-verify', style: 'margin-top:0.7rem' },
+    el('b', { text: '⚠️ חובה לאמת ידנית לפני שיגור:' }),
+    el('ul', {}, list.map((v) => el('li', { text: v }))),
+    el('label', { class: 'checkbox-field', style: 'padding-top:0.5rem' },
+      (() => { const cb = el('input', { type: 'checkbox', onchange: (e) => { s.verified = e.target.checked; render(); } }); cb.checked = s.verified; return cb; })(),
+      el('span', { text: 'אני מאשר שבדקתי את הקובץ ידנית והפרטים נכונים — הסריקה היא כלי עזר בלבד ואינה תחליף לבדיקת אדם.' })));
 }
 
 function renderStudioProfile(content) {
   const s = ui.studio;
   const a = s.analysis;
   const scan = s.scan;
+
+  if (s.docReview) {
+    const card = docReviewCard(s.docReview);
+    card.appendChild(verifyGate(s, s.docReview.mustVerify));
+    content.appendChild(card);
+  }
 
   if (a && scan) {
     const confColor = scan.confidence >= 70 ? 'var(--ok)' : scan.confidence >= 50 ? 'var(--warn)' : 'var(--err)';
@@ -1805,14 +1909,7 @@ function renderStudioProfile(content) {
       analysisCard.appendChild(el('div', { class: 'scan-warn', style: 'margin-top:0.5rem' }, el('span', { text: '⚠️' }), el('span', { text: w })));
     }
 
-    // Mandatory human-verification gate — because a mis-scan risks fines.
-    const verifyBox = el('div', { class: 'scan-verify', style: 'margin-top:0.7rem' },
-      el('b', { text: '⚠️ חובה לאמת ידנית לפני שיגור:' }),
-      el('ul', {}, scan.mustVerify.map((v) => el('li', { text: v }))),
-      el('label', { class: 'checkbox-field', style: 'padding-top:0.5rem' },
-        (() => { const cb = el('input', { type: 'checkbox', onchange: (e) => { s.verified = e.target.checked; render(); } }); cb.checked = s.verified; return cb; })(),
-        el('span', { text: 'אני מאשר שבדקתי את התוכנית ידנית והפרטים נכונים — הסריקה היא כלי עזר בלבד.' })));
-    analysisCard.appendChild(verifyBox);
+    analysisCard.appendChild(verifyGate(s, scan.mustVerify));
     content.appendChild(analysisCard);
   }
 
@@ -1844,7 +1941,7 @@ function renderStudioProfile(content) {
       })));
   content.appendChild(catCard);
 
-  const needsVerify = Boolean(s.scan) && !s.verified;
+  const needsVerify = Boolean(s.scan || s.docReview) && !s.verified;
   content.appendChild(el('div', { class: 'btn-row' },
     el('button', { class: 'btn', text: '⚙️ צור תוכנית ביקורת', disabled: s.categoryIds.length === 0 || needsVerify, onclick: generateProgram }),
     el('button', { class: 'btn secondary', text: 'התחל מחדש', onclick: () => { ui.studio = null; render(); } })));
@@ -1886,7 +1983,8 @@ function generateProgram() {
 function renderStudioProgram(content) {
   const s = ui.studio;
   content.appendChild(el('div', { class: 'btn-row' },
-    el('button', { class: 'btn secondary small', text: '→ חזרה לפרופיל', onclick: () => { s.step = 'profile'; render(); } })));
+    el('button', { class: 'btn secondary small', text: '→ חזרה לפרופיל', onclick: () => { s.step = 'profile'; render(); } }),
+    el('button', { class: 'btn secondary small', text: '↺ העלה קובץ אחר', onclick: () => { ui.studio = null; render(); } })));
   content.appendChild(el('h2', { class: 'page-title', text: `תוכנית ביקורת — ${s.projectName}` }));
 
   // Preview which proposals have a matching worker and which will be skipped.

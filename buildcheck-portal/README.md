@@ -83,14 +83,25 @@ answers can turn into a one-click task dispatch. The engine is a pluggable
 provider — a server deployment can route the same `askAssistant()` call to
 the Claude API for open-ended answers.
 
-**סטודיו תוכניות (plan studio)** — the manager uploads a גרמושקה sheet or a
-3D sketch. The studio runs a **real, local pixel analysis** (drawing vs. photo
-detection via a horizontal/vertical line-orientation profile, plus a density
-score), proposes a project profile (floors, apartments, elevator, ממ"ד,
-roof), and **generates a complete inspection program**: staged, role-targeted
-tasks across floor groups and every chosen category — dispatched in one click,
-with proposals that lack a matching worker surfaced (never silently dropped)
-rather than skipped in silence.
+**סטודיו תוכניות (plan studio)** — the manager uploads a plan or spec as an
+**image** (גרמושקה / floor plan / 3D sketch), a **PDF**, or a **Word (.docx)**
+file. Two review engines run **entirely client-side, no libraries**:
+- **Images** → a real pixel analysis (drawing-vs-photo via a
+  horizontal/vertical line-orientation profile, density, zone and title-block
+  detection) with a confidence score.
+- **PDF / Word** → text is extracted in the browser (.docx unzipped via the
+  native `DecompressionStream`; text-layer PDFs decompressed and read) and run
+  through a **thorough construction review** that pulls out building, floors,
+  apartments, rooms, dimensions, Israeli standards (ת"י), dates and
+  disciplines — prefilling the project profile from what it read.
+
+Either way the studio then **generates a complete inspection program** (staged,
+role-targeted tasks across floor groups and every chosen category, dispatched
+in one click, unmatched proposals surfaced rather than dropped). Because a
+mis-read can expose the company to fines, every review ends in a **mandatory
+human-verification gate** and states honestly that it is an assistant, not a
+substitute for a person — scanned or CID-encoded PDFs with no text layer are
+reported as unreadable rather than guessed.
 
 ## Architecture
 
@@ -105,7 +116,10 @@ src/core/
   tasks.js      ── targeting, dispatch, drafts, report validation, approval
   knowledge.js  ── smart assistant: data intents + construction knowledge base
   planstudio.js ── image pixel analysis + inspection-program generation
-  analytics.js  ── dashboard aggregations (trend, defect rates, export)
+  docparse.js   ── client-side .docx/PDF text extraction (injected inflaters)
+  docreview.js  ── thorough construction-entity review of extracted text
+  reports.js    ── CSV, printable report + handover certificate builders
+  analytics.js  ── dashboard aggregations (trend, defect rates, risk, export)
   store.js      ── db shape, (de)serialization, demo seed
 server.js       ── zero-dep static server (core served as-is to the browser)
 tools/build-demo.mjs ── bundles everything into one self-contained HTML file
