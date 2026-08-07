@@ -88,10 +88,16 @@ test('a manager cannot deactivate workers of another company', () => {
   assert.throws(() => setUserActive(db, otherManager, worker.id, false), AuthError);
 });
 
-test('logo regeneration is admin-only and changes the seed', () => {
+test('logo regeneration: own company manager + admin allowed, foreign manager not', () => {
   const { db, admin, manager, company, c } = setup();
   const before = company.logoSeed;
   const after = regenerateLogo(db, admin, company.id, c);
   assert.notEqual(after, before);
-  assert.throws(() => regenerateLogo(db, manager, company.id, c), AuthError);
+  // The company's own manager may also re-brand.
+  const own = regenerateLogo(db, manager, company.id, c);
+  assert.notEqual(own, after);
+  // A manager of another company may not.
+  const other = createCompany(db, admin, { name: 'חברה אחרת' }, c);
+  const { user: foreignManager } = createManager(db, admin, { companyId: other.id, name: 'זר' }, c);
+  assert.throws(() => regenerateLogo(db, foreignManager, company.id, c), AuthError);
 });

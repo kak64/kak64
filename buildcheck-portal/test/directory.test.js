@@ -57,11 +57,12 @@ test('demo seed: fixed credentials, two companies, live history with photos', ()
   assert.ok(authenticate(db, 'yossi', '1234'));
   assert.ok(authenticate(db, 'rona', '1234'));
   assert.equal(db.companies.length, 2);
-  assert.equal(db.tasks.length, 13);
+  assert.equal(db.tasks.length, 14);
   const submitted = db.tasks.flatMap((t) => t.assignments).filter((a) => a.status === STATUS.SUBMITTED);
   const approved = db.tasks.flatMap((t) => t.assignments).filter((a) => a.status === STATUS.APPROVED);
   assert.equal(submitted.length, 3);
   assert.equal(approved.length, 8);
+  assert.equal(db.fines.length, 1);
   assert.ok(submitted.every((a) => a.report.items.every((i) => i.photos.length >= 1)));
   assert.ok(submitted.some((a) => a.report.items.some((i) => i.status === 'defect')));
 });

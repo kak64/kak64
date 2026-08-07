@@ -49,6 +49,29 @@ defects), and **at least one photo per check — enforced**; submits a detailed
 report that lands on the manager's approval queue. Drafts persist locally, so
 a page refresh mid-inspection loses nothing.
 
+## User & branding management
+
+- **Custom or auto usernames** — register a worker with a username you choose,
+  or leave it blank for an auto-generated one (live availability hint).
+- **Rename, reset password, change username, delete** — full control from the
+  workers panel. Password reset is also permitted to supervisory roles
+  (מנהל פרויקט / מהנדס ביצוע / מנהל עבודה) for a teammate who forgot theirs.
+- **Logo upload** — the app admin *or* a company's own manager can upload an
+  image logo (center-cropped, stored per company) that brands the panel and
+  every printed report/certificate, or re-roll a generated geometric mark.
+
+## Defect resolution, fines & documents
+
+- When a submitted report contains defects, the manager resolves it three
+  ways: **reassign** the task to another worker, **extend** the deadline and
+  reopen it, or **reject and fine** the responsible company.
+- A **fines ledger** (with Excel export and paid/open tracking) and a composite
+  **project-risk score** (defects + overdue + rejects + open fines) surface on
+  the dashboard.
+- **Detailed reports** export to **Excel (CSV)** and print to **PDF**; a clean
+  report can be approved with a **digital signature** that issues a **signed
+  handover certificate** (תעודת מסירה דיגיטלית).
+
 ## The AI layer
 
 **העוזר החכם (smart assistant)** — a floating chat available in every panel.

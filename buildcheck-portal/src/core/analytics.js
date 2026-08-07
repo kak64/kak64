@@ -1,8 +1,40 @@
 // BuildCheck Portal — dashboard aggregations (pure, unit-testable).
 
 import { addDaysStr } from './util.js';
-import { STATUS, companyTasks } from './tasks.js';
+import { STATUS, companyTasks, companyStats, finesSummary } from './tasks.js';
 import { categoryById } from './directory.js';
+
+/**
+ * Composite project-health risk score (0–100, higher = riskier) with a band.
+ * Blends four real signals: defect rate, overdue share, rejected share, and
+ * open fines. Meant as a triage indicator, not a guarantee.
+ */
+export function riskScore(db, companyId, today) {
+  const stats = companyStats(db, companyId, today);
+  const defects = defectsByCategory(db, companyId);
+  const totalChecks = defects.reduce((s, d) => s + d.checks, 0);
+  const totalDefects = defects.reduce((s, d) => s + d.defects, 0);
+  const fines = finesSummary(db, companyId);
+
+  const defectRate = totalChecks > 0 ? totalDefects / totalChecks : 0;
+  const overdueRate = stats.total > 0 ? stats.overdue / stats.total : 0;
+  const rejectRate = stats.total > 0 ? stats.rejected / stats.total : 0;
+
+  const score = Math.round(Math.min(100,
+    defectRate * 55 + overdueRate * 30 + rejectRate * 25 + Math.min(15, fines.openCount * 5)));
+  const band = score >= 60 ? 'high' : score >= 30 ? 'medium' : 'low';
+  return {
+    score,
+    band,
+    bandLabel: { low: 'נמוך', medium: 'בינוני', high: 'גבוה' }[band],
+    factors: {
+      defectRate: Math.round(defectRate * 100),
+      overdueRate: Math.round(overdueRate * 100),
+      rejectRate: Math.round(rejectRate * 100),
+      openFines: fines.openCount,
+    },
+  };
+}
 
 /**
  * Reports-per-day trend over the trailing `days` window (inclusive of

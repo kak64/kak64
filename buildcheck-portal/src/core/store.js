@@ -7,9 +7,9 @@
 import { defaultCtx, todayStr, addDaysStr } from './util.js';
 import { baseRoles, baseDistricts, baseCategories } from './directory.js';
 import { createCompany, createManager, createWorker } from './auth.js';
-import { dispatchTask, startAssignment, submitReport, approveAssignment } from './tasks.js';
+import { dispatchTask, startAssignment, submitReport, approveAssignment, resolveDefect } from './tasks.js';
 
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export function createDb(ctx = defaultCtx()) {
   const db = {
@@ -22,6 +22,7 @@ export function createDb(ctx = defaultCtx()) {
     users: [],
     tasks: [],
     projects: [],
+    fines: [],
   };
   db.users.push({
     id: 'usr_admin',
@@ -205,6 +206,24 @@ export function seedDemo(db, ctx = defaultCtx()) {
     summary: 'הלוח תקין במלואו.',
   }, ctx);
   approveAssignment(db, manager, t4.id, david.id, ctx);
+
+  // Task 5 — a rejected report that led to a fine, so the fines ledger and
+  // risk score have real data on first load.
+  const t5 = dispatchTask(db, manager, {
+    title: 'ריצוף מרפסות — קומה 2',
+    site: 'פרויקט נופי השרון, פתח תקווה',
+    categoryId: 'finish', subcategoryId: 'tiling',
+    target: { roleId: 'tiler' },
+    execDate: addDaysStr(today, -4), execTime: '08:00', dueDate: addDaysStr(today, -2),
+  }, ctx);
+  startAssignment(db, avi, t5.id, ctx);
+  submitReport(db, avi, t5.id, {
+    items: t5.checks.map((label, i) => (i === 0
+      ? { status: 'defect', measurement: { value: 0.3, unit: 'm' }, note: 'שיפוע הפוך במרפסת — מים נעמדים ליד הדלת', photos: [placeholderPhoto('ליקוי שיפוע', '#8a2f3c')] }
+      : { status: 'ok', measurement: null, note: '', photos: [placeholderPhoto(label.slice(0, 16))] })),
+    summary: 'נמצא ליקוי שיפוע חמור.',
+  }, ctx);
+  resolveDefect(db, manager, t5.id, avi.id, { kind: 'fine', amount: 2500, reason: 'שיפוע ריצוף לקוי חוזר — נדרש תיקון על חשבון קבלן המשנה' }, ctx);
 
   return { company, manager, workers: { yossi, david } };
 }

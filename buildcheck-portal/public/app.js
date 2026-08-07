@@ -6,16 +6,22 @@
 import { todayStr, addDaysStr, defaultCtx } from '/core/util.js';
 import { roleById, districtById, areaById, categoryById, subcategoryById, addRole, addCategory, addSubcategory } from '/core/directory.js';
 import { generateLogo } from '/core/logo.js';
-import { authenticate, companyOf, createCompany, createManager, createWorker, setUserActive, regenerateLogo } from '/core/auth.js';
+import {
+  authenticate, companyOf, createCompany, createManager, createWorker, setUserActive, regenerateLogo,
+  renameUser, resetPassword, changeUsername, deleteUser, usernameAvailable, normalizeUsername,
+  setCompanyLogoImage, clearCompanyLogoImage, canManageFully, canResetCredentials, SUPERVISORY_ROLES,
+} from '/core/auth.js';
 import {
   STATUS, STATUS_LABELS, MEASUREMENT_UNITS, resolveAssignees, dispatchTask,
   tasksForWorker, getAssignment, startAssignment, saveDraft, emptyDraftItem,
-  submitReport, approveAssignment, isOverdue, companyTasks, companyStats,
+  submitReport, approveAssignment, resolveDefect, isOverdue, companyTasks, companyStats,
+  companyFines, finesSummary,
 } from '/core/tasks.js';
 import { createDb, seedDemo, serializeDb, deserializeDb } from '/core/store.js';
 import { askAssistant, assistantIntro } from '/core/knowledge.js';
-import { analyzePixels, guessProjectName, buildProgram, dispatchProgram } from '/core/planstudio.js';
-import { reportTrend, defectsByCategory, collectDefects } from '/core/analytics.js';
+import { analyzePixels, buildScanReport, guessProjectName, buildProgram, dispatchProgram } from '/core/planstudio.js';
+import { reportTrend, defectsByCategory, collectDefects, riskScore } from '/core/analytics.js';
+import { buildDefectsCsv, buildFinesCsv, buildReportHtml, buildCertificateHtml } from '/core/reports.js';
 
 const STORAGE_KEY = 'buildcheck-portal-db-v1';
 const SESSION_KEY = 'buildcheck-portal-session-v1';
@@ -43,6 +49,9 @@ const ui = {
   assistantOpen: false,
   assistantLog: [],
   studio: null,
+  resolve: null,
+  sigModal: null,
+  userEdit: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -130,8 +139,12 @@ function fmtDate(dateStr) {
 }
 
 function logoNode(company, size = 40) {
-  const span = el('span', { class: 'co-logo' });
-  span.innerHTML = generateLogo(company.logoSeed, company.name, size);
+  const span = el('span', { class: 'co-logo', style: `width:${size}px;height:${size}px` });
+  if (company.logoImage) {
+    span.appendChild(el('img', { src: company.logoImage, alt: company.name, width: size, height: size }));
+  } else {
+    span.innerHTML = generateLogo(company.logoSeed, company.name, size);
+  }
   return span;
 }
 
@@ -187,9 +200,11 @@ function renderOverlays() {
   document.querySelectorAll('.overlay').forEach((o) => o.remove());
   if (ui.lightbox) {
     const overlay = el('div', { class: 'overlay', onclick: () => { ui.lightbox = null; render(); } },
-      el('img', { src: ui.lightbox, alt: 'תמונה מוגדלת' }));
+      el('img', { class: 'lb', src: ui.lightbox, alt: 'תמונה מוגדלת' }));
     document.body.appendChild(overlay);
   }
+  renderSignatureOverlay();
+  renderUserEditOverlay();
   if (ui.modal) {
     const m = ui.modal;
     const overlay = el('div', { class: 'overlay' },
@@ -299,11 +314,12 @@ const TABS = {
   ],
   manager: [
     { id: 'overview', label: 'סקירה' },
-    { id: 'dashboard', label: '📊 דשבורד' },
-    { id: 'studio', label: '📐 סטודיו תוכניות' },
+    { id: 'dashboard', label: 'דשבורד' },
+    { id: 'studio', label: 'סטודיו תוכניות' },
     { id: 'dispatch', label: 'שליחת משימה' },
     { id: 'tasks', label: 'משימות ודוחות' },
     { id: 'workers', label: 'עובדים' },
+    { id: 'company', label: 'החברה שלי' },
   ],
   worker: [
     { id: 'mytasks', label: 'המשימות שלי' },
@@ -363,7 +379,7 @@ function renderAdmin(content) {
 
 function renderAdminCompanies(content) {
   content.appendChild(el('h2', { class: 'page-title', text: 'חברות בשירות' }));
-  content.appendChild(el('p', { class: 'page-sub', text: 'כל חברה מקבלת לוגו ייחודי משלה — אפשר להגריל מחדש בכל רגע.' }));
+  content.appendChild(el('p', { class: 'page-sub', text: 'כל חברה מקבלת מיתוג ייחודי: העלה לוגו משלך (תמונה), או הגרל מארק גיאומטרי.' }));
 
   for (const company of db.companies) {
     const managers = db.users.filter((u) => u.kind === 'manager' && u.companyId === company.id);
@@ -377,8 +393,16 @@ function renderAdminCompanies(content) {
         el('span', {}, 'מנהלים: ', managers.map((m) => m.name).join(', ') || '—')),
       el('div', { class: 'btn-row' },
         el('button', {
-          class: 'btn secondary small', text: '🎲 החלף לוגו',
-          onclick: () => tryAction(() => { regenerateLogo(db, currentUser, company.id, ctx); toast('לוגו חדש הוגרל לחברה'); }),
+          class: 'btn accent small', text: '🖼️ העלה לוגו',
+          onclick: () => uploadLogoFlow(company),
+        }),
+        company.logoImage ? el('button', {
+          class: 'btn secondary small', text: 'הסר לוגו',
+          onclick: () => tryAction(() => { clearCompanyLogoImage(db, currentUser, company.id); toast('הלוגו הוסר'); }),
+        }) : null,
+        el('button', {
+          class: 'btn secondary small', text: '🎲 הגרל מארק',
+          onclick: () => tryAction(() => { regenerateLogo(db, currentUser, company.id, ctx); toast('מארק חדש הוגרל'); }),
         }),
         el('button', {
           class: 'btn secondary small', text: '+ מנהל חברה',
@@ -489,7 +513,47 @@ function renderManager(content) {
   if (ui.tab === 'studio') return renderManagerStudio(content);
   if (ui.tab === 'dispatch') return renderManagerDispatch(content);
   if (ui.tab === 'tasks') return renderManagerTasks(content);
+  if (ui.tab === 'company') return renderManagerCompany(content);
   return renderManagerWorkers(content);
+}
+
+function renderManagerCompany(content) {
+  const company = companyOf(db, currentUser);
+  content.appendChild(el('h2', { class: 'page-title', text: 'החברה שלי' }));
+
+  // Branding.
+  content.appendChild(el('div', { class: 'card task-card' },
+    el('div', { class: 'head' }, logoNode(company, 56), el('span', { class: 't', text: company.name })),
+    el('p', { class: 'muted-note', text: 'העלה לוגו משלך (תמונה) כדי למתג את הפאנל והדוחות, או הגרל מארק גיאומטרי.' }),
+    el('div', { class: 'btn-row' },
+      el('button', { class: 'btn accent small', text: '🖼️ העלה לוגו', onclick: () => uploadLogoFlow(company) }),
+      company.logoImage ? el('button', { class: 'btn secondary small', text: 'הסר לוגו', onclick: () => tryAction(() => { clearCompanyLogoImage(db, currentUser, company.id); toast('הלוגו הוסר'); }) }) : null,
+      el('button', { class: 'btn secondary small', text: '🎲 הגרל מארק', onclick: () => tryAction(() => { regenerateLogo(db, currentUser, company.id, ctx); toast('מארק חדש הוגרל'); }) }))));
+
+  // Fines ledger.
+  const fines = companyFines(db, currentUser.companyId);
+  const sum = finesSummary(db, currentUser.companyId);
+  const card = el('div', { class: 'card' },
+    el('h3', { text: `💸 קנסות (${sum.count})` }),
+    el('div', { class: 'stat-row', style: 'margin-bottom:0.7rem' },
+      stat(`₪${sum.openAmount.toLocaleString()}`, 'קנסות פתוחים'),
+      stat(`₪${sum.totalAmount.toLocaleString()}`, 'סה"כ קנסות'),
+      stat(sum.openCount, 'מספר פתוחים')));
+  if (fines.length === 0) {
+    card.appendChild(el('div', { class: 'empty', text: 'לא נרשמו קנסות 🎉' }));
+  } else {
+    for (const f of fines) {
+      card.appendChild(el('div', { class: 'assignee-row' },
+        el('span', { class: 'chip ' + (f.status === 'open' ? 'rejected' : 'approved'), text: f.status === 'open' ? 'פתוח' : 'שולם' }),
+        el('b', { class: 'num', text: `₪${f.amount.toLocaleString()}` }),
+        el('span', { class: 'grow', text: `${f.taskTitle} — ${userName(f.workerId)}` }),
+        f.reason ? el('span', { class: 'muted-note', text: f.reason }) : null,
+        f.status === 'open' ? el('button', { class: 'btn secondary small', text: 'סמן כשולם', onclick: () => tryAction(() => { f.status = 'paid'; toast('סומן כשולם'); }) }) : null));
+    }
+    card.appendChild(el('div', { class: 'btn-row', style: 'margin-top:0.7rem' },
+      el('button', { class: 'btn secondary small', text: '💸 ייצוא ל-Excel', onclick: exportFinesCsv })));
+  }
+  content.appendChild(card);
 }
 
 function renderManagerOverview(content) {
@@ -673,64 +737,116 @@ function renderManagerTasks(content) {
 }
 
 function renderManagerWorkers(content) {
-  content.appendChild(el('h2', { class: 'page-title', text: 'עובדי החברה' }));
-  content.appendChild(el('p', { class: 'page-sub', text: 'רושמים רק שם ותפקיד — שם המשתמש והסיסמה נוצרים אוטומטית ומוצגים פעם אחת.' }));
+  content.appendChild(el('h2', { class: 'page-title', text: 'ניהול עובדים' }));
+  content.appendChild(el('p', { class: 'page-sub', text: 'רשום עובד עם שם משתמש משלך או אוטומטי. אפשר בכל עת לשנות שם, לאפס סיסמה, לשנות שם משתמש או למחוק.' }));
 
   const workers = db.users.filter((u) => u.kind === 'worker' && u.companyId === currentUser.companyId);
   const grid = el('div', { class: 'cards-grid' });
-  for (const w of workers) {
-    const role = roleById(db, w.roleId);
-    const district = districtById(db, w.districtId);
-    const area = areaById(db, w.districtId, w.areaId);
-    grid.appendChild(el('div', { class: 'card task-card' + (w.active ? '' : ' inactive') },
-      el('div', { class: 'head' },
-        el('span', { class: 't', text: w.name }),
-        el('span', { class: 'chip cat', text: role?.name ?? '—' }),
-        w.active ? null : el('span', { class: 'chip overdue', text: 'מושבת' })),
-      el('div', { class: 'meta' },
-        el('span', { text: `🗺 ${district?.name ?? 'ללא מחוז'}${area ? ' · ' + area.name : ''}` }),
-        el('span', { class: 'num', text: `👤 ${w.username}` })),
-      el('div', { class: 'btn-row' },
-        el('button', {
-          class: 'btn secondary small',
-          text: w.active ? 'השבת' : 'הפעל מחדש',
-          onclick: () => tryAction(() => setUserActive(db, currentUser, w.id, !w.active)),
-        }))));
-  }
+  for (const w of workers) grid.appendChild(userCard(w));
+  if (workers.length === 0) grid.appendChild(el('div', { class: 'empty', text: 'עוד לא נרשמו עובדים.' }));
   content.appendChild(grid);
+  content.appendChild(newWorkerCard());
+}
 
-  const nameInput = el('input', { type: 'text', placeholder: 'למשל: אבי שלום' });
-  const roleSelect = select(db.roles[0].id, db.roles.map((r) => [r.id, r.name]), () => {});
-  const districtSelect = el('select', {},
-    el('option', { value: '', text: 'ללא מחוז' }),
-    db.districts.map((x) => el('option', { value: x.id, text: x.name })));
+function userCard(w) {
+  const role = roleById(db, w.roleId);
+  const district = districtById(db, w.districtId);
+  const area = areaById(db, w.districtId, w.areaId);
+  const canFull = canManageFully(currentUser, w);
+  const canReset = canResetCredentials(currentUser, w);
+  return el('div', { class: 'card task-card' },
+    el('div', { class: 'head' },
+      el('span', { class: 't', text: w.name }),
+      role ? el('span', { class: 'chip cat', text: role.name }) : null,
+      w.active ? null : el('span', { class: 'chip rejected', text: 'מושבת' })),
+    el('div', { class: 'meta' },
+      el('span', { text: `🗺 ${district?.name ?? 'ללא מחוז'}${area ? ' · ' + area.name : ''}` }),
+      el('span', { class: 'num', text: `👤 ${w.username}` })),
+    el('div', { class: 'btn-row' },
+      canReset ? el('button', { class: 'btn secondary small', text: '🔑 אפס סיסמה', onclick: () => resetPasswordFlow(w) }) : null,
+      canFull ? el('button', { class: 'btn secondary small', text: '✏️ ערוך', onclick: () => { ui.userEdit = { id: w.id, name: w.name, username: w.username }; render(); } }) : null,
+      canReset ? el('button', { class: 'btn secondary small', text: w.active ? 'השבת' : 'הפעל', onclick: () => tryAction(() => setUserActive(db, currentUser, w.id, !w.active)) }) : null,
+      canFull ? el('button', { class: 'btn danger small', text: '🗑', title: 'מחק', onclick: () => deleteUserFlow(w) }) : null));
+}
+
+function resetPasswordFlow(user) {
+  const choice = window.prompt(`איפוס סיסמה ל-${user.name}.\nהקלד סיסמה חדשה, או השאר ריק כדי לייצר אוטומטית:`, '');
+  if (choice === null) return;
+  tryAction(() => {
+    const pass = resetPassword(db, currentUser, user.id, choice.trim() || null, ctx);
+    ui.modal = { title: 'הסיסמה אופסה', name: user.name, username: user.username, password: pass };
+  });
+}
+
+function deleteUserFlow(user) {
+  if (!window.confirm(`למחוק את ${user.name}? הפעולה תסיר גם את שיוכי המשימות שלו ואינה ניתנת לביטול.`)) return;
+  tryAction(() => { deleteUser(db, currentUser, user.id); toast('העובד נמחק'); });
+}
+
+function newWorkerCard() {
+  const st = { name: '', roleId: db.roles[0].id, districtId: '', areaId: '', username: '', auto: true };
+  const nameInput = input('text', '', (v) => { st.name = v; }, 'למשל: אבי שלום');
+  const roleSelect = select(st.roleId, db.roles.map((r) => [r.id, r.name]), (v) => { st.roleId = v; });
+  const districtSelect = el('select', {}, el('option', { value: '', text: 'ללא מחוז' }), db.districts.map((x) => el('option', { value: x.id, text: x.name })));
   const areaSelect = el('select', {}, el('option', { value: '', text: 'ללא אזור' }));
   districtSelect.onchange = () => {
+    st.districtId = districtSelect.value; st.areaId = '';
     areaSelect.replaceChildren(el('option', { value: '', text: 'ללא אזור' }));
     const dist = districtById(db, districtSelect.value);
     if (dist) for (const a of dist.areas) areaSelect.appendChild(el('option', { value: a.id, text: a.name }));
   };
+  areaSelect.onchange = () => { st.areaId = areaSelect.value; };
 
-  content.appendChild(el('div', { class: 'card' },
+  const userInput = input('text', '', (v) => { st.username = v; }, 'ריק = אוטומטי לפי התפקיד');
+  const hint = el('span', { class: 'muted-note' });
+  userInput.oninput = (e) => {
+    st.username = e.target.value;
+    const clean = normalizeUsername(st.username);
+    hint.textContent = !clean ? '' : usernameAvailable(db, clean) ? `זמין: ${clean} ✓` : `תפוס/לא תקין: ${clean}`;
+    hint.style.color = usernameAvailable(db, clean) ? 'var(--ok)' : 'var(--err)';
+  };
+
+  return el('div', { class: 'card' },
     el('h3', { text: 'רישום עובד חדש' }),
     el('div', { class: 'form-grid' },
       field('שם העובד', nameInput),
       field('תפקיד (מהרשומים באפליקציה)', roleSelect),
       field('מחוז', districtSelect),
-      field('אזור', areaSelect)),
+      field('אזור', areaSelect),
+      el('div', { class: 'field wide' }, el('label', { text: 'שם משתמש (אופציונלי — ריק = אוטומטי)' }), userInput, hint)),
     el('div', { class: 'btn-row', style: 'margin-top:0.7rem' },
       el('button', {
         class: 'btn', text: 'צור עובד + פרטי התחברות',
         onclick: () => tryAction(() => {
           const { user, credentials } = createWorker(db, currentUser, {
-            name: nameInput.value,
-            roleId: roleSelect.value,
-            districtId: districtSelect.value || undefined,
-            areaId: areaSelect.value || undefined,
+            name: st.name, roleId: st.roleId,
+            districtId: st.districtId || undefined, areaId: st.areaId || undefined,
+            username: st.username.trim() ? normalizeUsername(st.username) : undefined,
           }, ctx);
           ui.modal = { title: 'עובד נרשם בהצלחה', name: user.name, ...credentials };
         }),
-      }))));
+      })));
+}
+
+// Edit-user modal (rename + change username).
+function renderUserEditOverlay() {
+  if (!ui.userEdit) return;
+  const ue = ui.userEdit;
+  const overlay = el('div', { class: 'overlay' },
+    el('div', { class: 'modal', onclick: (e) => e.stopPropagation() },
+      el('h3', { text: 'עריכת עובד' }),
+      el('div', { class: 'field' }, el('label', { text: 'שם מלא' }), input('text', ue.name, (v) => { ue.name = v; })),
+      el('div', { class: 'field' }, el('label', { text: 'שם משתמש להתחברות' }), input('text', ue.username, (v) => { ue.username = v; })),
+      el('div', { class: 'btn-row' },
+        el('button', { class: 'btn', text: 'שמור', onclick: () => tryAction(() => {
+          renameUser(db, currentUser, ue.id, ue.name);
+          const clean = normalizeUsername(ue.username);
+          const cur = db.users.find((u) => u.id === ue.id);
+          if (cur && clean && clean !== cur.username) changeUsername(db, currentUser, ue.id, ue.username);
+          ui.userEdit = null; toast('נשמר ✔');
+        }) }),
+        el('button', { class: 'btn secondary', text: 'ביטול', onclick: () => { ui.userEdit = null; render(); } }))));
+  document.body.appendChild(overlay);
 }
 
 // ---------------------------------------------------------------------------
@@ -750,7 +866,9 @@ function renderReportView(content, { manager = false } = {}) {
   const defects = report.items.filter((i) => i.status === 'defect').length;
 
   content.appendChild(el('div', { class: 'btn-row' },
-    el('button', { class: 'btn secondary small', text: '→ חזרה', onclick: () => { ui.reportView = null; render(); } })));
+    el('button', { class: 'btn secondary small', text: '→ חזרה', onclick: () => { ui.reportView = null; render(); } }),
+    el('span', { style: 'flex:1' }),
+    el('button', { class: 'btn secondary small', text: '🖨️ הדפס / שמור PDF', onclick: () => printReport(task, assignment) })));
   content.appendChild(el('h2', { class: 'page-title', text: `דוח שטח — ${task.title}` }));
   content.appendChild(el('p', { class: 'page-sub' },
     `${userName(workerId)} · ${catLabel(task)} · נשלח ${new Date(report.submittedAt).toLocaleString('he-IL')}`));
@@ -780,17 +898,101 @@ function renderReportView(content, { manager = false } = {}) {
   }
   content.appendChild(card);
 
-  if (manager && assignment.status === STATUS.SUBMITTED) {
-    content.appendChild(el('div', { class: 'btn-row' },
-      el('button', {
-        class: 'btn', text: 'אשר דוח ✔',
-        onclick: () => tryAction(() => {
-          approveAssignment(db, currentUser, task.id, workerId, ctx);
-          ui.reportView = null;
-          toast('הדוח אושר');
-        }),
-      })));
+  // Already-resolved history note.
+  if (assignment.resolution && assignment.resolution.kind !== 'approved') {
+    const r = assignment.resolution;
+    const txt = r.kind === 'reassigned' ? `הועברה לעובד ${userName(r.to)}`
+      : r.kind === 'extended' ? `הוארך התאריך ל-${fmtDate(r.newDueDate)}`
+      : r.kind === 'fined' ? `הוטל קנס ₪${r.amount}` : '';
+    content.appendChild(el('div', { class: 'card', style: 'border-color:var(--warn)' },
+      el('b', { text: 'טופל: ' }), el('span', { text: txt })));
   }
+
+  if (manager && assignment.status === STATUS.SUBMITTED) {
+    if (defects > 0) {
+      content.appendChild(defectResolutionCard(task, assignment));
+    } else {
+      content.appendChild(el('div', { class: 'card' },
+        el('h3', { text: 'אישור ותעודת מסירה' }),
+        el('p', { class: 'muted-note', text: 'אשר את הדוח וחתום דיגיטלית להנפקת תעודת מסירה.' }),
+        el('div', { class: 'btn-row' },
+          el('button', { class: 'btn', text: 'אשר דוח ✔', onclick: () => tryAction(() => {
+            approveAssignment(db, currentUser, task.id, workerId, ctx);
+            ui.reportView = null; toast('הדוח אושר ✔');
+          }) }),
+          el('button', { class: 'btn accent', text: '✒️ אשר + תעודת מסירה חתומה', onclick: () => openSignatureModal(task.id, workerId) }))));
+    }
+  }
+
+  // Approved report → offer the signed handover certificate.
+  if (assignment.status === STATUS.APPROVED) {
+    content.appendChild(el('div', { class: 'btn-row' },
+      el('button', { class: 'btn accent small', text: '📜 הפק תעודת מסירה', onclick: () => printCertificate(task, assignment) })));
+  }
+}
+
+function defectResolutionCard(task, assignment) {
+  const workerId = assignment.workerId;
+  const key = task.id + '|' + workerId;
+  if (!ui.resolve || ui.resolve.key !== key) {
+    ui.resolve = { key, kind: null, toWorkerId: '', dueDate: addDaysStr(task.dueDate, 3), amount: 1500, reason: '' };
+  }
+  const state = ui.resolve;
+  const card = el('div', { class: 'card', style: 'border-color:var(--err)' });
+  card.appendChild(el('h3', { text: '⚠️ נמצאו ליקויים — כיצד לטפל?' }));
+  card.appendChild(el('p', { class: 'muted-note', text: 'בחר דרך טיפול: העברה לעובד אחר לתיקון, הארכת זמן הביצוע, או דחייה עם קנס לחברה האחראית.' }));
+
+  const opt = (kind, title, desc) => el('button', {
+    class: 'resolve-opt' + (state.kind === kind ? ' on' : ''),
+    onclick: () => { state.kind = kind; render(); },
+  }, el('span', { class: 'ro-t', text: title }), el('span', { class: 'ro-d', text: desc }));
+
+  card.appendChild(el('div', { class: 'resolve-grid' },
+    opt('reassign', '👷 העבר לעובד אחר', 'שליחת אותה משימה לעובד אחר לתיקון'),
+    opt('extend', '📅 הארך זמן', 'דחיית תאריך היעד ופתיחת המשימה מחדש'),
+    opt('fine', '💸 דחה + קנוס', 'דחיית העבודה והטלת קנס על החברה האחראית')));
+
+  if (state.kind === 'reassign') {
+    // Prefer same-role workers, but allow any active company worker not already on the task.
+    const failedRole = db.users.find((u) => u.id === workerId)?.roleId;
+    const eligible = db.users.filter((u) => u.kind === 'worker' && u.companyId === currentUser.companyId
+      && u.active && u.id !== workerId && !getAssignment(task, u.id));
+    const sameRole = eligible.filter((u) => u.roleId === failedRole);
+    const pool = sameRole.length ? sameRole : eligible;
+    const sel = select(state.toWorkerId || (pool[0]?.id ?? ''), pool.map((w) => [w.id, `${w.name} · ${roleById(db, w.roleId)?.name ?? ''}`]), (v) => { state.toWorkerId = v; });
+    if (pool.length === 0) {
+      card.appendChild(el('div', { class: 'scan-warn', text: 'אין עובד פעיל אחר להעברה — רשום עובד או בחר דרך טיפול אחרת.' }));
+    } else {
+      state.toWorkerId = state.toWorkerId || pool[0].id;
+      card.appendChild(el('div', { class: 'form-grid', style: 'margin-top:0.6rem' },
+        field('העבר לעובד', sel),
+        field('הערה (אופציונלי)', input('text', state.reason, (v) => { state.reason = v; }))));
+      card.appendChild(el('div', { class: 'btn-row', style: 'margin-top:0.6rem' },
+        el('button', { class: 'btn danger', text: 'העבר משימה', onclick: () => tryAction(() => {
+          resolveDefect(db, currentUser, task.id, workerId, { kind: 'reassign', toWorkerId: state.toWorkerId, reason: state.reason }, ctx);
+          ui.resolve = null; ui.reportView = null; toast('המשימה הועברה לעובד אחר ✔');
+        }) })));
+    }
+  } else if (state.kind === 'extend') {
+    card.appendChild(el('div', { class: 'form-grid', style: 'margin-top:0.6rem' },
+      field('תאריך יעד חדש', input('date', state.dueDate, (v) => { state.dueDate = v; })),
+      field('הערה (אופציונלי)', input('text', state.reason, (v) => { state.reason = v; }))));
+    card.appendChild(el('div', { class: 'btn-row', style: 'margin-top:0.6rem' },
+      el('button', { class: 'btn', text: 'הארך והחזר לביצוע', onclick: () => tryAction(() => {
+        resolveDefect(db, currentUser, task.id, workerId, { kind: 'extend', dueDate: state.dueDate, reason: state.reason }, ctx);
+        ui.resolve = null; ui.reportView = null; toast('התאריך הוארך והמשימה נפתחה מחדש ✔');
+      }) })));
+  } else if (state.kind === 'fine') {
+    card.appendChild(el('div', { class: 'form-grid', style: 'margin-top:0.6rem' },
+      field('סכום הקנס (₪)', numInput(state.amount, 1, 1000000, (v) => { state.amount = v; })),
+      field('סיבת הקנס', input('text', state.reason, (v) => { state.reason = v; }, 'למשל: ליקוי חוזר על חשבון הקבלן'))));
+    card.appendChild(el('div', { class: 'btn-row', style: 'margin-top:0.6rem' },
+      el('button', { class: 'btn danger', text: 'דחה והטל קנס', onclick: () => tryAction(() => {
+        resolveDefect(db, currentUser, task.id, workerId, { kind: 'fine', amount: state.amount, reason: state.reason }, ctx);
+        ui.resolve = null; ui.reportView = null; toast(`נרשם קנס ₪${state.amount} ✔`);
+      }) })));
+  }
+  return card;
 }
 
 // ===========================================================================
@@ -1166,7 +1368,7 @@ function runAssistantAction(action) {
 // ===========================================================================
 
 function renderManagerDashboard(content) {
-  content.appendChild(el('h2', { class: 'page-title', text: '📊 דשבורד ניהולי' }));
+  content.appendChild(el('h2', { class: 'page-title', text: 'דשבורד ניהולי' }));
   const stats = companyStats(db, currentUser.companyId, todayStr());
   content.appendChild(el('div', { class: 'stat-row' },
     stat(stats.total, 'סה"כ שיוכים'),
@@ -1174,6 +1376,19 @@ function renderManagerDashboard(content) {
     stat(stats.submitted, 'לאישור'),
     stat(stats.in_progress, 'בביצוע'),
     el('div', { class: 'stat overdue' }, el('div', { class: 'v', text: stats.overdue }), el('div', { class: 'l', text: 'באיחור' }))));
+
+  // Project risk gauge — composite health indicator.
+  const risk = riskScore(db, currentUser.companyId, todayStr());
+  content.appendChild(el('div', { class: 'card risk-card' },
+    riskGauge(risk),
+    el('div', { style: 'flex:1;min-width:200px' },
+      el('h3', { style: 'margin-bottom:0.4rem', text: 'מדד סיכון פרויקט' }),
+      el('p', { class: 'muted-note', style: 'margin:0 0 0.6rem', text: 'אינדיקטור משולב לתיעדוף — משקלל ליקויים, איחורים, דחיות וקנסות פתוחים.' }),
+      el('div', { class: 'risk-factors' },
+        riskFactor('שיעור ליקויים', `${risk.factors.defectRate}%`),
+        riskFactor('שיעור איחורים', `${risk.factors.overdueRate}%`),
+        riskFactor('שיעור דחיות', `${risk.factors.rejectRate}%`),
+        riskFactor('קנסות פתוחים', risk.factors.openFines)))));
 
   // Trend — reports per day, single-hue area+line.
   const trend = reportTrend(db, currentUser.companyId, todayStr(), 14);
@@ -1191,12 +1406,33 @@ function renderManagerDashboard(content) {
   }
   content.appendChild(defectCard);
 
-  // Export.
+  // Export — real Excel-CSV files.
   content.appendChild(el('div', { class: 'card' },
-    el('h3', { text: 'ייצוא דוח ליקויים' }),
-    el('p', { class: 'muted-note', text: 'הורדת קובץ טקסט מרוכז של כל הליקויים הפתוחים — לשליחה ליזם או לקבלן.' }),
+    el('h3', { text: 'ייצוא נתונים' }),
+    el('p', { class: 'muted-note', text: 'קבצי Excel (CSV) מרוכזים לשליחה ליזם, למפקח או לקבלן משנה.' }),
     el('div', { class: 'btn-row' },
-      el('button', { class: 'btn small', text: '⬇️ הורד דוח ליקויים', onclick: exportDefectReport }))));
+      el('button', { class: 'btn accent small', text: '📊 ייצוא ליקויים ל-Excel', onclick: exportDefectReport }),
+      el('button', { class: 'btn secondary small', text: '💸 ייצוא קנסות ל-Excel', onclick: exportFinesCsv }))));
+}
+
+function riskGauge(risk) {
+  const color = risk.band === 'high' ? 'var(--err)' : risk.band === 'medium' ? 'var(--warn)' : 'var(--ok)';
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('width', '96'); svg.setAttribute('height', '96');
+  const circ = 2 * Math.PI * 42;
+  const off = circ * (1 - risk.score / 100);
+  svg.innerHTML = `
+    <circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface-3)" stroke-width="9"/>
+    <circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 50 50)"/>`;
+  return el('div', { class: 'risk-gauge' }, svg,
+    el('div', { class: 'val' }, el('b', { style: `color:${color}`, text: risk.score }), el('span', { text: `סיכון ${risk.bandLabel}` })));
+}
+
+function riskFactor(label, value) {
+  return el('div', { class: 'rf' }, el('span', { class: 'muted-note', text: label }), el('b', { class: 'num', text: value }));
 }
 
 function trendChart(trend) {
@@ -1249,49 +1485,178 @@ function defectChart(rows) {
   return list;
 }
 
-async function exportDefectReport() {
-  const rows = collectDefects(db, currentUser.companyId);
-  const company = companyOf(db, currentUser);
-  const lines = [
-    `דוח ליקויים — ${company?.name ?? ''}`,
-    `הופק: ${new Date().toLocaleString('he-IL')}`,
-    `סה"כ ליקויים: ${rows.length}`,
-    '='.repeat(40), '',
-  ];
-  rows.forEach((r, i) => {
-    lines.push(`${i + 1}. ${r.task}`);
-    if (r.site) lines.push(`   אתר: ${r.site}`);
-    lines.push(`   בדיקה: ${r.check}`);
-    lines.push(`   עובד: ${userName(r.workerId)}`);
-    if (r.measurement) lines.push(`   מדידה: ${r.measurement.value} ${r.measurement.unit === 'cm' ? 'ס"מ' : 'מטר'}`);
-    lines.push(`   תיאור: ${r.note}`);
-    lines.push(`   תמונות מצורפות: ${r.photos}`);
-    lines.push('');
-  });
-  const text = lines.join('\n');
-  const filename = `defect-report-${todayStr()}.txt`;
+// ---------------------------------------------------------------------------
+// Downloads & printing (Excel-CSV via the downloads capability with a blob
+// fallback; PDF via a print iframe — the browser's "save as PDF").
+// ---------------------------------------------------------------------------
 
+async function saveFile(filename, data, mime = 'text/plain') {
   if (window.claude?.downloads) {
     try {
-      await window.claude.downloads.save({ filename, data: text });
-      toast('דוח הליקויים הורד ✔');
-      return;
+      await window.claude.downloads.save({ filename, data });
+      toast('הקובץ הורד ✔');
+      return true;
     } catch (e) {
-      if (e?.code === 'declined') { toast('ההורדה בוטלה', true); return; }
-      // fall through to blob fallback for other errors
+      if (e?.code === 'declined') { toast('ההורדה בוטלה', true); return false; }
+      if (e?.code === 'extension_not_enabled') { toast('סוג הקובץ אינו זמין כאן — נסה הדפסה ל-PDF', true); return false; }
+      // other errors: fall through to blob fallback
     }
   }
   try {
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([data], { type: `${mime};charset=utf-8` });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast('דוח הליקויים הורד ✔');
+    a.href = url; a.download = filename; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('הקובץ הורד ✔');
+    return true;
   } catch {
     toast('הורדה אינה נתמכת בתצוגה זו', true);
+    return false;
   }
+}
+
+/** Print a full HTML document via a hidden iframe → browser "save as PDF". */
+function printHtmlDocument(fullHtml) {
+  const frame = document.createElement('iframe');
+  frame.style.cssText = 'position:fixed;inset:0;width:0;height:0;border:0;opacity:0;';
+  document.body.appendChild(frame);
+  const doc = frame.contentWindow.document;
+  doc.open(); doc.write(fullHtml); doc.close();
+  const go = () => {
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } catch {
+      toast('הדפסה אינה נתמכת כאן — נסה ייצוא Excel', true);
+    }
+    setTimeout(() => frame.remove(), 1500);
+  };
+  if (frame.contentWindow.document.readyState === 'complete') setTimeout(go, 250);
+  else frame.onload = () => setTimeout(go, 250);
+}
+
+function companyLogoDataUrl(company) {
+  return company?.logoImage ?? null; // generated SVG marks aren't embedded as data URLs
+}
+
+/** Pick an image file, square-crop + downscale it, and store as the logo. */
+function uploadLogoFlow(company) {
+  const fileInput = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
+  fileInput.onchange = async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await squareLogo(file);
+      tryAction(() => { setCompanyLogoImage(db, currentUser, company.id, dataUrl); toast('הלוגו עודכן ✔'); });
+    } catch {
+      toast('קובץ תמונה לא נתמך', true);
+    }
+  };
+  document.body.appendChild(fileInput);
+  fileInput.click();
+  setTimeout(() => fileInput.remove(), 1000);
+}
+
+/** Center-crop an image to a square and scale to 256px PNG. */
+function squareLogo(file, size = 256) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+
+async function exportDefectReport() {
+  const csv = buildDefectsCsv(db, currentUser.companyId, userName);
+  await saveFile(`defects-${todayStr()}.csv`, csv, 'text/csv');
+}
+
+async function exportFinesCsv() {
+  const csv = buildFinesCsv(db, currentUser.companyId, userName);
+  await saveFile(`fines-${todayStr()}.csv`, csv, 'text/csv');
+}
+
+function printReport(task, assignment) {
+  const company = companyOf(db, currentUser);
+  const html = buildReportHtml({
+    company, task, assignment,
+    workerName: userName(assignment.workerId),
+    approverName: assignment.approvedBy ? userName(assignment.approvedBy) : null,
+    categoryName: categoryById(db, task.categoryId)?.name ?? '',
+    logoDataUrl: companyLogoDataUrl(company),
+  });
+  printHtmlDocument(html);
+}
+
+function certId(task, workerId) {
+  return `BC-${task.id.replace(/[^a-z0-9]/gi, '').toUpperCase()}-${workerId.replace(/[^a-z0-9]/gi, '').slice(-4).toUpperCase()}`;
+}
+
+function printCertificate(task, assignment) {
+  const company = companyOf(db, currentUser);
+  const html = buildCertificateHtml({
+    company, task,
+    workerName: userName(assignment.workerId),
+    approverName: assignment.approvedBy ? userName(assignment.approvedBy) : currentUser.name,
+    signatureDataUrl: assignment.certificate?.signature ?? null,
+    certId: certId(task, assignment.workerId),
+    date: (assignment.approvedAt ?? new Date().toISOString()).slice(0, 10),
+    logoDataUrl: companyLogoDataUrl(company),
+  });
+  printHtmlDocument(html);
+}
+
+// Signature capture modal (canvas) → approve with an embedded signature.
+function openSignatureModal(taskId, workerId) {
+  ui.sigModal = { taskId, workerId };
+  render();
+}
+
+function renderSignatureOverlay() {
+  if (!ui.sigModal) return;
+  const { taskId, workerId } = ui.sigModal;
+  const canvas = el('canvas', { class: 'sigpad', width: 400, height: 150 });
+  // Scale the backing store to the displayed size after mount.
+  let drawing = false, dirty = false, ctx2d = null;
+  const pos = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return { x: (p.clientX - r.left) * (canvas.width / r.width), y: (p.clientY - r.top) * (canvas.height / r.height) };
+  };
+  const start = (e) => { e.preventDefault(); drawing = true; ctx2d = ctx2d || canvas.getContext('2d'); const { x, y } = pos(e); ctx2d.beginPath(); ctx2d.moveTo(x, y); };
+  const move = (e) => { if (!drawing) return; e.preventDefault(); const { x, y } = pos(e); ctx2d.lineTo(x, y); ctx2d.strokeStyle = '#16324f'; ctx2d.lineWidth = 2.4; ctx2d.lineCap = 'round'; ctx2d.stroke(); dirty = true; };
+  const end = () => { drawing = false; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', move, { passive: false }); canvas.addEventListener('touchend', end);
+
+  const overlay = el('div', { class: 'overlay' },
+    el('div', { class: 'modal', onclick: (e) => e.stopPropagation() },
+      el('h3', { text: '✒️ חתימת אישור דיגיטלית' }),
+      el('p', { class: 'muted-note', text: 'חתום באצבע או בעכבר לאישור המשימה והנפקת תעודת מסירה.' }),
+      canvas,
+      el('div', { class: 'btn-row' },
+        el('button', { class: 'btn', text: 'אשר וחתום ✔', onclick: () => {
+          if (!dirty) { toast('נא לחתום קודם', true); return; }
+          tryAction(() => {
+            approveAssignment(db, currentUser, taskId, workerId, ctx, { signature: canvas.toDataURL('image/png') });
+            ui.sigModal = null; ui.reportView = null; toast('אושר ונחתם ✔');
+          });
+        } }),
+        el('button', { class: 'btn secondary', text: 'נקה', onclick: () => { ctx2d = ctx2d || canvas.getContext('2d'); ctx2d.clearRect(0, 0, canvas.width, canvas.height); dirty = false; } }),
+        el('button', { class: 'btn secondary', text: 'ביטול', onclick: () => { ui.sigModal = null; render(); } }))));
+  document.body.appendChild(overlay);
 }
 
 // ===========================================================================
@@ -1362,6 +1727,8 @@ async function startAnalysis(file) {
     const profile = blankProfile();
     profile.step = 'profile';
     profile.analysis = analysis;
+    profile.scan = buildScanReport(analysis);
+    profile.verified = false;
     profile.preview = preview;
     profile.projectName = guessProjectName(file.name);
     // Denser sheets imply more floors — a gentle nudge, fully editable.
@@ -1406,20 +1773,46 @@ function renderStudioAnalyzing(content) {
 function renderStudioProfile(content) {
   const s = ui.studio;
   const a = s.analysis;
+  const scan = s.scan;
 
-  if (a) {
-    const verdict = a.isDrawing
-      ? `זוהתה תוכנית הנדסית (${Math.round(a.hvScore * 100)}% קווים אנכיים/אופקיים, צפיפות ${a.complexity}/5).`
-      : 'התמונה נראית כמו צילום/סקיצה חופשית — נשתמש בה כרקע, ותוכל לכוון את הפרטים ידנית.';
-    const analysisCard = el('div', { class: 'card studio-analysis' },
-      s.preview ? el('img', { class: 'studio-preview', src: s.preview, alt: 'תצוגת התוכנית', onclick: () => { ui.lightbox = s.preview; renderOverlays(); } }) : null,
-      el('div', { class: 'studio-verdict' },
-        el('div', { class: 'chip ' + (a.isDrawing ? 'approved' : 'in_progress'), text: a.isDrawing ? '✓ תוכנית זוהתה' : 'סקיצה' }),
-        el('p', { text: verdict }),
-        el('div', { class: 'studio-metrics' },
-          metric('צפיפות שרטוט', `${a.complexity}/5`),
-          metric('קווי מבנה', `${Math.round(a.hvScore * 100)}%`),
-          metric('רקע לבן', `${Math.round(a.whiteRatio * 100)}%`))));
+  if (a && scan) {
+    const confColor = scan.confidence >= 70 ? 'var(--ok)' : scan.confidence >= 50 ? 'var(--warn)' : 'var(--err)';
+    const analysisCard = el('div', { class: 'card' },
+      el('div', { class: 'studio-analysis' },
+        s.preview ? el('img', { class: 'studio-preview', src: s.preview, alt: 'תצוגת התוכנית', onclick: () => { ui.lightbox = s.preview; renderOverlays(); } }) : null,
+        el('div', { class: 'studio-verdict' },
+          el('div', { class: 'btn-row' },
+            el('span', { class: 'chip ' + (a.isDrawing ? 'approved' : 'submitted'), text: scan.kindLabel }),
+            el('span', { class: 'chip cat', text: `ודאות ${scan.confidence}%` })),
+          el('div', { class: 'confidence-meter' }, el('span', { class: 'cfill', style: `width:${scan.confidence}%;background:${confColor}` })),
+          el('div', { class: 'studio-metrics' },
+            metric('צפיפות', `${a.complexity}/5`),
+            metric('קווי מבנה', `${Math.round(a.hvScore * 100)}%`),
+            metric('אלכסונים', `${Math.round(a.diagScore * 100)}%`),
+            metric('אזורים', a.zones),
+            metric('צבע', `${Math.round(a.colorRatio * 100)}%`)))));
+
+    // Detailed findings.
+    const findings = el('div', { class: 'scan-findings' });
+    for (const f of scan.findings) {
+      findings.appendChild(el('div', { class: 'scan-find' },
+        el('span', { class: 'ic', text: f.ok ? '✅' : '⚠️' }), el('span', { text: f.label })));
+    }
+    analysisCard.appendChild(el('h3', { style: 'margin:0.9rem 0 0.5rem', text: 'ממצאי הסריקה' }));
+    analysisCard.appendChild(findings);
+
+    for (const w of scan.warnings) {
+      analysisCard.appendChild(el('div', { class: 'scan-warn', style: 'margin-top:0.5rem' }, el('span', { text: '⚠️' }), el('span', { text: w })));
+    }
+
+    // Mandatory human-verification gate — because a mis-scan risks fines.
+    const verifyBox = el('div', { class: 'scan-verify', style: 'margin-top:0.7rem' },
+      el('b', { text: '⚠️ חובה לאמת ידנית לפני שיגור:' }),
+      el('ul', {}, scan.mustVerify.map((v) => el('li', { text: v }))),
+      el('label', { class: 'checkbox-field', style: 'padding-top:0.5rem' },
+        (() => { const cb = el('input', { type: 'checkbox', onchange: (e) => { s.verified = e.target.checked; render(); } }); cb.checked = s.verified; return cb; })(),
+        el('span', { text: 'אני מאשר שבדקתי את התוכנית ידנית והפרטים נכונים — הסריקה היא כלי עזר בלבד.' })));
+    analysisCard.appendChild(verifyBox);
     content.appendChild(analysisCard);
   }
 
@@ -1451,9 +1844,11 @@ function renderStudioProfile(content) {
       })));
   content.appendChild(catCard);
 
+  const needsVerify = Boolean(s.scan) && !s.verified;
   content.appendChild(el('div', { class: 'btn-row' },
-    el('button', { class: 'btn', text: '⚙️ צור תוכנית ביקורת', disabled: s.categoryIds.length === 0, onclick: generateProgram }),
+    el('button', { class: 'btn', text: '⚙️ צור תוכנית ביקורת', disabled: s.categoryIds.length === 0 || needsVerify, onclick: generateProgram }),
     el('button', { class: 'btn secondary', text: 'התחל מחדש', onclick: () => { ui.studio = null; render(); } })));
+  if (needsVerify) content.appendChild(el('p', { class: 'hint-warn', text: 'סמן את אישור האימות הידני כדי להמשיך.' }));
 }
 
 function metric(label, value) {

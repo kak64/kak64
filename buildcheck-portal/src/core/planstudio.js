@@ -14,18 +14,23 @@ import { resolveAssignees, dispatchTask } from './tasks.js';
 // ---------------------------------------------------------------------------
 
 /**
- * Analyze a raster of RGBA pixels. Returns:
- *  - inkRatio: share of dark "ink" pixels
- *  - whiteRatio: share of near-white background pixels
- *  - hvScore: of the strong edges, how many are axis-aligned (drawings of
- *    buildings are dominated by horizontal/vertical lines; photos are not)
- *  - isDrawing: heuristic — white background + moderate ink + strong H/V grid
- *  - complexity: 1..5 estimate of the sheet's density
+ * Analyze a raster of RGBA pixels. This is a real but HEURISTIC pixel scan —
+ * it measures signal, it does not "read" a drawing. Returns:
+ *  - inkRatio / whiteRatio: ink vs. near-white background share
+ *  - hvScore: share of strong edges that are axis-aligned (buildings are
+ *    dominated by H/V lines; photos are not)
+ *  - diagScore: share of strong edges that are diagonal (3D sketches / hatching)
+ *  - isDrawing: heuristic — white ground + moderate ink + strong H/V structure
+ *  - complexity: 1..5 density estimate
+ *  - zones: estimated distinct dense regions (rooms/detail blocks) via a grid
+ *  - colorRatio: share of saturated (non-gray) pixels — colored legends/3D
+ *  - titleBlock: a dense rectangular corner region was detected (title block)
  */
 export function analyzePixels({ data, width, height }) {
   const gray = new Float32Array(width * height);
   let white = 0;
   let ink = 0;
+  let colored = 0;
   for (let i = 0; i < width * height; i++) {
     const r = data[i * 4];
     const g = data[i * 4 + 1];
@@ -34,13 +39,18 @@ export function analyzePixels({ data, width, height }) {
     gray[i] = v;
     if (v > 225) white++;
     if (v < 120) ink++;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    if (max - min > 40) colored++;
   }
   const total = width * height;
   const whiteRatio = white / total;
   const inkRatio = ink / total;
+  const colorRatio = colored / total;
 
   let strong = 0;
   let axis = 0;
+  let diag = 0;
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const i = y * width + x;
@@ -49,21 +59,101 @@ export function analyzePixels({ data, width, height }) {
       const mag = dx + dy;
       if (mag > 60) {
         strong++;
-        // An axis-aligned edge has one dominant gradient direction.
         if (dx > dy * 3 || dy > dx * 3) axis++;
+        else if (Math.abs(dx - dy) < Math.max(dx, dy) * 0.5) diag++;
       }
     }
   }
   const hvScore = strong > 0 ? axis / strong : 0;
+  const diagScore = strong > 0 ? diag / strong : 0;
+
+  // Region grid: how many cells carry meaningful ink (rooms / detail blocks).
+  const GRID = 6;
+  const cell = new Array(GRID * GRID).fill(0);
+  for (let y = 0; y < height; y++) {
+    const gy = Math.min(GRID - 1, Math.floor((y / height) * GRID));
+    for (let x = 0; x < width; x++) {
+      if (gray[y * width + x] < 120) {
+        const gx = Math.min(GRID - 1, Math.floor((x / width) * GRID));
+        cell[gy * GRID + gx]++;
+      }
+    }
+  }
+  const cellArea = total / (GRID * GRID);
+  const detailCells = cell.filter((c) => c / cellArea > 0.02).length;
+  const zones = Math.max(1, Math.round(detailCells / 2));
+
+  // Title block: a corner cell far denser than the sheet average.
+  const avgCell = cell.reduce((s, c) => s + c, 0) / cell.length;
+  const corners = [cell[0], cell[GRID - 1], cell[GRID * (GRID - 1)], cell[GRID * GRID - 1]];
+  const titleBlock = avgCell > 0 && Math.max(...corners) > avgCell * 2.2;
+
   const isDrawing = whiteRatio > 0.45 && inkRatio > 0.01 && inkRatio < 0.5 && hvScore > 0.5 && strong > total * 0.005;
   const complexity = Math.max(1, Math.min(5, Math.round(inkRatio * 25 + (strong / total) * 30)));
   return {
     inkRatio: round3(inkRatio),
     whiteRatio: round3(whiteRatio),
+    colorRatio: round3(colorRatio),
     hvScore: round3(hvScore),
+    diagScore: round3(diagScore),
     strongEdges: strong,
     isDrawing,
     complexity,
+    detailCells,
+    zones,
+    titleBlock,
+  };
+}
+
+/**
+ * Turn raw metrics into a THOROUGH, HONEST scan report for the manager.
+ * Because a mis-scan can expose the company to fines, this never claims to
+ * have read dimensions or a legend it cannot; instead it reports what the
+ * pixel scan can and cannot establish, a 0–100 confidence, a findings list,
+ * and an explicit list of items a human MUST verify before dispatch.
+ */
+export function buildScanReport(m) {
+  const kind = m.isDrawing
+    ? (m.diagScore > 0.28 ? '3d' : '2d')
+    : (m.colorRatio > 0.25 || m.diagScore > 0.3 ? '3d' : 'photo');
+
+  const findings = [];
+  findings.push({ ok: m.isDrawing, label: m.isDrawing ? 'זוהה שרטוט הנדסי (רקע לבן + מבנה קווים)' : 'לא זוהה שרטוט הנדסי מובהק — ייתכן צילום או סקיצה' });
+  findings.push({ ok: true, label: `${Math.round(m.hvScore * 100)}% מהקווים אנכיים/אופקיים${m.diagScore > 0.25 ? `, ${Math.round(m.diagScore * 100)}% אלכסוניים (סקיצת 3D?)` : ''}` });
+  findings.push({ ok: m.detailCells >= 3, label: `זוהו כ-${m.zones} אזורי תוכן (חדרים/פרטים) ב-${m.detailCells} תאי צפיפות` });
+  findings.push({ ok: m.titleBlock, label: m.titleBlock ? 'זוהתה מסגרת/גוש כותרת בפינה' : 'לא זוהתה מסגרת כותרת ברורה — ודא שהתוכנית מלאה' });
+  findings.push({ ok: true, label: `צפיפות שרטוט ${m.complexity}/5` });
+
+  // Confidence: strong when it looks like a clean, framed, detailed drawing.
+  let confidence = 0;
+  if (m.isDrawing) confidence += 45;
+  confidence += Math.round(Math.min(1, m.hvScore) * 25);
+  confidence += Math.min(15, m.detailCells * 2);
+  if (m.titleBlock) confidence += 10;
+  if (m.whiteRatio > 0.6) confidence += 5;
+  confidence = Math.max(5, Math.min(95, confidence));
+
+  // What a mis-scan can't safely infer — the human MUST confirm these.
+  const mustVerify = [
+    'מספר הקומות והדירות בפועל מול התוכנית',
+    'קנה המידה והמידות (הסריקה אינה קוראת מספרים בשרטוט)',
+    'התאמת תחומי הביקורת שנבחרו לתוכן התוכנית',
+    'שינויי דיירים ועדכוני תכנון אחרונים',
+  ];
+  const warnings = [];
+  if (!m.isDrawing) warnings.push('הקובץ אינו נראה כשרטוט הנדסי סטנדרטי — אמת ידנית לפני שיגור.');
+  if (!m.titleBlock) warnings.push('לא זוהתה מסגרת כותרת — ודא שהועלתה התוכנית המלאה ולא קטע ממנה.');
+  if (m.complexity <= 1) warnings.push('צפיפות נמוכה — ייתכן שזו סקיצה חלקית או תמונה באיכות נמוכה.');
+  if (confidence < 55) warnings.push('רמת ודאות נמוכה — מומלץ ניתוח ידני מדוקדק והצלבה מול קונסטרוקטור/אדריכל.');
+
+  return {
+    kind, // '2d' | '3d' | 'photo'
+    kindLabel: { '2d': 'תוכנית 2D', '3d': 'סקיצת/מודל 3D', photo: 'צילום או סקיצה חופשית' }[kind],
+    confidence,
+    metrics: m,
+    findings,
+    mustVerify,
+    warnings,
   };
 }
 

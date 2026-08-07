@@ -13,6 +13,7 @@ export const STATUS = Object.freeze({
   IN_PROGRESS: 'in_progress',
   SUBMITTED: 'submitted',
   APPROVED: 'approved',
+  REJECTED: 'rejected',
 });
 
 export const STATUS_LABELS = Object.freeze({
@@ -20,6 +21,7 @@ export const STATUS_LABELS = Object.freeze({
   in_progress: 'בביצוע',
   submitted: 'דוח נשלח',
   approved: 'אושר',
+  rejected: 'נדחה',
 });
 
 export const MEASUREMENT_UNITS = Object.freeze([
@@ -191,27 +193,110 @@ export function submitReport(db, actor, taskId, report, ctx) {
   return assignment;
 }
 
-export function approveAssignment(db, actor, taskId, workerId, ctx) {
-  if (actor?.kind !== 'manager') throw new Error('רק מנהל חברה מאשר דוחות');
+function requireManagerTask(db, actor, taskId) {
+  if (actor?.kind !== 'manager') throw new Error('רק מנהל חברה מבצע פעולה זו');
   const task = db.tasks.find((t) => t.id === taskId && t.companyId === actor.companyId);
   if (!task) throw new Error('משימה לא נמצאה');
+  return task;
+}
+
+export function approveAssignment(db, actor, taskId, workerId, ctx, { signature = null } = {}) {
+  const task = requireManagerTask(db, actor, taskId);
   const assignment = getAssignment(task, workerId);
   if (!assignment) throw new Error('שיוך לא נמצא');
   if (assignment.status !== STATUS.SUBMITTED) throw new Error('ניתן לאשר רק דוח שנשלח');
   assignment.status = STATUS.APPROVED;
   assignment.approvedAt = ctx.now();
   assignment.approvedBy = actor.id;
+  assignment.resolution = { kind: 'approved', at: ctx.now() };
+  if (signature) {
+    assignment.certificate = { signature, signedBy: actor.id, at: ctx.now() };
+  }
   return assignment;
+}
+
+/**
+ * Reject a report that has defects. Three outcomes, all recorded on the
+ * assignment's `resolution` and (for fines) the company ledger:
+ *   - 'reassign': send the SAME task to another worker (new pending assignment).
+ *   - 'extend':   push the due date out and reopen this worker's assignment.
+ *   - 'fine':     hold the company responsible with a monetary penalty.
+ */
+export function resolveDefect(db, actor, taskId, workerId, resolution, ctx) {
+  const task = requireManagerTask(db, actor, taskId);
+  const assignment = getAssignment(task, workerId);
+  if (!assignment) throw new Error('שיוך לא נמצא');
+  if (assignment.status !== STATUS.SUBMITTED) throw new Error('ניתן לטפל רק בדוח שנשלח');
+  const { kind } = resolution;
+
+  if (kind === 'reassign') {
+    const toWorkerId = resolution.toWorkerId;
+    const toWorker = db.users.find((u) => u.id === toWorkerId && u.kind === 'worker' && u.companyId === task.companyId && u.active);
+    if (!toWorker) throw new Error('יש לבחור עובד פעיל להעברת המשימה');
+    if (getAssignment(task, toWorkerId)) throw new Error('המשימה כבר משויכת לעובד זה');
+    assignment.status = STATUS.REJECTED;
+    assignment.resolution = { kind: 'reassigned', to: toWorkerId, reason: resolution.reason ?? '', at: ctx.now() };
+    task.assignments.push({ workerId: toWorkerId, status: STATUS.PENDING, draft: null, report: null, reassignedFrom: workerId });
+    return { task, newWorkerId: toWorkerId };
+  }
+
+  if (kind === 'extend') {
+    if (!DATE_RE.test(resolution.dueDate ?? '')) throw new Error('נדרש תאריך יעד חדש תקין');
+    if (resolution.dueDate <= task.dueDate) throw new Error('התאריך החדש חייב להיות מאוחר מהנוכחי');
+    task.dueDate = resolution.dueDate;
+    assignment.status = STATUS.IN_PROGRESS;
+    assignment.report = null;
+    assignment.resolution = { kind: 'extended', newDueDate: resolution.dueDate, reason: resolution.reason ?? '', at: ctx.now() };
+    return { task };
+  }
+
+  if (kind === 'fine') {
+    const amount = Number(resolution.amount);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error('נדרש סכום קנס חיובי');
+    assignment.status = STATUS.REJECTED;
+    assignment.resolution = { kind: 'fined', amount, reason: resolution.reason ?? '', at: ctx.now() };
+    db.fines = db.fines ?? [];
+    const fine = {
+      id: `fine_${(db.meta.nextId++).toString(36).padStart(4, '0')}`,
+      companyId: task.companyId,
+      taskId, workerId,
+      taskTitle: task.title,
+      amount,
+      reason: resolution.reason ?? '',
+      status: 'open',
+      issuedBy: actor.id,
+      at: ctx.now(),
+    };
+    db.fines.push(fine);
+    return { task, fine };
+  }
+
+  throw new Error('סוג טיפול לא מוכר');
+}
+
+export function companyFines(db, companyId) {
+  return (db.fines ?? []).filter((f) => f.companyId === companyId);
+}
+
+export function finesSummary(db, companyId) {
+  const fines = companyFines(db, companyId);
+  const open = fines.filter((f) => f.status === 'open');
+  return {
+    count: fines.length,
+    openCount: open.length,
+    openAmount: open.reduce((s, f) => s + f.amount, 0),
+    totalAmount: fines.reduce((s, f) => s + f.amount, 0),
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Derived views
 // ---------------------------------------------------------------------------
 
+const TERMINAL = new Set([STATUS.SUBMITTED, STATUS.APPROVED, STATUS.REJECTED]);
+
 export function isOverdue(task, assignment, today) {
-  return task.dueDate < today
-    && assignment.status !== STATUS.SUBMITTED
-    && assignment.status !== STATUS.APPROVED;
+  return task.dueDate < today && !TERMINAL.has(assignment.status);
 }
 
 export function companyTasks(db, companyId) {
@@ -221,7 +306,7 @@ export function companyTasks(db, companyId) {
 }
 
 export function companyStats(db, companyId, today) {
-  const stats = { total: 0, pending: 0, in_progress: 0, submitted: 0, approved: 0, overdue: 0 };
+  const stats = { total: 0, pending: 0, in_progress: 0, submitted: 0, approved: 0, rejected: 0, overdue: 0 };
   for (const task of companyTasks(db, companyId)) {
     for (const a of task.assignments) {
       stats.total++;

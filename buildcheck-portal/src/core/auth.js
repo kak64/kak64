@@ -57,12 +57,40 @@ export function createCompany(db, actor, { name }, ctx) {
   return company;
 }
 
+/** Who may edit a company's branding: the app admin, or that company's manager. */
+function assertCanBrand(actor, company) {
+  const allowed = actor?.kind === 'appadmin'
+    || (actor?.kind === 'manager' && actor.companyId === company.id);
+  if (!allowed) throw new AuthError('אין הרשאה לשנות את מיתוג החברה');
+}
+
 export function regenerateLogo(db, actor, companyId, ctx) {
-  assertKind(actor, 'appadmin', 'רק מנהל האפליקציה מחליף לוגו');
   const company = db.companies.find((c) => c.id === companyId);
   if (!company) throw new Error('חברה לא נמצאה');
+  assertCanBrand(actor, company);
   company.logoSeed = randomLogoSeed(ctx.rng);
+  company.logoImage = null; // switch back to the generated mark
   return company.logoSeed;
+}
+
+/** Upload a custom logo image (data URL). Overrides the generated mark. */
+export function setCompanyLogoImage(db, actor, companyId, dataUrl) {
+  const company = db.companies.find((c) => c.id === companyId);
+  if (!company) throw new Error('חברה לא נמצאה');
+  assertCanBrand(actor, company);
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+    throw new Error('נדרש קובץ תמונה תקין');
+  }
+  company.logoImage = dataUrl;
+  return company;
+}
+
+export function clearCompanyLogoImage(db, actor, companyId) {
+  const company = db.companies.find((c) => c.id === companyId);
+  if (!company) throw new Error('חברה לא נמצאה');
+  assertCanBrand(actor, company);
+  company.logoImage = null;
+  return company;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,14 +138,108 @@ function addUser(db, { kind, companyId, name, roleId = null, districtId = null, 
   return { user, credentials: { username: finalUsername, password: finalPassword } };
 }
 
+// ---------------------------------------------------------------------------
+// User management — rename, custom username, password reset, delete.
+// Permission tiers:
+//   - app admin: full control over managers and workers.
+//   - company manager: full control over workers in their own company.
+//   - supervisory workers (מנהל פרויקט / מהנדס ביצוע / מנהל עבודה): may reset a
+//     forgotten password and toggle activity for workers in their own company.
+// ---------------------------------------------------------------------------
+
+export const SUPERVISORY_ROLES = Object.freeze(['project-manager', 'site-engineer', 'foreman']);
+
+function sameCompanyWorker(actor, target) {
+  return target.kind === 'worker' && target.companyId === actor.companyId;
+}
+
+/** Full control: rename, set username, delete. */
+export function canManageFully(actor, target) {
+  if (!actor || !target) return false;
+  if (actor.kind === 'appadmin') return target.kind !== 'appadmin';
+  if (actor.kind === 'manager') return sameCompanyWorker(actor, target);
+  return false;
+}
+
+/** Reset password / toggle active — broader (supervisors included). */
+export function canResetCredentials(actor, target) {
+  if (canManageFully(actor, target)) return true;
+  if (actor?.kind === 'worker' && SUPERVISORY_ROLES.includes(actor.roleId)) {
+    return sameCompanyWorker(actor, target) && target.id !== actor.id;
+  }
+  return false;
+}
+
 export function setUserActive(db, actor, userId, active) {
   const user = db.users.find((u) => u.id === userId);
   if (!user) throw new Error('משתמש לא נמצא');
-  const allowed = actor?.kind === 'appadmin'
-    || (actor?.kind === 'manager' && user.kind === 'worker' && user.companyId === actor.companyId);
-  if (!allowed) throw new AuthError('אין הרשאה לנהל משתמש זה');
+  if (!canResetCredentials(actor, user)) throw new AuthError('אין הרשאה לנהל משתמש זה');
   user.active = Boolean(active);
   return user;
+}
+
+export function renameUser(db, actor, userId, name) {
+  const user = db.users.find((u) => u.id === userId);
+  if (!user) throw new Error('משתמש לא נמצא');
+  if (!canManageFully(actor, user)) throw new AuthError('אין הרשאה לשנות שם משתמש זה');
+  if (!name?.trim()) throw new Error('נדרש שם');
+  user.name = name.trim();
+  return user;
+}
+
+/**
+ * Reset a user's password. Pass a specific password, or omit to generate one.
+ * Returns the new password so the manager can hand it to the worker.
+ */
+export function resetPassword(db, actor, userId, newPassword, ctx = { rng: Math.random }) {
+  const user = db.users.find((u) => u.id === userId);
+  if (!user) throw new Error('משתמש לא נמצא');
+  if (!canResetCredentials(actor, user)) throw new AuthError('אין הרשאה לאפס סיסמה למשתמש זה');
+  const pass = newPassword?.trim() || genPassword(ctx.rng);
+  if (pass.length < 4) throw new Error('הסיסמה חייבת להכיל לפחות 4 תווים');
+  user.password = pass;
+  return pass;
+}
+
+/** Change a user's login username to a chosen value (validated + unique). */
+export function changeUsername(db, actor, userId, username) {
+  const user = db.users.find((u) => u.id === userId);
+  if (!user) throw new Error('משתמש לא נמצא');
+  if (!canManageFully(actor, user)) throw new AuthError('אין הרשאה לשנות שם משתמש זה');
+  const clean = normalizeUsername(username);
+  if (clean.length < 3) throw new Error('שם משתמש חייב לפחות 3 תווים (אותיות אנגלית, ספרות, מקף)');
+  if (db.users.some((u) => u.username === clean && u.id !== userId)) throw new Error('שם המשתמש כבר תפוס');
+  user.username = clean;
+  return clean;
+}
+
+export function deleteUser(db, actor, userId) {
+  const user = db.users.find((u) => u.id === userId);
+  if (!user) throw new Error('משתמש לא נמצא');
+  if (user.id === actor.id) throw new Error('אי אפשר למחוק את המשתמש שלך');
+  if (!canManageFully(actor, user)) throw new AuthError('אין הרשאה למחוק משתמש זה');
+  if (user.kind === 'manager') {
+    const workers = db.users.filter((u) => u.kind === 'worker' && u.companyId === user.companyId);
+    if (workers.length > 0) throw new Error('לא ניתן למחוק מנהל שיש תחתיו עובדים — מחק/העבר אותם קודם');
+  }
+  // Remove the user's task assignments so nothing is orphaned.
+  for (const task of db.tasks) {
+    task.assignments = task.assignments.filter((a) => a.workerId !== userId);
+  }
+  db.users = db.users.filter((u) => u.id !== userId);
+  return user;
+}
+
+/** Latin-only, lowercased, safe username slug. */
+export function normalizeUsername(raw) {
+  return String(raw ?? '').toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+}
+
+/** Is a chosen username free (and valid) for a new/edited user? */
+export function usernameAvailable(db, username, exceptId = null) {
+  const clean = normalizeUsername(username);
+  if (clean.length < 3) return false;
+  return !db.users.some((u) => u.username === clean && u.id !== exceptId);
 }
 
 // ---------------------------------------------------------------------------
