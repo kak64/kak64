@@ -13,6 +13,9 @@ import {
   submitReport, approveAssignment, isOverdue, companyTasks, companyStats,
 } from '/core/tasks.js';
 import { createDb, seedDemo, serializeDb, deserializeDb } from '/core/store.js';
+import { askAssistant, assistantIntro } from '/core/knowledge.js';
+import { analyzePixels, guessProjectName, buildProgram, dispatchProgram } from '/core/planstudio.js';
+import { reportTrend, defectsByCategory, collectDefects } from '/core/analytics.js';
 
 const STORAGE_KEY = 'buildcheck-portal-db-v1';
 const SESSION_KEY = 'buildcheck-portal-session-v1';
@@ -37,6 +40,9 @@ const ui = {
   myTasksDate: todayStr(),
   modal: null,
   lightbox: null,
+  assistantOpen: false,
+  assistantLog: [],
+  studio: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -143,6 +149,15 @@ function catLabel(task) {
 
 function userName(id) {
   return db.users.find((u) => u.id === id)?.name ?? '—';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/** Minimal, safe inline markdown: escape everything, then bold **…**. */
+function mdLite(text) {
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
 function tryAction(fn) {
@@ -284,6 +299,8 @@ const TABS = {
   ],
   manager: [
     { id: 'overview', label: 'סקירה' },
+    { id: 'dashboard', label: '📊 דשבורד' },
+    { id: 'studio', label: '📐 סטודיו תוכניות' },
     { id: 'dispatch', label: 'שליחת משימה' },
     { id: 'tasks', label: 'משימות ודוחות' },
     { id: 'workers', label: 'עובדים' },
@@ -330,7 +347,8 @@ function renderShell() {
   else if (currentUser.kind === 'manager') renderManager(content);
   else renderWorker(content);
 
-  app.replaceChildren(topbar, tabs, content);
+  app.replaceChildren(topbar, tabs, content, assistantFab());
+  if (ui.assistantOpen) app.appendChild(assistantPanel());
 }
 
 // ===========================================================================
@@ -467,6 +485,8 @@ function renderAdminSettings(content) {
 function renderManager(content) {
   if (ui.reportView) return renderReportView(content, { manager: true });
   if (ui.tab === 'overview') return renderManagerOverview(content);
+  if (ui.tab === 'dashboard') return renderManagerDashboard(content);
+  if (ui.tab === 'studio') return renderManagerStudio(content);
   if (ui.tab === 'dispatch') return renderManagerDispatch(content);
   if (ui.tab === 'tasks') return renderManagerTasks(content);
   return renderManagerWorkers(content);
@@ -1040,6 +1060,482 @@ function compressImage(file, maxDim = 1000, quality = 0.72) {
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad image')); };
     img.src = url;
   });
+}
+
+// ===========================================================================
+// Smart assistant (העוזר החכם) — floating drawer, all roles
+// ===========================================================================
+
+function assistantFab() {
+  return el('button', {
+    class: 'assistant-fab' + (ui.assistantOpen ? ' open' : ''),
+    title: 'העוזר החכם',
+    'aria-label': 'פתח את העוזר החכם',
+    onclick: () => {
+      ui.assistantOpen = !ui.assistantOpen;
+      if (ui.assistantOpen && ui.assistantLog.length === 0) {
+        ui.assistantLog.push({ who: 'ai', text: assistantIntro(db, currentUser), actions: [] });
+      }
+      render();
+      focusAssistantInput();
+    },
+    html: ui.assistantOpen ? '✕' : '💬',
+  });
+}
+
+function focusAssistantInput() {
+  requestAnimationFrame(() => document.getElementById('assistant-input')?.focus());
+}
+
+function assistantPanel() {
+  const log = el('div', { class: 'assistant-log' });
+  for (const msg of ui.assistantLog) {
+    const bubble = el('div', { class: `a-bubble ${msg.who}`, html: mdLite(msg.text) });
+    log.appendChild(bubble);
+    if (msg.actions?.length) {
+      const row = el('div', { class: 'a-actions' });
+      for (const action of msg.actions) {
+        row.appendChild(el('button', { class: 'a-chip', text: action.label, onclick: () => runAssistantAction(action) }));
+      }
+      log.appendChild(row);
+    }
+  }
+
+  const suggestions = currentUser.kind === 'worker'
+    ? ['מה יש לי היום?', 'משימות באיחור', 'מה גובה נקודות מים בכיור?']
+    : currentUser.kind === 'manager'
+      ? ['מה מצב המשימות?', 'כמה ליקויים ואיפה?', 'מי העובד המוביל?', 'מה שיפוע דלוחין תקין?']
+      : ['מה הסטטוס במערכת?', 'מה זה שטיכמוס?'];
+
+  const sugRow = el('div', { class: 'a-suggest' },
+    suggestions.map((s) => el('button', { class: 'a-sug', text: s, onclick: () => sendAssistant(s) })));
+
+  const inputEl = el('input', {
+    id: 'assistant-input', type: 'text', placeholder: 'שאל אותי כל דבר…', autocomplete: 'off',
+    onkeydown: (e) => { if (e.key === 'Enter' && e.target.value.trim()) sendAssistant(e.target.value); },
+  });
+
+  const panel = el('div', { class: 'assistant-panel', role: 'dialog', 'aria-label': 'העוזר החכם' },
+    el('div', { class: 'assistant-head' },
+      el('span', { html: '🤖 <b>העוזר החכם</b>' }),
+      el('span', { class: 'a-badge', text: 'AI' }),
+      el('span', { style: 'flex:1' }),
+      el('button', { class: 'a-close', text: '✕', 'aria-label': 'סגור', onclick: () => { ui.assistantOpen = false; render(); } })),
+    log,
+    sugRow,
+    el('div', { class: 'assistant-input-row' },
+      inputEl,
+      el('button', { class: 'a-send', text: 'שלח', onclick: () => { if (inputEl.value.trim()) sendAssistant(inputEl.value); } })));
+
+  requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
+  return panel;
+}
+
+function sendAssistant(text) {
+  ui.assistantLog.push({ who: 'user', text, actions: [] });
+  const res = askAssistant(db, currentUser, text, { today: todayStr() });
+  ui.assistantLog.push({ who: 'ai', text: res.answer, actions: res.actions ?? [], source: res.source });
+  render();
+  focusAssistantInput();
+}
+
+function runAssistantAction(action) {
+  if (action.type === 'open_tab') {
+    ui.tab = action.tab;
+    ui.assistantOpen = false;
+  } else if (action.type === 'dispatch_draft') {
+    ui.tab = 'dispatch';
+    ui.dispatch = null;
+    render();
+    // Prefill after the dispatch form initializes its defaults.
+    ui.dispatch = {
+      categoryId: action.categoryId,
+      subcategoryId: action.subcategoryId,
+      checksText: subcategoryById(db, action.categoryId, action.subcategoryId)?.checks.join('\n') ?? '',
+      roleId: '', districtId: '', areaId: '',
+      title: '', site: '', description: '',
+      execDate: todayStr(), execTime: '08:00', dueDate: addDaysStr(todayStr(), 2),
+    };
+    ui.assistantOpen = false;
+  }
+  render();
+}
+
+// ===========================================================================
+// Dashboard — analytics with SVG charts
+// ===========================================================================
+
+function renderManagerDashboard(content) {
+  content.appendChild(el('h2', { class: 'page-title', text: '📊 דשבורד ניהולי' }));
+  const stats = companyStats(db, currentUser.companyId, todayStr());
+  content.appendChild(el('div', { class: 'stat-row' },
+    stat(stats.total, 'סה"כ שיוכים'),
+    stat(stats.approved, 'אושרו'),
+    stat(stats.submitted, 'לאישור'),
+    stat(stats.in_progress, 'בביצוע'),
+    el('div', { class: 'stat overdue' }, el('div', { class: 'v', text: stats.overdue }), el('div', { class: 'l', text: 'באיחור' }))));
+
+  // Trend — reports per day, single-hue area+line.
+  const trend = reportTrend(db, currentUser.companyId, todayStr(), 14);
+  content.appendChild(el('div', { class: 'card' },
+    el('h3', { text: 'דוחות שנשלחו — 14 ימים אחרונים' }),
+    trendChart(trend)));
+
+  // Defects by category — single status-hue bars, direct-labeled + table.
+  const defects = defectsByCategory(db, currentUser.companyId);
+  const defectCard = el('div', { class: 'card' }, el('h3', { text: 'ליקויים לפי קטגוריה' }));
+  if (defects.length === 0 || defects.every((d) => d.defects === 0)) {
+    defectCard.appendChild(el('div', { class: 'empty', text: 'לא דווחו ליקויים 🎉' }));
+  } else {
+    defectCard.appendChild(defectChart(defects.filter((d) => d.defects > 0)));
+  }
+  content.appendChild(defectCard);
+
+  // Export.
+  content.appendChild(el('div', { class: 'card' },
+    el('h3', { text: 'ייצוא דוח ליקויים' }),
+    el('p', { class: 'muted-note', text: 'הורדת קובץ טקסט מרוכז של כל הליקויים הפתוחים — לשליחה ליזם או לקבלן.' }),
+    el('div', { class: 'btn-row' },
+      el('button', { class: 'btn small', text: '⬇️ הורד דוח ליקויים', onclick: exportDefectReport }))));
+}
+
+function trendChart(trend) {
+  const W = 620, H = 150, padX = 8, padY = 16;
+  const max = Math.max(1, ...trend.map((d) => d.count));
+  const stepX = (W - padX * 2) / Math.max(1, trend.length - 1);
+  const x = (i) => padX + i * stepX;
+  const y = (v) => H - padY - (v / max) * (H - padY * 2);
+  const pts = trend.map((d, i) => [x(i), y(d.count)]);
+  const linePath = pts.map(([px, py], i) => `${i ? 'L' : 'M'}${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L${x(trend.length - 1).toFixed(1)},${H - padY} L${padX},${H - padY} Z`;
+  const total = trend.reduce((s, d) => s + d.count, 0);
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('class', 'chart-svg');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', `דוחות ליום ב-14 הימים האחרונים, סה"כ ${total}`);
+  svg.innerHTML = `
+    <line x1="${padX}" y1="${H - padY}" x2="${W - padX}" y2="${H - padY}" class="chart-axis"/>
+    <path d="${areaPath}" class="chart-area"/>
+    <path d="${linePath}" class="chart-line"/>
+    ${pts.map(([px, py], i) => `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3.5" class="chart-dot" data-i="${i}"><title>${trend[i].date}: ${trend[i].count} דוחות</title></circle>`).join('')}
+    ${pts.map(([px, py], i) => trend[i].count > 0 ? `<text x="${px.toFixed(1)}" y="${(py - 7).toFixed(1)}" class="chart-pt-label">${trend[i].count}</text>` : '').join('')}
+  `;
+  const wrap = el('div', { class: 'chart-wrap' }, svg);
+  const labels = el('div', { class: 'chart-xlabels' });
+  trend.forEach((d, i) => {
+    if (i % 2 === 0 || i === trend.length - 1) {
+      const [dd, mm] = [d.date.slice(8), d.date.slice(5, 7)];
+      labels.appendChild(el('span', { style: `inset-inline-start:${(x(i) / W * 100).toFixed(1)}%`, text: `${dd}.${mm}` }));
+    }
+  });
+  return el('div', {}, wrap, labels);
+}
+
+function defectChart(rows) {
+  const max = Math.max(...rows.map((r) => r.defects));
+  const list = el('div', { class: 'bar-list' });
+  for (const r of rows) {
+    const pct = (r.defects / max) * 100;
+    const rate = r.checks > 0 ? Math.round((r.defects / r.checks) * 100) : 0;
+    list.appendChild(el('div', { class: 'bar-row' },
+      el('span', { class: 'bar-label', text: `${categoryById(db, r.categoryId)?.icon ?? ''} ${r.name}` }),
+      el('span', { class: 'bar-track' },
+        el('span', { class: 'bar-fill', style: `width:${Math.max(6, pct)}%`, title: `${r.defects} ליקויים מתוך ${r.checks} בדיקות` })),
+      el('span', { class: 'bar-value num', text: `${r.defects} · ${rate}%` })));
+  }
+  return list;
+}
+
+async function exportDefectReport() {
+  const rows = collectDefects(db, currentUser.companyId);
+  const company = companyOf(db, currentUser);
+  const lines = [
+    `דוח ליקויים — ${company?.name ?? ''}`,
+    `הופק: ${new Date().toLocaleString('he-IL')}`,
+    `סה"כ ליקויים: ${rows.length}`,
+    '='.repeat(40), '',
+  ];
+  rows.forEach((r, i) => {
+    lines.push(`${i + 1}. ${r.task}`);
+    if (r.site) lines.push(`   אתר: ${r.site}`);
+    lines.push(`   בדיקה: ${r.check}`);
+    lines.push(`   עובד: ${userName(r.workerId)}`);
+    if (r.measurement) lines.push(`   מדידה: ${r.measurement.value} ${r.measurement.unit === 'cm' ? 'ס"מ' : 'מטר'}`);
+    lines.push(`   תיאור: ${r.note}`);
+    lines.push(`   תמונות מצורפות: ${r.photos}`);
+    lines.push('');
+  });
+  const text = lines.join('\n');
+  const filename = `defect-report-${todayStr()}.txt`;
+
+  if (window.claude?.downloads) {
+    try {
+      await window.claude.downloads.save({ filename, data: text });
+      toast('דוח הליקויים הורד ✔');
+      return;
+    } catch (e) {
+      if (e?.code === 'declined') { toast('ההורדה בוטלה', true); return; }
+      // fall through to blob fallback for other errors
+    }
+  }
+  try {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('דוח הליקויים הורד ✔');
+  } catch {
+    toast('הורדה אינה נתמכת בתצוגה זו', true);
+  }
+}
+
+// ===========================================================================
+// Plan Studio (סטודיו תוכניות) — upload, AI analysis, program generation
+// ===========================================================================
+
+function renderManagerStudio(content) {
+  content.appendChild(el('h2', { class: 'page-title', text: '📐 סטודיו תוכניות' }));
+  content.appendChild(el('p', { class: 'page-sub', text: 'העלה גרמושקה או סקיצת 3D — המערכת מנתחת את התוכנית, בונה פרופיל פרויקט, ומייצרת תוכנית ביקורת מלאה לשיגור בלחיצה.' }));
+
+  const s = ui.studio;
+
+  // Existing projects.
+  const projects = (db.projects ?? []).filter((p) => p.companyId === currentUser.companyId);
+  if (projects.length > 0 && (!s || s.step === 'upload')) {
+    const card = el('div', { class: 'card' }, el('h3', { text: `פרויקטים שנותחו (${projects.length})` }));
+    for (const p of projects) {
+      card.appendChild(el('div', { class: 'assignee-row' },
+        el('b', { text: p.name }),
+        el('span', { class: 'chip cat num', text: `${p.taskIds.length} משימות` }),
+        p.skippedCount ? el('span', { class: 'chip overdue', text: `${p.skippedCount} דולגו` }) : null,
+        el('span', { class: 'grow' }),
+        el('span', { class: 'muted-note num', text: new Date(p.createdAt).toLocaleDateString('he-IL') })));
+    }
+    content.appendChild(card);
+  }
+
+  if (!s || s.step === 'upload') return renderStudioUpload(content);
+  if (s.step === 'analyzing') return renderStudioAnalyzing(content);
+  if (s.step === 'profile') return renderStudioProfile(content);
+  if (s.step === 'program') return renderStudioProgram(content);
+}
+
+function renderStudioUpload(content) {
+  const fileInput = el('input', {
+    type: 'file', accept: 'image/*', style: 'display:none',
+    onchange: (e) => { if (e.target.files[0]) startAnalysis(e.target.files[0]); },
+  });
+  content.appendChild(el('div', { class: 'card studio-drop' },
+    el('div', { class: 'studio-drop-inner' },
+      el('div', { class: 'studio-icon', html: '📐' }),
+      el('h3', { text: 'העלה תוכנית לניתוח' }),
+      el('p', { class: 'muted-note', text: 'גרמושקה, תוכנית קומה, חתך או סקיצת 3D — קובץ תמונה (JPG/PNG).' }),
+      fileInput,
+      el('button', { class: 'btn', text: '📎 בחר קובץ תוכנית', onclick: () => fileInput.click() }),
+      el('button', { class: 'btn secondary small', text: 'דלג — הזן פרטי פרויקט ידנית', onclick: () => { ui.studio = blankProfile(); ui.studio.step = 'profile'; render(); } }))));
+}
+
+function blankProfile() {
+  return {
+    step: 'profile',
+    analysis: null,
+    preview: null,
+    projectName: 'פרויקט חדש',
+    floors: 6, apartmentsPerFloor: 4,
+    hasElevator: true, hasMamad: true, hasRoof: true,
+    startDate: todayStr(),
+    categoryIds: ['shell', 'plumbing', 'electric', 'hvac', 'sealing', 'finish', 'safety'],
+  };
+}
+
+async function startAnalysis(file) {
+  ui.studio = { step: 'analyzing', filename: file.name };
+  render();
+  try {
+    const preview = await compressImage(file, 1000, 0.75);
+    const analysis = await analyzeImageFile(preview);
+    const profile = blankProfile();
+    profile.step = 'profile';
+    profile.analysis = analysis;
+    profile.preview = preview;
+    profile.projectName = guessProjectName(file.name);
+    // Denser sheets imply more floors — a gentle nudge, fully editable.
+    profile.floors = analysis.complexity >= 4 ? 12 : analysis.complexity >= 3 ? 8 : 5;
+    ui.studio = profile;
+    render();
+  } catch (e) {
+    toast('שגיאה בניתוח התמונה: ' + e.message, true);
+    ui.studio = null;
+    render();
+  }
+}
+
+/** Draw the image to a downscaled canvas and run analyzePixels on it. */
+function analyzeImageFile(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 260;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const cx = canvas.getContext('2d');
+      cx.drawImage(img, 0, 0, w, h);
+      const imgData = cx.getImageData(0, 0, w, h);
+      resolve(analyzePixels(imgData));
+    };
+    img.onerror = () => reject(new Error('bad image'));
+    img.src = dataUrl;
+  });
+}
+
+function renderStudioAnalyzing(content) {
+  content.appendChild(el('div', { class: 'card studio-analyzing' },
+    el('div', { class: 'spinner' }),
+    el('h3', { text: 'מנתח את התוכנית…' }),
+    el('p', { class: 'muted-note', text: 'זיהוי סוג השרטוט, צפיפות וקווי מבנה' })));
+}
+
+function renderStudioProfile(content) {
+  const s = ui.studio;
+  const a = s.analysis;
+
+  if (a) {
+    const verdict = a.isDrawing
+      ? `זוהתה תוכנית הנדסית (${Math.round(a.hvScore * 100)}% קווים אנכיים/אופקיים, צפיפות ${a.complexity}/5).`
+      : 'התמונה נראית כמו צילום/סקיצה חופשית — נשתמש בה כרקע, ותוכל לכוון את הפרטים ידנית.';
+    const analysisCard = el('div', { class: 'card studio-analysis' },
+      s.preview ? el('img', { class: 'studio-preview', src: s.preview, alt: 'תצוגת התוכנית', onclick: () => { ui.lightbox = s.preview; renderOverlays(); } }) : null,
+      el('div', { class: 'studio-verdict' },
+        el('div', { class: 'chip ' + (a.isDrawing ? 'approved' : 'in_progress'), text: a.isDrawing ? '✓ תוכנית זוהתה' : 'סקיצה' }),
+        el('p', { text: verdict }),
+        el('div', { class: 'studio-metrics' },
+          metric('צפיפות שרטוט', `${a.complexity}/5`),
+          metric('קווי מבנה', `${Math.round(a.hvScore * 100)}%`),
+          metric('רקע לבן', `${Math.round(a.whiteRatio * 100)}%`))));
+    content.appendChild(analysisCard);
+  }
+
+  content.appendChild(el('div', { class: 'card' },
+    el('h3', { text: 'פרופיל הפרויקט' }),
+    el('p', { class: 'muted-note', text: 'ערכי ברירת מחדל הוצעו מהניתוח — כוון לפי המבנה בפועל.' }),
+    el('div', { class: 'form-grid' },
+      field('שם הפרויקט', input('text', s.projectName, (v) => { s.projectName = v; })),
+      field('תאריך התחלת ביקורות', input('date', s.startDate, (v) => { s.startDate = v; })),
+      field('מספר קומות', numInput(s.floors, 1, 60, (v) => { s.floors = v; })),
+      field('דירות בקומה', numInput(s.apartmentsPerFloor, 1, 20, (v) => { s.apartmentsPerFloor = v; })),
+      checkboxField('מעלית בבניין', s.hasElevator, (v) => { s.hasElevator = v; }),
+      checkboxField('ממ"ד בכל דירה', s.hasMamad, (v) => { s.hasMamad = v; }),
+      checkboxField('גג לבדיקה', s.hasRoof, (v) => { s.hasRoof = v; }))));
+
+  const catCard = el('div', { class: 'card' },
+    el('h3', { text: 'תחומי ביקורת בתוכנית' }),
+    el('div', { class: 'cat-toggle-grid' },
+      db.categories.map((c) => {
+        const on = s.categoryIds.includes(c.id);
+        return el('button', {
+          class: 'cat-toggle' + (on ? ' on' : ''),
+          onclick: () => {
+            s.categoryIds = on ? s.categoryIds.filter((x) => x !== c.id) : [...s.categoryIds, c.id];
+            render();
+          },
+          html: `<span class="ct-ic">${c.icon}</span><span>${c.name}</span><span class="ct-check">${on ? '✓' : ''}</span>`,
+        });
+      })));
+  content.appendChild(catCard);
+
+  content.appendChild(el('div', { class: 'btn-row' },
+    el('button', { class: 'btn', text: '⚙️ צור תוכנית ביקורת', disabled: s.categoryIds.length === 0, onclick: generateProgram }),
+    el('button', { class: 'btn secondary', text: 'התחל מחדש', onclick: () => { ui.studio = null; render(); } })));
+}
+
+function metric(label, value) {
+  return el('div', { class: 'studio-metric' }, el('div', { class: 'mv num', text: value }), el('div', { class: 'ml', text: label }));
+}
+
+function numInput(value, min, max, oninput) {
+  return el('input', {
+    type: 'number', value, min, max, step: 1, inputMode: 'numeric',
+    oninput: (e) => { const n = Number(e.target.value); if (!Number.isNaN(n)) oninput(Math.max(min, Math.min(max, n))); },
+  });
+}
+
+function checkboxField(label, checked, onchange) {
+  const box = el('input', { type: 'checkbox', onchange: (e) => onchange(e.target.checked) });
+  box.checked = checked;
+  const wrap = el('label', { class: 'checkbox-field' }, box, el('span', { text: label }));
+  return el('div', { class: 'field' }, wrap);
+}
+
+function generateProgram() {
+  const s = ui.studio;
+  try {
+    const { proposals, capped, totalBeforeCap } = buildProgram(db, s);
+    s.proposals = proposals;
+    s.capped = capped;
+    s.totalBeforeCap = totalBeforeCap;
+    s.step = 'program';
+    render();
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+function renderStudioProgram(content) {
+  const s = ui.studio;
+  content.appendChild(el('div', { class: 'btn-row' },
+    el('button', { class: 'btn secondary small', text: '→ חזרה לפרופיל', onclick: () => { s.step = 'profile'; render(); } })));
+  content.appendChild(el('h2', { class: 'page-title', text: `תוכנית ביקורת — ${s.projectName}` }));
+
+  // Preview which proposals have a matching worker and which will be skipped.
+  const withMatch = s.proposals.map((p) => ({
+    ...p,
+    matched: p.roleId ? resolveAssignees(db, currentUser.companyId, { roleId: p.roleId }).length : 0,
+  }));
+  const sendable = withMatch.filter((p) => p.matched > 0).length;
+
+  content.appendChild(el('p', { class: 'page-sub', text: `${s.proposals.length} משימות תוזמנו לפי שלבי הביצוע. ${sendable} ניתנות לשיגור מיידי (יש עובד מתאים); השאר ידולגו עד שיירשם עובד בתפקיד.` }));
+  if (s.capped) content.appendChild(el('div', { class: 'card', style: 'border-color:var(--warn)' }, el('p', { class: 'hint-warn', text: `⚠️ נוצרו ${s.totalBeforeCap} משימות — מוצגות ומשוגרות ${s.proposals.length} הראשונות. צמצם תחומים או קומות לתוכנית ממוקדת יותר.` })));
+
+  // Group by execution date for a phased view.
+  const byDate = new Map();
+  for (const p of withMatch) {
+    if (!byDate.has(p.execDate)) byDate.set(p.execDate, []);
+    byDate.get(p.execDate).push(p);
+  }
+  for (const [date, group] of [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const card = el('div', { class: 'card' }, el('h3', { html: `🗓 ${fmtDate(date)} <span class="muted-note">(${group.length} משימות)</span>` }));
+    for (const p of group) {
+      card.appendChild(el('div', { class: 'assignee-row' },
+        el('span', { class: 'chip cat', text: roleById(db, p.roleId)?.name ?? '—' }),
+        el('span', { class: 'grow', text: p.title }),
+        p.matched > 0
+          ? el('span', { class: 'chip approved', text: `${p.matched} עובדים ✓` })
+          : el('span', { class: 'chip overdue', text: 'אין עובד' })));
+    }
+    content.appendChild(card);
+  }
+
+  content.appendChild(el('div', { class: 'btn-row' },
+    el('button', {
+      class: 'btn', text: `🚀 שגר תוכנית — ${sendable} משימות`,
+      disabled: sendable === 0,
+      onclick: () => tryAction(() => {
+        const { project, sent, skipped } = dispatchProgram(db, currentUser, {
+          projectName: s.projectName, analysis: s.analysis, proposals: s.proposals,
+        }, ctx);
+        ui.studio = null;
+        ui.tab = 'tasks';
+        toast(`התוכנית שוגרה: ${sent.length} משימות נשלחו${skipped.length ? `, ${skipped.length} דולגו` : ''} ✔`);
+      }),
+    })));
 }
 
 boot();

@@ -9,7 +9,7 @@ import { baseRoles, baseDistricts, baseCategories } from './directory.js';
 import { createCompany, createManager, createWorker } from './auth.js';
 import { dispatchTask, startAssignment, submitReport, approveAssignment } from './tasks.js';
 
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export function createDb(ctx = defaultCtx()) {
   const db = {
@@ -21,6 +21,7 @@ export function createDb(ctx = defaultCtx()) {
     companies: [],
     users: [],
     tasks: [],
+    projects: [],
   };
   db.users.push({
     id: 'usr_admin',
@@ -87,10 +88,67 @@ export function seedDemo(db, ctx = defaultCtx()) {
     name: 'דוד מזרחי', roleId: 'electrician', districtId: 'center', areaId: 'rishon',
     username: 'david', password: '1234',
   }, ctx);
-  createWorker(db, manager, {
+  const { user: moshe } = createWorker(db, manager, {
     name: 'משה פרץ', roleId: 'hvac', districtId: 'north', areaId: 'haifa',
     username: 'moshe', password: '1234',
   }, ctx);
+  const { user: avi } = createWorker(db, manager, {
+    name: 'אבי שלום', roleId: 'tiler', districtId: 'center', areaId: 'petah-tikva',
+    username: 'avi', password: '1234',
+  }, ctx);
+  const { user: noa } = createWorker(db, manager, {
+    name: 'נועה ברק', roleId: 'safety', districtId: 'center', areaId: 'petah-tikva',
+    username: 'noa', password: '1234',
+  }, ctx);
+  const { user: haim } = createWorker(db, manager, {
+    name: 'חיים דדון', roleId: 'sealer', districtId: 'south', areaId: 'ashdod',
+    username: 'haim', password: '1234',
+  }, ctx);
+
+  // Second client company — multi-tenant branding on the login screen.
+  const company2 = createCompany(db, admin, { name: 'גל-ים הנדסה בע"מ' }, ctx);
+  company2.logoSeed = 4212;
+  const { user: manager2 } = createManager(db, admin, {
+    companyId: company2.id, name: 'רונה גל', username: 'rona', password: '1234',
+  }, ctx);
+  createWorker(db, manager2, {
+    name: 'סמי אוחיון', roleId: 'plumber', districtId: 'tel-aviv', areaId: 'holon',
+    username: 'sami', password: '1234',
+  }, ctx);
+
+  // Two weeks of history so the dashboard trend and defect analytics are
+  // alive: submitted/approved single-check reports on alternating days.
+  const HISTORY = [
+    { d: -12, w: david, cat: 'electric', sub: 'lighting', defect: false, approve: true },
+    { d: -11, w: yossi, cat: 'plumbing', sub: 'risers', defect: false, approve: true },
+    { d: -9, w: avi, cat: 'finish', sub: 'tiling', defect: true, note: 'שלולית במרפסת דירה 6 — שיפוע הפוך', approve: true },
+    { d: -8, w: moshe, cat: 'hvac', sub: 'units', defect: false, approve: true },
+    { d: -7, w: haim, cat: 'sealing', sub: 'wet', defect: true, note: 'רטיבות בתקרת דירה 3 אחרי הצפה', approve: true },
+    { d: -5, w: david, cat: 'electric', sub: 'points', defect: false, approve: true },
+    { d: -4, w: yossi, cat: 'plumbing', sub: 'drains', defect: true, note: 'שיפוע 1% בלבד בקו מטבח דירה 9', approve: false },
+    { d: -3, w: noa, cat: 'safety', sub: 'openings', defect: true, note: 'פתח רצפה ללא כיסוי בקומה 4', approve: false },
+    { d: -2, w: avi, cat: 'finish', sub: 'paint', defect: false, approve: true },
+  ];
+  for (const h of HISTORY) {
+    const date = addDaysStr(today, h.d);
+    const cat = db.categories.find((c) => c.id === h.cat);
+    const sub = cat.subs.find((s) => s.id === h.sub);
+    const task = dispatchTask(db, manager, {
+      title: `${cat.name} · ${sub.name} — מגדל A`,
+      site: 'פרויקט נופי השרון, פתח תקווה',
+      categoryId: h.cat, subcategoryId: h.sub,
+      target: { roleId: h.w.roleId },
+      execDate: date, execTime: '08:00', dueDate: addDaysStr(date, 2),
+    }, ctx);
+    startAssignment(db, h.w, task.id, ctx);
+    submitReport(db, h.w, task.id, {
+      items: task.checks.map((label, i) => (h.defect && i === 0
+        ? { status: 'defect', measurement: null, note: h.note, photos: [placeholderPhoto('ליקוי — ' + sub.name, '#8a2f3c')] }
+        : { status: 'ok', measurement: null, note: '', photos: [placeholderPhoto(label.slice(0, 18))] })),
+      summary: h.defect ? h.note : 'בוצע ותקין.',
+    }, ctx);
+    if (h.approve) approveAssignment(db, manager, task.id, h.w.id, ctx);
+  }
 
   // Task 1 — today, pending, targeted by role (plumbers).
   dispatchTask(db, manager, {

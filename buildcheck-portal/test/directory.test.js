@@ -48,21 +48,22 @@ test('logo: deterministic per seed, varies across seeds, carries initials', () =
   assert.equal(initialsOf('סולו'), 'ס');
 });
 
-test('demo seed: fixed credentials, live tasks, one submitted report with photos', () => {
+test('demo seed: fixed credentials, two companies, live history with photos', () => {
   const c = ctx();
   const db = createDb(c);
   seedDemo(db, c);
   assert.ok(authenticate(db, 'admin', '1234'));
   assert.ok(authenticate(db, 'ohad', '1234'));
   assert.ok(authenticate(db, 'yossi', '1234'));
-  assert.equal(db.companies.length, 1);
-  assert.equal(db.tasks.length, 4);
+  assert.ok(authenticate(db, 'rona', '1234'));
+  assert.equal(db.companies.length, 2);
+  assert.equal(db.tasks.length, 13);
   const submitted = db.tasks.flatMap((t) => t.assignments).filter((a) => a.status === STATUS.SUBMITTED);
   const approved = db.tasks.flatMap((t) => t.assignments).filter((a) => a.status === STATUS.APPROVED);
-  assert.equal(submitted.length, 1);
-  assert.equal(approved.length, 1);
-  assert.ok(submitted[0].report.items.every((i) => i.photos.length >= 1));
-  assert.ok(submitted[0].report.items.some((i) => i.status === 'defect'));
+  assert.equal(submitted.length, 3);
+  assert.equal(approved.length, 8);
+  assert.ok(submitted.every((a) => a.report.items.every((i) => i.photos.length >= 1)));
+  assert.ok(submitted.some((a) => a.report.items.some((i) => i.status === 'defect')));
 });
 
 test('serialization round-trip preserves the db; bad json rejected', () => {
