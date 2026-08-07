@@ -5,5 +5,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // בזמן פיתוח: כל בקשה ל-/api מנותבת אוטומטית לשרת ה-Express על 4000
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
   },
 });

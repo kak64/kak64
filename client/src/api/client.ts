@@ -22,6 +22,9 @@ import {
 import { localAiAnswer } from './localAi';
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+// משתמשים ב-API אמיתי כשהוגדרה כתובת מפורשת, או בזמן פיתוח (Vite מנתב /api לשרת).
+// בבנייה סטטית ללא הגדרה — עובדים על נתוני דמה מקומיים ללא בקשות רשת מיותרות.
+const USE_API = Boolean(API_URL) || import.meta.env.DEV;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
@@ -36,7 +39,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
  * עוטף קריאת API: אם השרת לא זמין (פיתוח standalone) נופלים בחן לנתוני דמה מקומיים.
  */
 async function withFallback<T>(call: () => Promise<T>, fallback: T): Promise<T> {
-  if (!API_URL) return fallback;
+  if (!USE_API) return fallback;
   try {
     return await call();
   } catch {
