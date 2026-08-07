@@ -1,0 +1,16 @@
+{
+  "name": "buildcheck-ai",
+  "version": "1.0.0",
+  "description": "BuildCheck AI — interactive field-inspection assistant for plumbing completions (קומפלטים): pre-check gatekeeper, laser datum calculator, station-by-station wizard and approval report.",
+  "type": "module",
+  "main": "src/core/engine.js",
+  "scripts": {
+    "start": "node server.js",
+    "cli": "node bin/cli.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

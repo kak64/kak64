@@ -1,3 +1,9 @@
+# KAK64
+
+> 🏗️ **BuildCheck AI** — an interactive field-inspection assistant for
+> plumbing completions (בקרת קומפלטים) lives in
+> [`buildcheck-ai/`](buildcheck-ai/README.md).
+
 # KAK64 Hosting Panel
 
 פאנל ניהול אחסון בעברית מעל VMware ESXi.

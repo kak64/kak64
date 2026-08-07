@@ -1,0 +1,120 @@
+/* BuildCheck AI — RTL Hebrew chat UI */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f4f6f8;
+  --panel: #ffffff;
+  --ink: #1f2933;
+  --muted: #6b7280;
+  --accent: #0f6fde;
+  --accent-ink: #ffffff;
+  --ok: #157f3d;
+  --warn: #b45309;
+  --err: #b91c1c;
+  --bubble-ai: #ffffff;
+  --bubble-user: #dcebff;
+  --border: #d8dee6;
+}
+
+body {
+  font-family: "Segoe UI", "Heebo", "Arial Hebrew", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.topbar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.brand { font-size: 1.15rem; font-weight: 700; }
+.subtitle { color: var(--muted); font-size: 0.9rem; flex: 1; }
+.state-badge {
+  font-family: monospace;
+  font-size: 0.75rem;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+}
+
+.chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  white-space: pre-wrap;
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+.bubble.ai { background: var(--bubble-ai); align-self: flex-start; border-start-start-radius: 4px; }
+.bubble.user { background: var(--bubble-user); align-self: flex-end; border-start-end-radius: 4px; }
+.bubble strong { color: #0b3d91; }
+.bubble .dev { color: var(--err); font-weight: 700; }
+.bubble .ok { color: var(--ok); font-weight: 700; }
+
+.composer {
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 0.9rem 1.2rem 1.1rem;
+}
+.composer-inner { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.7rem; }
+
+.inputs { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.6rem; }
+.field { display: flex; flex-direction: column; gap: 0.25rem; }
+.field label { font-size: 0.8rem; color: var(--muted); }
+.field input[type="number"], .field input[type="text"] {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.95rem;
+  background: #fbfcfe;
+}
+.field input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+.bool-field {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+  border: 1px solid var(--border); border-radius: 10px; padding: 0.5rem 0.7rem; background: #fbfcfe;
+}
+.bool-field .q { font-size: 0.85rem; }
+.bool-field .hint { display: block; color: var(--muted); font-size: 0.75rem; }
+.seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.seg button { border: 0; background: #fff; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.85rem; }
+.seg button.on-yes { background: var(--ok); color: #fff; }
+.seg button.on-no { background: var(--err); color: #fff; }
+
+.buttons { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.action-btn {
+  border: 0; border-radius: 10px; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink);
+  padding: 0.6rem 1.1rem; font-size: 0.95rem; font-weight: 600;
+}
+.action-btn.secondary { background: #eef1f5; color: var(--ink); border: 1px solid var(--border); }
+.action-btn.danger { background: var(--err); }
+.action-btn:hover { filter: brightness(1.06); }
+
+.report {
+  background: #f8fafc; border: 1px dashed var(--border); border-radius: 10px;
+  padding: 0.7rem; font-family: monospace; font-size: 0.78rem;
+  direction: ltr; text-align: left; overflow-x: auto; max-height: 300px;
+}
