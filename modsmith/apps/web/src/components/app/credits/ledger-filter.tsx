@@ -2,8 +2,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { NativeSelect } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { LEDGER_TYPES } from "./ledger-types";
 
-export const LEDGER_TYPES = ["SIGNUP_BONUS", "EMAIL_VERIFY_BONUS", "DISCORD_BONUS", "REFERRAL_REWARD", "PARTNER_BONUS", "PURCHASE", "EXPORT", "FAILED_JOB_REFUND", "PROMOTIONAL_GRANT", "SUBSCRIPTION_ALLOCATION", "ADMIN_ADJUSTMENT", "REFUND"] as const;
 
 export function LedgerFilter({ type }: { type: string }) {
   const router = useRouter();

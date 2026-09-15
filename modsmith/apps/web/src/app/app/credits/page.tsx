@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, Pagination, Stat } from "@/components/ui/misc";
 import { BuyCredits, type PackCard } from "@/components/app/credits/buy-credits";
-import { LedgerFilter, LEDGER_TYPES } from "@/components/app/credits/ledger-filter";
+import { LedgerFilter } from "@/components/app/credits/ledger-filter";
+import { isLedgerType } from "@/components/app/credits/ledger-types";
 
 export const metadata: Metadata = { title: "Credits" };
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ export default async function CreditsPage({ searchParams }: { searchParams: Prom
   const user = (await getCurrentUser())!;
   const sp = await searchParams;
   const typeParam = first(sp.type);
-  const type = LEDGER_TYPES.includes(typeParam as (typeof LEDGER_TYPES)[number]) ? (typeParam as CreditTransactionType) : undefined;
+  const type = isLedgerType(typeParam) ? (typeParam as CreditTransactionType) : undefined;
   const page = Math.max(1, Number(first(sp.page)) || 1);
   const where: Prisma.CreditTransactionWhereInput = { userId: user.id, ...(type ? { type } : {}) };
   const [account, total, transactions, packs, tools] = await Promise.all([
