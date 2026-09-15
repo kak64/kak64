@@ -20,9 +20,6 @@
     "lint": "echo skip",
     "test": "echo skip"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@prisma/client": "6.19.3",
     "argon2": "0.41.1"
