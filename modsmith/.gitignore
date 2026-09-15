@@ -13,3 +13,4 @@ apps/worker/tmp/
 packages/db/generated/
 .DS_Store
 .storage/
+dump.rdb
