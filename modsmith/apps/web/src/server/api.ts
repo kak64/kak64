@@ -77,7 +77,10 @@ export function apiRoute<TBody extends z.ZodTypeAny | undefined = undefined, TQu
   options: ApiOptions<TBody, TQuery>,
   handler: (ctx: ApiContext<Infer<TBody>, Infer<TQuery>>) => Promise<Response>,
 ) {
-  return async (req: NextRequest, routeCtx?: { params?: Promise<Record<string, string>> | Record<string, string> }): Promise<Response> => {
+  // Next's generated route types require the context parameter to be declared and its `params` to be a
+  // promise, even for routes with no dynamic segments. The runtime access stays defensive because the
+  // wrapper is also called directly from tests.
+  return async (req: NextRequest, routeCtx: { params: Promise<Record<string, string>> }): Promise<Response> => {
     try {
       if (options.csrf !== false) checkCsrf(req);
       const ip = getIp(req);
@@ -120,7 +123,7 @@ export function apiRoute<TBody extends z.ZodTypeAny | undefined = undefined, TQu
         });
         query = options.query.parse(obj);
       }
-      const rawParams = routeCtx?.params ? await routeCtx.params : {};
+      const rawParams = (await routeCtx?.params) ?? {};
       return await handler({ req, user, sessionId: session?.sessionId ?? null, body: body as Infer<TBody>, query: query as Infer<TQuery>, params: rawParams, ip, userAgent });
     } catch (err) {
       return errorResponse(err);
