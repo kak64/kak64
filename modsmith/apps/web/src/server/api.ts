@@ -4,7 +4,7 @@ import { ApiFailure, ErrorCodes, fail, flattenZodError, ok } from "@modsmith/cor
 import { getSession, type SessionUser, CSRF_COOKIE } from "./session";
 import { env } from "@modsmith/services";
 import { logger } from "@modsmith/services";
-import { rateLimit, RATE_LIMITS, type RateLimitRule } from "@modsmith/services";
+import { rateLimit, RATE_LIMITS, safeEqual, type RateLimitRule } from "@modsmith/services";
 
 export type ApiContext<TBody = unknown, TQuery = unknown> = {
   req: NextRequest;
@@ -66,7 +66,7 @@ function checkCsrf(req: NextRequest) {
   const header = req.headers.get("x-csrf-token");
   const cookie = req.cookies.get(CSRF_COOKIE)?.value;
   // Double-submit: when a CSRF cookie exists, the header must match it.
-  if (cookie && header !== cookie) throw new ApiFailure(ErrorCodes.CSRF, "Missing or invalid CSRF token", 403);
+  if (cookie && (!header || !safeEqual(header, cookie))) throw new ApiFailure(ErrorCodes.CSRF, "Missing or invalid CSRF token", 403);
 }
 
 /**

@@ -168,11 +168,13 @@ export async function publishJobEvent(jobId: string, event: { status?: JobStatus
 }
 
 export async function recordJobProgress(jobId: string, p: { stage?: JobStage | string; progress?: number; message?: string; level?: string; data?: Prisma.InputJsonValue }) {
+  // The packaging stage has its own status so the UI can distinguish "still converting" from "almost done".
+  const status: JobStatus = p.stage === "packaging" ? "PACKAGING" : "PROCESSING";
   await prisma.$transaction([
-    prisma.processingJob.update({ where: { id: jobId }, data: { stage: p.stage, progress: p.progress, status: "PROCESSING" } }),
-    prisma.processingEvent.create({ data: { jobId, status: "PROCESSING", stage: p.stage, progress: p.progress, message: p.message, level: p.level ?? "info", data: p.data } }),
+    prisma.processingJob.update({ where: { id: jobId }, data: { stage: p.stage, progress: p.progress, status, ...(p.stage === "validation" ? { startedAt: new Date() } : {}) } }),
+    prisma.processingEvent.create({ data: { jobId, status, stage: p.stage, progress: p.progress, message: p.message, level: p.level ?? "info", data: p.data } }),
   ]);
-  await publishJobEvent(jobId, { status: "PROCESSING", ...p, data: undefined });
+  await publishJobEvent(jobId, { status, ...p, data: undefined });
 }
 
 /** Called by the worker on success. Creates the immutable CreationVersion and notifies. */
@@ -225,25 +227,33 @@ export async function completeJob(jobId: string, result: { resultKey: string; re
   return job;
 }
 
-/** Called by the worker on failure/cancel. Refunds held credits when the failure is ours (infrastructure) or the job never started. */
+/**
+ * Called by the worker on failure or cancellation.
+ *
+ * Refund policy: a user pays only for a successful build, so **every** failed or cancelled job
+ * returns the credits that were held when it was queued — whether the cause was our infrastructure,
+ * a bad input or the user changing their mind. `failure.infrastructure` is recorded for operations
+ * (it distinguishes "our fault" from "their file") and drives retry decisions, not the refund.
+ */
 export async function failJob(jobId: string, failure: { code: string; message: string; infrastructure: boolean; cancelled?: boolean }) {
   const job = await prisma.processingJob.findUniqueOrThrow({ where: { id: jobId }, include: { creation: true, exportCharge: true } });
   if (job.status === "COMPLETED" || job.status === "REFUNDED") return job;
   const tool = getTool(job.toolSlug);
-  const shouldRefund = (job.chargedCredits ?? 0) > 0 && (failure.infrastructure || failure.cancelled || true);
-  // Policy: any failed job returns credits — the user only pays for a successful build.
+  const heldCredits = job.chargedCredits ?? 0;
+  const shouldRefund = heldCredits > 0;
   const status: JobStatus = failure.cancelled ? "CANCELLED" : "FAILED";
   await prisma.$transaction(async (tx) => {
     await tx.processingJob.update({ where: { id: jobId }, data: { status, finishedAt: new Date(), errorCode: failure.code, errorMessage: failure.message.slice(0, 1000) } });
     await tx.processingEvent.create({ data: { jobId, status, message: failure.message.slice(0, 1000), level: "error", data: { code: failure.code, infrastructure: failure.infrastructure } } });
     if (job.creationId) await tx.creation.update({ where: { id: job.creationId }, data: { status: job.creation?.currentVersionId ? "READY" : "FAILED" } });
-    if (shouldRefund && job.exportCharge) {
-      const { transaction, duplicate } = await applyLedgerEntry({ userId: job.userId, type: "FAILED_JOB_REFUND", amount: job.chargedCredits!, reason: failure.cancelled ? "Job cancelled — credits returned" : `Job failed — credits returned (${failure.code})`, referenceType: "job", referenceId: jobId, idempotencyKey: `job-refund:${jobId}` }, tx);
-      if (!duplicate) await tx.creditRefund.create({ data: { chargeId: job.exportCharge.id, credits: job.chargedCredits!, reason: failure.code, transactionId: transaction.id } });
+    if (shouldRefund) {
+      const { transaction, duplicate } = await applyLedgerEntry({ userId: job.userId, type: "FAILED_JOB_REFUND", amount: heldCredits, reason: failure.cancelled ? "Job cancelled — credits returned" : `Job failed — credits returned (${failure.code})`, referenceType: "job", referenceId: jobId, idempotencyKey: `job-refund:${jobId}` }, tx);
+      // The charge row is the audit trail for the refund; inspect jobs have none because they are free.
+      if (!duplicate && job.exportCharge) await tx.creditRefund.create({ data: { chargeId: job.exportCharge.id, credits: heldCredits, reason: failure.code, transactionId: transaction.id } });
       await tx.processingJob.update({ where: { id: jobId }, data: { status: "REFUNDED" } });
     }
   });
-  const finalStatus = shouldRefund && job.exportCharge ? "REFUNDED" : status;
+  const finalStatus = shouldRefund ? "REFUNDED" : status;
   await publishJobEvent(jobId, { status: finalStatus, message: failure.message });
   if (!failure.cancelled) {
     const href = `/app/jobs/${jobId}`;
