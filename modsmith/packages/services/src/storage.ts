@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdir, open, readFile, rm, stat, writeFile, type FileHandle } from "node:fs/promises";
 import path from "node:path";
 import {
   AbortMultipartUploadCommand, CompleteMultipartUploadCommand, CreateMultipartUploadCommand, DeleteObjectCommand, GetObjectCommand,
@@ -18,6 +19,10 @@ import { hmacToken, safeEqual } from "./crypto";
 export interface StorageProvider {
   putObject(key: string, body: Buffer | Uint8Array, mime: string): Promise<void>;
   getObject(key: string): Promise<Buffer | null>;
+  /** Reads a byte range without fetching the whole object (used for content sniffing). */
+  getRange(key: string, start: number, endInclusive: number): Promise<Buffer | null>;
+  /** Streams an object so large files can be hashed without being buffered in memory. */
+  getStream(key: string): Promise<NodeJS.ReadableStream | null>;
   headObject(key: string): Promise<{ size: number; mime?: string } | null>;
   deleteObject(key: string): Promise<void>;
   signedGetUrl(key: string, opts?: { ttl?: number; downloadName?: string; mime?: string }): Promise<string>;
@@ -49,6 +54,25 @@ class S3Provider implements StorageProvider {
       const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
       const bytes = await res.Body?.transformToByteArray();
       return bytes ? Buffer.from(bytes) : null;
+    } catch (e: any) {
+      if (e?.$metadata?.httpStatusCode === 404 || e?.name === "NoSuchKey") return null;
+      throw e;
+    }
+  }
+  async getRange(key: string, start: number, endInclusive: number) {
+    try {
+      const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key, Range: `bytes=${start}-${endInclusive}` }));
+      const bytes = await res.Body?.transformToByteArray();
+      return bytes ? Buffer.from(bytes) : null;
+    } catch (e: any) {
+      if (e?.$metadata?.httpStatusCode === 404 || e?.name === "NoSuchKey") return null;
+      throw e;
+    }
+  }
+  async getStream(key: string) {
+    try {
+      const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+      return (res.Body as NodeJS.ReadableStream | undefined) ?? null;
     } catch (e: any) {
       if (e?.$metadata?.httpStatusCode === 404 || e?.name === "NoSuchKey") return null;
       throw e;
@@ -117,6 +141,22 @@ export class LocalProvider implements StorageProvider {
   async getObject(key: string) {
     try { return await readFile(this.p(key)); } catch { return null; }
   }
+  async getRange(key: string, start: number, endInclusive: number) {
+    let handle: FileHandle | undefined;
+    try {
+      handle = await open(this.p(key), "r");
+      const length = endInclusive - start + 1;
+      const buf = Buffer.alloc(length);
+      const { bytesRead } = await handle.read(buf, 0, length, start);
+      return buf.subarray(0, bytesRead);
+    } catch { return null; } finally { await handle?.close(); }
+  }
+  async getStream(key: string) {
+    try {
+      await stat(this.p(key));
+      return createReadStream(this.p(key));
+    } catch { return null; }
+  }
   async headObject(key: string) {
     try {
       const s = await stat(this.p(key));
@@ -172,6 +212,27 @@ const g = globalThis as unknown as { __storage?: StorageProvider };
 export function storage(): StorageProvider {
   if (!g.__storage) g.__storage = env().STORAGE_PROVIDER === "local" ? new LocalProvider() : new S3Provider();
   return g.__storage;
+}
+
+/**
+ * Computes the SHA-256 of a stored object without buffering it in memory.
+ * Returns null when the object is missing.
+ */
+export async function hashObject(key: string): Promise<{ sha256: string; size: number } | null> {
+  const stream = await storage().getStream(key);
+  if (!stream) return null;
+  const hash = createHash("sha256");
+  let size = 0;
+  await new Promise<void>((resolve, reject) => {
+    stream.on("data", (chunk: Buffer | string) => {
+      const buf = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+      size += buf.length;
+      hash.update(buf);
+    });
+    stream.on("end", () => resolve());
+    stream.on("error", reject);
+  });
+  return { sha256: hash.digest("hex"), size };
 }
 
 export function objectKey(parts: { scope: "uploads" | "results" | "thumbs" | "hub" | "ai" | "external" | "avatars"; userId?: string; projectId?: string; id: string; name: string }) {

@@ -48,5 +48,9 @@ decodeDds(buf): { width, height, format, mips: number, rgba(level): Uint8Array }
 ```
 The worker must degrade gracefully: if the native encoder cannot represent an input, fall back to CodeWalker XML output (+ CLI conversion when `CODEWALKER_CLI` is configured) and record `encoder` in the manifest and a warning.
 
+## Maintenance-queue jobs (worker)
+- `finalize-upload` `{ uploadId }` — for uploads larger than 256 MiB the web layer defers hashing. The worker streams the object, computes SHA-256, compares it with `AssetUpload.sizeBytes`, sets `status: "UPLOADED"`, `sha256`, `scanStatus: "pending"` (or `REJECTED` with a `rejectReason` on mismatch) and publishes nothing. Until this runs, `estimateJob`/`createJob` refuse the upload with `INVALID_FILE { finalizing: true }`.
+- `maintenance` (repeatable, every 15 min) — expired uploads, expired reservations, log/media retention, orphaned objects, old sessions and outbox rows.
+
 ## Tool inputs the editors upload
 Editors always upload the user's ORIGINAL file(s) (for the source hash) and, for generic 3D formats (OBJ/FBX/DAE/glTF), an additional browser-normalized `<name>.glb` (Three.js loaders → GLTFExporter) so the worker only needs to parse GLB for those tools. Config for prop-creator carries `materials[]` mapping material names → uploaded texture keys (by upload id) as validated by `propConfigSchema`.

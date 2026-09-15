@@ -59,7 +59,12 @@ export async function estimateJob(opts: { userId: string; emailVerified: boolean
     ? await prisma.assetUpload.findMany({ where: { id: { in: opts.uploadIds }, userId: opts.userId, status: { in: ["UPLOADED", "VALIDATED"] }, deletedAt: null }, select: { id: true, sha256: true, storageKey: true, originalName: true, sizeBytes: true, detectedMime: true, expiresAt: true } })
     : [];
   if (uploads.length !== opts.uploadIds.length) throw new ApiFailure(ErrorCodes.INVALID_FILE, "One or more uploads are missing, expired or not yours", 400);
-  for (const u of uploads) if (u.expiresAt < new Date()) throw new ApiFailure(ErrorCodes.UPLOAD_EXPIRED, "An upload has expired. Upload it again.", 400);
+  for (const u of uploads) {
+    if (u.expiresAt < new Date()) throw new ApiFailure(ErrorCodes.UPLOAD_EXPIRED, "An upload has expired. Upload it again.", 400);
+    // Large uploads are hashed by a worker; without the hash we cannot decide the free re-export window,
+    // so the job waits rather than silently charging (or not charging) the wrong amount.
+    if (!u.sha256) throw new ApiFailure(ErrorCodes.INVALID_FILE, "This upload is still being verified. Try again in a moment.", 409, { finalizing: true, uploadId: u.id });
+  }
 
   const { sourceHash, configHash } = computeHashes(opts.toolSlug, uploads, config, opts.externalRef);
   const windowDays = await getSetting<number>("credits.reexportWindowDays");
