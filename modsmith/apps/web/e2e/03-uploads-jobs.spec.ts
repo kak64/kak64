@@ -1,23 +1,12 @@
 import { expect, test } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { apiJson, csrfHeaders, grantCredits, prisma, register, uniqueUser, verifyUserByToken, workerRunning } from "./helpers";
+import { cubeGlb, resourceZip } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
-/** Minimal but structurally valid GLB: header + JSON chunk describing an empty scene. */
-function sampleGlb(): Buffer {
-  const json = Buffer.from(JSON.stringify({ asset: { version: "2.0", generator: "modsmith-e2e" }, scenes: [{ nodes: [] }], scene: 0, nodes: [], meshes: [] }), "utf8");
-  const pad = (4 - (json.length % 4)) % 4;
-  const jsonChunk = Buffer.concat([json, Buffer.alloc(pad, 0x20)]);
-  const header = Buffer.alloc(12);
-  header.write("glTF", 0, "ascii");
-  header.writeUInt32LE(2, 4);
-  header.writeUInt32LE(12 + 8 + jsonChunk.length, 8);
-  const chunkHeader = Buffer.alloc(8);
-  chunkHeader.writeUInt32LE(jsonChunk.length, 0);
-  chunkHeader.write("JSON", 4, "ascii");
-  return Buffer.concat([header, chunkHeader, jsonChunk]);
-}
+/** A real textured cube, so a successful export proves the pipeline processed actual geometry. */
+const sampleGlb = cubeGlb;
 
 async function uploadFile(request: any, page: any, toolSlug: string, fileName: string, body: Buffer, mime: string) {
   const init = await apiJson<{ uploadId: string; multipart: boolean; putUrl: string }>(request, page, "post", "/api/v1/uploads", { toolSlug, fileName, sizeBytes: body.length, mime });
@@ -132,6 +121,10 @@ test("a real export produces a downloadable resource and a creation (requires a 
   expect(zip.ok()).toBeTruthy();
   const bytes = Buffer.from(await zip.body());
   expect(bytes.subarray(0, 2).toString("ascii")).toBe("PK"); // a real ZIP, not a placeholder
+  expect(bytes.length).toBeGreaterThan(512); // and it carries actual converted content
+  const manifest = done.resultManifest as { files?: { path: string }[]; stats?: Record<string, unknown> };
+  expect(manifest.files?.length, "the manifest must list the files the worker actually produced").toBeGreaterThan(0);
+  expect(manifest.files!.some((f) => /fxmanifest\.lua$/.test(f.path)), "every FiveM resource needs a manifest").toBeTruthy();
 
   // Re-exporting the identical file with identical settings inside the window is free.
   const uploadAgain = await uploadFile(request, page, "prop-creator", "renamed-sample.glb", sampleGlb(), "model/gltf-binary");
@@ -141,4 +134,30 @@ test("a real export produces a downloadable resource and a creation (requires a 
 
   await page.goto(`/app/creations/${creation.id}`);
   await expect(page.getByText("E2E built prop").first()).toBeVisible({ timeout: 20_000 });
+});
+
+test("the optimizer reports real findings for an oversized loose texture (requires a running worker)", async ({ page, request }) => {
+  test.skip(!(await workerRunning()), "no worker heartbeat — start `pnpm dev:worker` to run this test");
+  test.setTimeout(180_000);
+  const user = uniqueUser("opt");
+  await register(page, user);
+  await verifyUserByToken(page, user.email);
+  await grantCredits(user.email, 500);
+  const zip = resourceZip();
+  const uploadId = await uploadFile(request, page, "resource-optimizer", "my_resource.zip", zip, "application/zip");
+
+  // Analysis runs as a free inspect job.
+  const job = await apiJson<{ id: string; chargedCredits: number }>(request, page, "post", "/api/v1/jobs", { toolSlug: "resource-optimizer", uploadIds: [uploadId], config: { mode: "analyze", kind: "general" }, purpose: "inspect" });
+  expect(job.chargedCredits).toBe(0);
+  await expect.poll(async () => (await prisma.processingJob.findUniqueOrThrow({ where: { id: job.id } })).status, { timeout: 150_000, intervals: [2000] }).toMatch(/COMPLETED|FAILED|REFUNDED/);
+  const done = await prisma.processingJob.findUniqueOrThrow({ where: { id: job.id } });
+  expect(done.status, `optimizer failed: ${done.errorCode} ${done.errorMessage}`).toBe("COMPLETED");
+
+  const manifest = done.resultManifest as { artifacts?: { name: string }[] };
+  const report = manifest.artifacts?.find((a) => a.name === "report.json");
+  expect(report, "the optimizer must emit report.json").toBeTruthy();
+  const artifact = await apiJson<{ url: string }>(request, page, "get", `/api/v1/jobs/${job.id}/artifacts/report.json`);
+  const body = await (await request.get(artifact.url)).json();
+  expect(body.estimatedVramBytes, "expanded texture memory must exceed the compressed ZIP size").toBeGreaterThan(zip.length);
+  expect(Array.isArray(body.issues)).toBeTruthy();
 });
