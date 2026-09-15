@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { hmacToken, randomToken, sha256 } from "./crypto";
 import { redis } from "./redis";
 import { storage } from "./storage";
+import { scanBuffer, scannerConfigured } from "./scanner";
 import { getSetting } from "./settings";
 import { audit } from "./audit";
 
@@ -163,6 +164,13 @@ export async function completeMediaReservation(reservationId: string, uploadToke
   if (body.length > r.maxBytes) throw new ApiFailure(ErrorCodes.FILE_TOO_LARGE, `File exceeds ${r.maxBytes} bytes`, 413);
   const mime = sniffImageMime(body);
   if (!mime || !r.allowedMimes.includes(mime)) { await prisma.mediaReservation.update({ where: { id: r.id }, data: { status: "REJECTED" } }); throw new ApiFailure(ErrorCodes.INVALID_FILE, "File is not a supported image", 415); }
+  if (scannerConfigured()) {
+    const verdict = await scanBuffer(body);
+    if (verdict.clean === false) {
+      await prisma.mediaReservation.update({ where: { id: r.id }, data: { status: "REJECTED" } });
+      throw new ApiFailure(ErrorCodes.INVALID_FILE, "This file was rejected by our malware scanner", 400);
+    }
+  }
   const dims = readImageDimensions(body, mime);
   await storage().putObject(r.storageKey, body, mime);
   const meta = (r.metadata ?? {}) as { player?: { source?: number; license?: string; discord?: string; name?: string }; reason?: string; reportId?: string };

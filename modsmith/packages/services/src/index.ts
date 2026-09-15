@@ -16,3 +16,5 @@ export * from "./referrals";
 export * from "./billing";
 export * from "./hub";
 export * from "./uploads";
+export * from "./scanner";
+export * from "./metrics";

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { apiJson, csrfHeaders, login, logout, prisma, register, uniqueUser } from "./helpers";
+import { apiJson, csrfHeaders, logout, prisma, register, uniqueUser } from "./helpers";
 
 test.describe.configure({ mode: "serial" });
 

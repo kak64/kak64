@@ -48,6 +48,9 @@ decodeDds(buf): { width, height, format, mips: number, rgba(level): Uint8Array }
 ```
 The worker must degrade gracefully: if the native encoder cannot represent an input, fall back to CodeWalker XML output (+ CLI conversion when `CODEWALKER_CLI` is configured) and record `encoder` in the manifest and a warning.
 
+## Malware scanning
+`@modsmith/services` exports `scanObject(key)`, `scanBuffer(buf)` and `scannerConfigured()` (ClamAV INSTREAM; `MALWARE_SCANNER=none` returns `clean: null`). Uploads ≤ 32 MiB and all Server Hub media are scanned inline by the web layer. Larger uploads carry `scanStatus: "pending"` and **the worker must scan them at job start**, failing the job with code `MALWARE_DETECTED` (`infrastructure: false`) and marking the upload `REJECTED` when a signature is found.
+
 ## Maintenance-queue jobs (worker)
 - `finalize-upload` `{ uploadId }` — for uploads larger than 256 MiB the web layer defers hashing. The worker streams the object, computes SHA-256, compares it with `AssetUpload.sizeBytes`, sets `status: "UPLOADED"`, `sha256`, `scanStatus: "pending"` (or `REJECTED` with a `rejectReason` on mismatch) and publishes nothing. Until this runs, `estimateJob`/`createJob` refuse the upload with `INVALID_FILE { finalizing: true }`.
 - `maintenance` (repeatable, every 15 min) — expired uploads, expired reservations, log/media retention, orphaned objects, old sessions and outbox rows.

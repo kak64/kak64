@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: { default: `${BRAND.name} — Build FiveM assets in your browser`, template: `%s · ${BRAND.name}` },
   description: "Create props, vehicles, liveries, clothing, weapon skins, tattoos and more for FiveM — no Blender, CodeWalker, OpenIV or Windows required. Upload, configure, preview, export.",
   applicationName: BRAND.name,
-  openGraph: { type: "website", siteName: BRAND.name, url: appUrl, images: [{ url: "/og.png", width: 1200, height: 630 }] },
+  openGraph: { type: "website", siteName: BRAND.name, url: appUrl },
   twitter: { card: "summary_large_image", site: "@modsmith" },
   robots: { index: true, follow: true },
   icons: { icon: "/icon.svg" },

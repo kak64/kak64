@@ -1,10 +1,12 @@
 import { prisma } from "@modsmith/db";
 import { ApiFailure, ErrorCodes, uploadCompleteSchema } from "@modsmith/core";
-import { QUEUE_NAMES, audit, enqueue, hashObject, storage, verifyContent } from "@modsmith/services";
+import { QUEUE_NAMES, audit, enqueue, hashObject, scanObject, scannerConfigured, storage, verifyContent } from "@modsmith/services";
 import { apiRoute, json } from "@/server/api";
 
 /** Above this size the object is hashed by a worker instead of inside the request. */
 const INLINE_HASH_MAX_BYTES = 256 * 1024 * 1024;
+/** Above this size malware scanning is left to the worker, which streams the file anyway. */
+const INLINE_SCAN_MAX_BYTES = 32 * 1024 * 1024;
 
 /**
  * Finalizes an upload: completes the multipart upload if needed, confirms the object exists with the
@@ -65,7 +67,17 @@ export const POST = apiRoute({ auth: "required", body: uploadCompleteSchema.omit
     await reject("hash_mismatch");
     throw new ApiFailure(ErrorCodes.INVALID_FILE, "File hash mismatch — the upload may have been corrupted", 400);
   }
-  const updated = await prisma.assetUpload.update({ where: { id: u.id }, data: { status: "UPLOADED", detectedMime, sha256: digest.sha256, scanStatus: "pending" } });
+  // Small files are scanned before they are usable; larger ones are scanned by the worker at job start.
+  let scanStatus = "pending";
+  if (scannerConfigured() && head.size <= INLINE_SCAN_MAX_BYTES) {
+    const verdict = await scanObject(u.storageKey);
+    if (verdict.clean === false) {
+      await reject(`malware:${verdict.signature}`);
+      throw new ApiFailure(ErrorCodes.INVALID_FILE, "This file was rejected by our malware scanner", 400);
+    }
+    scanStatus = verdict.clean === true ? "clean" : "skipped";
+  }
+  const updated = await prisma.assetUpload.update({ where: { id: u.id }, data: { status: "UPLOADED", detectedMime, sha256: digest.sha256, scanStatus } });
   await audit({ actorId: user!.id, action: "upload.complete", targetType: "upload", targetId: u.id, after: { name: u.originalName, size: Number(u.sizeBytes), mime: detectedMime } });
   return json({ id: updated.id, status: updated.status, sha256: digest.sha256, detectedMime, finalizing: false });
 });
