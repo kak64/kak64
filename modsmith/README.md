@@ -71,6 +71,7 @@ Without Docker you can point `DATABASE_URL`/`REDIS_URL` at local services and se
 - [`docs/TESTING.md`](docs/TESTING.md) — unit, integration and E2E test instructions
 - [`docs/PROCESSING_CONTRACT.md`](docs/PROCESSING_CONTRACT.md) — web ⇄ worker ⇄ rage contract
 - [`docs/SERVER_HUB.md`](docs/SERVER_HUB.md) — Server Hub API and the `msmhub` resource
+- [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) — **what is verified, what is best-effort and what is not implemented**
 - [`docs/AGENT_BRIEF.md`](docs/AGENT_BRIEF.md) — engineering conventions
 
 ## Product principles (enforced in code)
