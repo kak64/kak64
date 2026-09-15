@@ -3,9 +3,12 @@ import { apiJson, csrfHeaders, prisma, register, uniqueUser, verifyUserByToken }
 
 test.describe.configure({ mode: "serial" });
 
-const stripeConfigured = !!process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_");
+// A placeholder key from .env.example would reach Stripe and be rejected; require a real test key.
+const stripeKey = process.env.STRIPE_SECRET_KEY ?? "";
+const stripeConfigured = stripeKey.startsWith("sk_test_") && stripeKey.length > 24 && !/x{3,}/i.test(stripeKey);
 
-test("credit purchase via Stripe test mode reaches checkout", async ({ page, request }) => {
+test("credit purchase via Stripe test mode reaches checkout", async ({ page }) => {
+  const request = page.request;
   test.skip(!stripeConfigured, "set a Stripe test key (sk_test_…) to run the checkout test");
   const user = uniqueUser("buy");
   await register(page, user);
@@ -17,15 +20,29 @@ test("credit purchase via Stripe test mode reaches checkout", async ({ page, req
   expect(purchase.status).toBe("PENDING"); // credits only arrive via the verified webhook
 });
 
-test("billing page reports an unconfigured payment provider instead of failing silently", async ({ page }) => {
-  test.skip(stripeConfigured, "runs only when Stripe is not configured");
+test("a misconfigured payment provider fails loudly as a payment error, never as a 500", async ({ page }) => {
+  test.skip(stripeConfigured, "runs only when Stripe is not configured with a working key");
   const user = uniqueUser("nobill");
   await register(page, user);
   await page.goto("/app/billing");
-  await expect(page.getByText(/payments? (are|is) not configured|not configured/i).first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: /billing/i }).first()).toBeVisible({ timeout: 20_000 });
+
+  const packs = await page.request.get("/api/v1/credits/packs").then((r) => r.json());
+  const pack = packs.data.packs.find((p: { isCustom: boolean }) => !p.isCustom);
+  const cookies = await page.context().cookies();
+  const csrf = cookies.find((c) => c.name === "ms_csrf")?.value ?? "";
+  const res = await page.request.post("/api/v1/billing/checkout/pack", { headers: { "x-csrf-token": csrf, "content-type": "application/json" }, data: JSON.stringify({ packId: pack.id }) });
+  const body = await res.json();
+  expect(body.success).toBe(false);
+  expect(["PAYMENT_ERROR", "VALIDATION_ERROR"], `got ${res.status()} ${body.error?.code}`).toContain(body.error.code);
+  expect(res.status(), "a provider problem must not surface as an internal error").not.toBe(500);
+  // No credits were granted and the purchase is not left looking paid.
+  const purchases = await page.request.get("/api/v1/billing").then((r) => r.json());
+  expect(purchases.data.purchases.every((p: { status: string }) => p.status !== "PAID")).toBeTruthy();
 });
 
-test("reviews require a completed export and land in moderation", async ({ page, request }) => {
+test("reviews require a completed export and land in moderation", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("rev");
   await register(page, user);
   await verifyUserByToken(page, user.email);
@@ -44,14 +61,17 @@ test("reviews require a completed export and land in moderation", async ({ page,
   expect(publicList.reviews.find((r) => r.id === review.id)).toBeUndefined();
 });
 
-test("showcase publishing is explicit and private creations stay private", async ({ page, request }) => {
+test("showcase publishing is explicit and private creations stay private", async ({ page, browser }) => {
+  const request = page.request;
   const user = uniqueUser("show");
   await register(page, user);
   await verifyUserByToken(page, user.email);
   const u = await prisma.user.findFirstOrThrow({ where: { emailNormalized: user.email.toLowerCase() } });
 
-  const creation = await prisma.creation.create({ data: { userId: u.id, toolSlug: "prop-creator", name: "Secret prop", status: "DRAFT" } });
-  const tooEarly = await request.post(`/api/v1/creations/${creation.id}/publish`, { headers: await csrfHeaders(page), data: JSON.stringify({ title: "Secret prop", category: "props" }) });
+  // A unique title keeps the generated showcase slug unique across runs against the same database.
+  const title = `Secret prop ${Date.now().toString(36)}`;
+  const creation = await prisma.creation.create({ data: { userId: u.id, toolSlug: "prop-creator", name: title, status: "DRAFT" } });
+  const tooEarly = await request.post(`/api/v1/creations/${creation.id}/publish`, { headers: await csrfHeaders(page), data: JSON.stringify({ title, category: "props" }) });
   expect(tooEarly.status()).toBe(409); // only completed creations can be published
 
   const job = await prisma.processingJob.create({ data: { userId: u.id, toolSlug: "prop-creator", processor: "prop", status: "COMPLETED", input: {}, config: {} } });
@@ -59,22 +79,31 @@ test("showcase publishing is explicit and private creations stay private", async
   await prisma.creation.update({ where: { id: creation.id }, data: { status: "READY", currentVersionId: version.id, exportVersion: 1 } });
 
   const publicBefore = await apiJson<{ items: { title: string }[] }>(request, page, "get", "/api/v1/showcase");
-  expect(publicBefore.items.find((i) => i.title === "Secret prop")).toBeUndefined();
+  expect(publicBefore.items.find((i) => i.title === title)).toBeUndefined();
 
-  const published = await apiJson<{ slug: string }>(request, page, "post", `/api/v1/creations/${creation.id}/publish`, { title: "Secret prop", description: "now public", category: "props", tags: ["e2e"], allowDownload: false, allowRemix: false });
+  const published = await apiJson<{ slug: string }>(request, page, "post", `/api/v1/creations/${creation.id}/publish`, { title, description: "now public", category: "props", tags: ["e2e"], allowDownload: false, allowRemix: false });
   await page.goto(`/showcase/${published.slug}`);
-  await expect(page.getByText("Secret prop").first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(title).first()).toBeVisible({ timeout: 20_000 });
 
-  // Download stays blocked because the creator did not enable it.
-  const dl = await request.get(`/api/v1/showcase/${published.slug}/download`);
-  expect(dl.status()).toBe(403);
+  // The creator can always fetch their own resource...
+  expect((await request.get(`/api/v1/showcase/${published.slug}/download`)).status()).toBe(200);
+
+  // ...but another signed-in viewer cannot, because downloads were not enabled.
+  const otherCtx = await browser.newContext();
+  const otherPage = await otherCtx.newPage();
+  await register(otherPage, uniqueUser("viewer"));
+  const denied = await otherPage.request.get(`/api/v1/showcase/${published.slug}/download`);
+  expect(denied.status()).toBe(403);
+  expect((await denied.json()).error.code).toBe("FORBIDDEN");
+  await otherCtx.close();
 
   await apiJson(request, page, "post", `/api/v1/creations/${creation.id}/unpublish`);
   const gone = await request.get(`/api/v1/showcase/${published.slug}`);
   expect(gone.status()).toBe(404);
 });
 
-test("referral rewards only pay out after the referred user's first successful build", async ({ page, request, browser }) => {
+test("referral rewards only pay out after the referred user's first successful build", async ({ page, browser }) => {
+  const request = page.request;
   const owner = uniqueUser("ref");
   await register(page, owner);
   const referral = await apiJson<{ code: string; url: string; signups: number; qualified: number }>(request, page, "get", "/api/v1/referrals");

@@ -124,6 +124,24 @@ export function cubeGlb(): Buffer {
   return Buffer.concat([header, jsonHeader, jsonChunk, binHeader, bin]);
 }
 
+/**
+ * A structurally valid GLB describing an empty scene. It passes upload validation (correct magic
+ * bytes and JSON chunk) but carries no geometry, so the prop processor must reject it rather than
+ * report a successful build.
+ */
+export function emptyGlb(): Buffer {
+  const json = Buffer.from(JSON.stringify({ asset: { version: "2.0", generator: "modsmith-e2e-fixture" }, scene: 0, scenes: [{ nodes: [] }], nodes: [], meshes: [] }), "utf8");
+  const chunk = json.length % 4 === 0 ? json : Buffer.concat([json, Buffer.alloc(4 - (json.length % 4), 0x20)]);
+  const header = Buffer.alloc(12);
+  header.write("glTF", 0, "ascii");
+  header.writeUInt32LE(2, 4);
+  header.writeUInt32LE(12 + 8 + chunk.length, 8);
+  const chunkHeader = Buffer.alloc(8);
+  chunkHeader.writeUInt32LE(chunk.length, 0);
+  chunkHeader.write("JSON", 4, "ascii");
+  return Buffer.concat([header, chunkHeader, chunk]);
+}
+
 /** A ZIP containing a loose oversized PNG — enough for the optimizer to report a real finding. */
 export function resourceZip(): Buffer {
   const png = encodePng(512, 512, (x, y) => [x & 255, y & 255, 128, 255]);

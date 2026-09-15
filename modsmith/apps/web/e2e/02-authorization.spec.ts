@@ -3,7 +3,8 @@ import { apiJson, csrfHeaders, logout, prisma, register, uniqueUser } from "./he
 
 test.describe.configure({ mode: "serial" });
 
-test("a user cannot read another user's creation, and server tokens cannot reach the dashboard", async ({ page, request }) => {
+test("a user cannot read another user's creation, and server tokens cannot reach the dashboard", async ({ page }) => {
+  const request = page.request;
   const alice = uniqueUser("alice");
   await register(page, alice);
   const aliceRow = await prisma.user.findFirstOrThrow({ where: { emailNormalized: alice.email.toLowerCase() } });
@@ -32,7 +33,8 @@ test("a user cannot read another user's creation, and server tokens cannot reach
   expect(ingest.status()).toBe(401);
 });
 
-test("server A's token cannot write to server B", async ({ page, request }) => {
+test("server A's token cannot write to server B", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("hub");
   await register(page, user);
   const a = await apiJson<{ id: string }>(request, page, "post", "/api/v1/server-hub/projects", { name: "Server A", framework: "standalone" });
@@ -53,7 +55,8 @@ test("anonymous users are redirected away from the workshop and admin", async ({
   await expect(page).toHaveURL(/\/login/);
 });
 
-test("a non-admin cannot reach the admin API", async ({ page, request }) => {
+test("a non-admin cannot reach the admin API", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("plain");
   await register(page, user);
   const res = await request.get("/api/v1/admin/overview");

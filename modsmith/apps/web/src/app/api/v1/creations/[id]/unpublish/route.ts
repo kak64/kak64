@@ -1,7 +1,7 @@
 import { prisma } from "@modsmith/db";
 import { audit } from "@modsmith/services";
 import { apiRoute, json } from "@/server/api";
-import { loadOwnedCreation } from "../route";
+import { loadOwnedCreation } from "@/server/creations";
 
 export const POST = apiRoute({ auth: "required" }, async ({ user, params }) => {
   const c = await loadOwnedCreation(params.id!, user!.id);

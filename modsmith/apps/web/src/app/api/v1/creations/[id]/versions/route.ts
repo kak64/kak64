@@ -1,5 +1,5 @@
 import { apiRoute, json } from "@/server/api";
-import { loadOwnedCreation } from "../route";
+import { loadOwnedCreation } from "@/server/creations";
 
 export const GET = apiRoute({ auth: "required" }, async ({ user, params }) => {
   const c = await loadOwnedCreation(params.id!, user!.id);

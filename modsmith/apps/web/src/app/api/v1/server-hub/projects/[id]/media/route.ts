@@ -2,7 +2,7 @@ import { z } from "zod";
 import { prisma } from "@modsmith/db";
 import { storage } from "@modsmith/services";
 import { apiRoute, json, paginationQuery } from "@/server/api";
-import { loadOwnedProject } from "../route";
+import { loadOwnedProject } from "@/server/server-hub";
 
 export const GET = apiRoute({ auth: "required", query: paginationQuery.extend({ kind: z.enum(["SCREENSHOT", "PHONE_PHOTO", "PHONE_VIDEO", "OTHER"]).optional(), player: z.string().optional(), reportId: z.string().optional() }) }, async ({ user, params, query }) => {
   const p = await loadOwnedProject(params.id!, user!.id);

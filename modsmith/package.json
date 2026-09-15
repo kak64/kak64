@@ -2,9 +2,11 @@
   "name": "modsmith",
   "private": true,
   "version": "0.1.0",
-  "description": "Modsmith — browser-based FiveM asset workshop with server-side processing, credits, Stripe billing, Discord and a Server Hub.",
+  "description": "Modsmith \u2014 browser-based FiveM asset workshop with server-side processing, credits, Stripe billing, Discord and a Server Hub.",
   "packageManager": "pnpm@10.33.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "pnpm -r --parallel --filter ./apps/* dev",
     "dev:web": "pnpm --filter @modsmith/web dev",
@@ -18,8 +20,8 @@
     "db:seed": "pnpm --filter @modsmith/db seed",
     "db:reset": "pnpm --filter @modsmith/db reset",
     "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r --filter ./packages/* --filter ./apps/* test",
+    "typecheck": "pnpm --filter @modsmith/db generate && pnpm -r typecheck",
+    "test": "pnpm -r --filter '!@modsmith/db' test",
     "test:e2e": "pnpm --filter @modsmith/web test:e2e"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ApiFailure, ErrorCodes } from "@modsmith/core";
 import { createJob, RATE_LIMITS } from "@modsmith/services";
 import { apiRoute, json } from "@/server/api";
-import { loadOwnedCreation } from "../route";
+import { loadOwnedCreation } from "@/server/creations";
 
 /**
  * Re-export a creation. Source uploads are deleted after a successful build, so the user re-uploads the file;

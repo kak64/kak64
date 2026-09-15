@@ -20,10 +20,33 @@ export function stripe(): Stripe {
 }
 export const stripeConfigured = () => !!env().STRIPE_SECRET_KEY;
 
+/**
+ * Runs a Stripe call and turns provider errors into a payment failure the client can act on.
+ * Without this an invalid key or a declined request surfaces as an opaque 500.
+ */
+async function withStripe<T>(what: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof ApiFailure) throw err;
+    const e = err as { type?: string; code?: string; message?: string; statusCode?: number };
+    const isStripeError = typeof e.type === "string" && e.type.startsWith("Stripe");
+    if (!isStripeError) throw err;
+    logger.error({ err, what }, "stripe call failed");
+    const authProblem = e.type === "StripeAuthenticationError" || e.type === "StripePermissionError";
+    throw new ApiFailure(
+      ErrorCodes.PAYMENT_ERROR,
+      authProblem ? "Payments are not configured correctly. Please contact support." : e.message ?? "The payment provider rejected this request.",
+      authProblem ? 503 : 502,
+      { stripeCode: e.code, stripeType: e.type },
+    );
+  }
+}
+
 export async function ensureStripeCustomer(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   if (user.stripeCustomerId) return user.stripeCustomerId;
-  const customer = await stripe().customers.create({ email: user.email, name: user.username, metadata: { userId } });
+  const customer = await withStripe("customers.create", () => stripe().customers.create({ email: user.email, name: user.username, metadata: { userId } }));
   await prisma.user.update({ where: { id: userId }, data: { stripeCustomerId: customer.id } });
   return customer.id;
 }
@@ -48,7 +71,7 @@ export async function createPackCheckout(userId: string, packId: string, quantit
   const customerId = await ensureStripeCustomer(userId);
   const purchase = await prisma.creditPurchase.create({ data: { userId, packId: pack.id, credits, bonusCredits: bonus, amountCents, currency: pack.currency, status: "PENDING" } });
   const appUrl = env().APP_URL;
-  const session = await stripe().checkout.sessions.create({
+  const session = await withStripe("checkout.pack", () => stripe().checkout.sessions.create({
     mode: "payment",
     customer: customerId,
     client_reference_id: purchase.id,
@@ -62,7 +85,7 @@ export async function createPackCheckout(userId: string, packId: string, quantit
     cancel_url: `${appUrl}/pricing?status=cancelled`,
     allow_promotion_codes: true,
     invoice_creation: { enabled: true },
-  });
+  }));
   await prisma.creditPurchase.update({ where: { id: purchase.id }, data: { stripeCheckoutSessionId: session.id } });
   return { url: session.url!, purchaseId: purchase.id };
 }
@@ -77,7 +100,7 @@ export async function createSubscriptionCheckout(userId: string, planId: string,
   const amount = interval === "month" ? plan.monthlyPriceCents : plan.yearlyPriceCents;
   const sub = await prisma.subscription.create({ data: { userId, planId: plan.id, interval, status: "INCOMPLETE" } });
   const appUrl = env().APP_URL;
-  const session = await stripe().checkout.sessions.create({
+  const session = await withStripe("checkout.subscription", () => stripe().checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
     client_reference_id: sub.id,
@@ -91,21 +114,21 @@ export async function createSubscriptionCheckout(userId: string, planId: string,
     success_url: `${appUrl}/app/billing?subscription=${sub.id}&status=success`,
     cancel_url: `${appUrl}/pricing?status=cancelled`,
     allow_promotion_codes: true,
-  });
+  }));
   await prisma.subscription.update({ where: { id: sub.id }, data: { stripeCheckoutSessionId: session.id } });
   return { url: session.url!, subscriptionId: sub.id };
 }
 
 export async function createPortalSession(userId: string) {
   const customerId = await ensureStripeCustomer(userId);
-  const session = await stripe().billingPortal.sessions.create({ customer: customerId, return_url: `${env().APP_URL}/app/billing` });
+  const session = await withStripe("billingPortal.create", () => stripe().billingPortal.sessions.create({ customer: customerId, return_url: `${env().APP_URL}/app/billing` }));
   return session.url;
 }
 
 export async function cancelSubscriptionAtPeriodEnd(userId: string, subscriptionId: string) {
   const sub = await prisma.subscription.findFirst({ where: { id: subscriptionId, userId } });
   if (!sub?.stripeSubscriptionId) throw new ApiFailure(ErrorCodes.NOT_FOUND, "Subscription not found", 404);
-  await stripe().subscriptions.update(sub.stripeSubscriptionId, { cancel_at_period_end: true });
+  await withStripe("subscriptions.cancel", () => stripe().subscriptions.update(sub.stripeSubscriptionId!, { cancel_at_period_end: true }));
   await prisma.subscription.update({ where: { id: sub.id }, data: { cancelAtPeriodEnd: true, canceledAt: new Date() } });
   await prisma.subscriptionEvent.create({ data: { subscriptionId: sub.id, type: "cancel_requested" } });
   await audit({ actorId: userId, action: "billing.subscription.cancel", targetType: "subscription", targetId: sub.id });
@@ -114,7 +137,7 @@ export async function cancelSubscriptionAtPeriodEnd(userId: string, subscription
 export async function resumeSubscription(userId: string, subscriptionId: string) {
   const sub = await prisma.subscription.findFirst({ where: { id: subscriptionId, userId } });
   if (!sub?.stripeSubscriptionId) throw new ApiFailure(ErrorCodes.NOT_FOUND, "Subscription not found", 404);
-  await stripe().subscriptions.update(sub.stripeSubscriptionId, { cancel_at_period_end: false });
+  await withStripe("subscriptions.resume", () => stripe().subscriptions.update(sub.stripeSubscriptionId!, { cancel_at_period_end: false }));
   await prisma.subscription.update({ where: { id: sub.id }, data: { cancelAtPeriodEnd: false, canceledAt: null } });
   await prisma.subscriptionEvent.create({ data: { subscriptionId: sub.id, type: "cancel_reverted" } });
 }

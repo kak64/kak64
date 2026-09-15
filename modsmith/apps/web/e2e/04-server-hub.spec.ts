@@ -5,7 +5,8 @@ test.describe.configure({ mode: "serial" });
 
 const PNG = (() => { const b = Buffer.alloc(128); Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b, 0); b.writeUInt32BE(32, 16); b.writeUInt32BE(24, 20); return b; })();
 
-test("create a server, ingest logs with the token, then search them", async ({ page, request }) => {
+test("create a server, ingest logs with the token, then search them", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("hub");
   await register(page, user);
 
@@ -53,7 +54,8 @@ test("create a server, ingest logs with the token, then search them", async ({ p
   expect(afterRevoke.status()).toBe(401);
 });
 
-test("ingestion rejects oversized batches and malformed events", async ({ page, request }) => {
+test("ingestion rejects oversized batches and malformed events", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("hublim");
   await register(page, user);
   const project = await apiJson<{ id: string }>(request, page, "post", "/api/v1/server-hub/projects", { name: "Limits", framework: "standalone" });
@@ -70,7 +72,8 @@ test("ingestion rejects oversized batches and malformed events", async ({ page, 
   expect(badLevel.status()).toBe(400);
 });
 
-test("phone media reservations are one-time, validated and privately served", async ({ page, request }) => {
+test("phone media reservations are one-time, validated and privately served", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("media");
   await register(page, user);
   const project = await apiJson<{ id: string }>(request, page, "post", "/api/v1/server-hub/projects", { name: "Media", framework: "standalone" });

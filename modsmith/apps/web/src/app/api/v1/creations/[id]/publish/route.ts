@@ -3,7 +3,7 @@ import { ApiFailure, ErrorCodes, publishSchema } from "@modsmith/core";
 import { audit } from "@modsmith/services";
 import { apiRoute, json } from "@/server/api";
 import { slugify } from "@/lib/utils";
-import { loadOwnedCreation } from "../route";
+import { loadOwnedCreation } from "@/server/creations";
 
 export const POST = apiRoute({ auth: "required", body: publishSchema, requireVerified: true }, async ({ user, params, body }) => {
   const c = await loadOwnedCreation(params.id!, user!.id);

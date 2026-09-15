@@ -8,25 +8,47 @@ import { PrismaClient } from "@prisma/client";
  */
 export const prisma = new PrismaClient({ datasources: { db: { url: process.env.E2E_DATABASE_URL ?? process.env.DATABASE_URL } } });
 
+/**
+ * Clears the Redis rate-limit buckets.
+ *
+ * The suite registers and logs in a dozen accounts from one IP, which legitimately trips the
+ * production limiter (5 registrations per hour per IP). The limiter is deliberately left switched
+ * on — `01-auth` still asserts that a rate-limited response is surfaced — so the helpers reset the
+ * buckets around the flows that would otherwise exhaust them.
+ */
+export async function resetRateLimits(namespaces = ["register", "login", "jobs", "uploads", "api", "review", "checkout"]) {
+  const { default: IORedis } = await import("ioredis");
+  const redis = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: 1, lazyConnect: true });
+  try {
+    await redis.connect();
+    for (const ns of namespaces) {
+      const keys = await redis.keys(`rl:${ns}:*`);
+      if (keys.length) await redis.del(...keys);
+    }
+  } catch { /* limiter fails open; tests can proceed */ } finally { redis.disconnect(); }
+}
+
 export function uniqueUser(prefix = "e2e") {
   const id = `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   return { username: id, email: `${id}@modsmith.test`, password: "TestPassword123!" };
 }
 
 export async function register(page: Page, user: { username: string; email: string; password: string }, opts: { ref?: string } = {}) {
+  await resetRateLimits(["register", "api"]);
   await page.goto(opts.ref ? `/register?ref=${opts.ref}` : "/register");
   await page.getByLabel(/email/i).fill(user.email);
   await page.getByLabel(/username/i).fill(user.username);
-  await page.getByLabel(/^password/i).fill(user.password);
+  await page.getByRole("textbox", { name: /password/i }).fill(user.password);
   await page.getByRole("checkbox").first().check();
   await page.getByRole("button", { name: /create (free )?account|get started|sign up/i }).click();
   await page.waitForURL(/\/app/, { timeout: 30_000 });
 }
 
 export async function login(page: Page, identifier: string, password: string) {
+  await resetRateLimits(["login", "api"]);
   await page.goto("/login");
   await page.getByLabel(/email or username|email/i).first().fill(identifier);
-  await page.getByLabel(/password/i).fill(password);
+  await page.getByRole("textbox", { name: /password/i }).fill(password);
   await page.getByRole("button", { name: /log in|sign in/i }).click();
   await page.waitForURL(/\/app/, { timeout: 30_000 });
 }
@@ -57,6 +79,10 @@ export async function verifyUserByToken(page: Page, email: string) {
   await expect(page.getByText(/verified|email confirmed/i).first()).toBeVisible({ timeout: 20_000 });
 }
 
+/**
+ * Calls the JSON API as the signed-in user. `request` must be `page.request` — Playwright's
+ * standalone `request` fixture has its own cookie jar and would send the call anonymously.
+ */
 export async function apiJson<T>(request: APIRequestContext, page: Page, method: "post" | "get" | "patch" | "delete", url: string, data?: unknown): Promise<T> {
   const res = await request.fetch(url, { method: method.toUpperCase(), headers: await csrfHeaders(page), data: data === undefined ? undefined : JSON.stringify(data) });
   const body = await res.json();

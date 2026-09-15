@@ -1,13 +1,8 @@
 import { prisma } from "@modsmith/db";
-import { ApiFailure, ErrorCodes, hubProjectSchema } from "@modsmith/core";
+import { hubProjectSchema } from "@modsmith/core";
 import { audit, storage } from "@modsmith/services";
 import { apiRoute, json } from "@/server/api";
-
-export async function loadOwnedProject(id: string, userId: string) {
-  const p = await prisma.serverHubProject.findFirst({ where: { id, userId, deletedAt: null } });
-  if (!p) throw new ApiFailure(ErrorCodes.NOT_FOUND, "Server not found", 404);
-  return p;
-}
+import { loadOwnedProject } from "@/server/server-hub";
 
 export const GET = apiRoute({ auth: "required" }, async ({ user, params }) => {
   const p = await loadOwnedProject(params.id!, user!.id);

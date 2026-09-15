@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { apiJson, csrfHeaders, grantCredits, prisma, register, uniqueUser, verifyUserByToken, workerRunning } from "./helpers";
-import { cubeGlb, resourceZip } from "./fixtures";
+import { cubeGlb, emptyGlb, resourceZip } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
@@ -17,7 +17,8 @@ async function uploadFile(request: any, page: any, toolSlug: string, fileName: s
   return init.uploadId;
 }
 
-test("upload validation rejects spoofed MIME, executables, bad extensions and oversized files", async ({ page, request }) => {
+test("upload validation rejects spoofed MIME, executables, bad extensions and oversized files", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("upl");
   await register(page, user);
 
@@ -45,7 +46,8 @@ test("upload validation rejects spoofed MIME, executables, bad extensions and ov
   expect(row.status).toBe("REJECTED");
 });
 
-test("credits are held on enqueue and the estimate reports the real cost", async ({ page, request }) => {
+test("credits are held on enqueue and the estimate reports the real cost", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("job");
   await register(page, user);
   await verifyUserByToken(page, user.email);
@@ -66,24 +68,42 @@ test("credits are held on enqueue and the estimate reports the real cost", async
   await expect(page.getByText(/queued|processing|validation|complete|failed/i).first()).toBeVisible({ timeout: 20_000 });
 });
 
-test("a job that fails returns the held credits automatically", async ({ page, request }) => {
+test("a job that fails returns the held credits automatically (requires a running worker)", async ({ page }) => {
+  const request = page.request;
+  test.skip(!(await workerRunning()), "no worker heartbeat — start `pnpm dev:worker` to run this test");
+  test.setTimeout(180_000);
   const user = uniqueUser("fail");
   await register(page, user);
   await verifyUserByToken(page, user.email);
-  const uploadId = await uploadFile(request, page, "prop-creator", "sample.glb", sampleGlb(), "model/gltf-binary");
-  const job = await apiJson<{ id: string }>(request, page, "post", "/api/v1/jobs", { toolSlug: "prop-creator", uploadIds: [uploadId], config: {} });
-  const before = await apiJson<{ balance: number }>(request, page, "get", "/api/v1/credits");
-  expect(before.balance).toBe(160);
 
-  // Cancelling a queued job takes the same refund path an infrastructure failure does.
-  await apiJson(request, page, "post", `/api/v1/jobs/${job.id}/cancel`);
-  const after = await apiJson<{ balance: number }>(request, page, "get", "/api/v1/credits");
-  expect(after.balance).toBe(200);
+  // A structurally valid GLB with no geometry passes upload validation and fails in the processor,
+  // which is the path a user hits with a broken model — and the one that must return their credits.
+  const uploadId = await uploadFile(request, page, "prop-creator", "empty.glb", emptyGlb(), "model/gltf-binary");
+  const job = await apiJson<{ id: string; chargedCredits: number }>(request, page, "post", "/api/v1/jobs", { toolSlug: "prop-creator", uploadIds: [uploadId], config: { propName: "empty_prop" } });
+  expect(job.chargedCredits, "credits are held when the job is queued").toBe(40);
+
+  await expect.poll(async () => (await prisma.processingJob.findUniqueOrThrow({ where: { id: job.id } })).status, { timeout: 150_000, intervals: [2000] }).toMatch(/COMPLETED|FAILED|REFUNDED|CANCELLED/);
   const row = await prisma.processingJob.findUniqueOrThrow({ where: { id: job.id } });
-  expect(["REFUNDED", "CANCELLED"]).toContain(row.status);
+  expect(row.status, "a model with no geometry must not be reported as a successful build").toBe("REFUNDED");
+  expect(row.errorCode).toBeTruthy();
+  expect((await apiJson<{ balance: number }>(request, page, "get", "/api/v1/credits")).balance).toBe(200);
+
+  // The ledger shows both halves: the hold when it queued and the return when it failed. The worker
+  // can refund faster than a poll, so the ledger — not an intermediate balance read — is the proof.
+  const ledger = await prisma.creditTransaction.findMany({ where: { userId: row.userId, referenceId: job.id }, orderBy: { createdAt: "asc" } });
+  expect(ledger.map((t) => t.type)).toEqual(["EXPORT", "FAILED_JOB_REFUND"]);
+  expect(ledger[0]!.amount).toBe(-40);
+  expect(ledger[0]!.balanceAfter).toBe(160);
+  expect(ledger[1]!.amount).toBe(40);
+  expect(ledger[1]!.balanceAfter).toBe(200);
+
+  // And the user is told, in app.
+  const note = await prisma.notification.findFirstOrThrow({ where: { userId: row.userId, type: "JOB_FAILED" } });
+  expect(note.href).toContain(job.id);
 });
 
-test("insufficient credits blocks the job before anything is created", async ({ page, request }) => {
+test("insufficient credits blocks the job before anything is created", async ({ page }) => {
+  const request = page.request;
   const user = uniqueUser("poor");
   await register(page, user);
   const u = await prisma.user.findFirstOrThrow({ where: { emailNormalized: user.email.toLowerCase() } });
@@ -96,7 +116,8 @@ test("insufficient credits blocks the job before anything is created", async ({ 
   expect((await prisma.creditAccount.findUniqueOrThrow({ where: { userId: u.id } })).balance).toBe(5);
 });
 
-test("a real export produces a downloadable resource and a creation (requires a running worker)", async ({ page, request }) => {
+test("a real export produces a downloadable resource and a creation (requires a running worker)", async ({ page }) => {
+  const request = page.request;
   test.skip(!(await workerRunning()), "no worker heartbeat — start `pnpm dev:worker` to run this test");
   test.setTimeout(240_000);
   const user = uniqueUser("build");
@@ -136,7 +157,8 @@ test("a real export produces a downloadable resource and a creation (requires a 
   await expect(page.getByText("E2E built prop").first()).toBeVisible({ timeout: 20_000 });
 });
 
-test("the optimizer reports real findings for an oversized loose texture (requires a running worker)", async ({ page, request }) => {
+test("the optimizer reports real findings for an oversized loose texture (requires a running worker)", async ({ page }) => {
+  const request = page.request;
   test.skip(!(await workerRunning()), "no worker heartbeat — start `pnpm dev:worker` to run this test");
   test.setTimeout(180_000);
   const user = uniqueUser("opt");

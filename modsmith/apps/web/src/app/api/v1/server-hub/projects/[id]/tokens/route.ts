@@ -1,7 +1,7 @@
 import { hubTokenSchema } from "@modsmith/core";
 import { createServerToken } from "@modsmith/services";
 import { apiRoute, json } from "@/server/api";
-import { loadOwnedProject } from "../route";
+import { loadOwnedProject } from "@/server/server-hub";
 
 /** Creates a server token. The raw token is returned exactly once. */
 export const POST = apiRoute({ auth: "required", body: hubTokenSchema }, async ({ user, params, body }) => {

@@ -1,13 +1,8 @@
 import { prisma } from "@modsmith/db";
-import { ApiFailure, ErrorCodes, creationUpdateSchema } from "@modsmith/core";
+import { creationUpdateSchema } from "@modsmith/core";
 import { audit, storage } from "@modsmith/services";
 import { apiRoute, json } from "@/server/api";
-
-export async function loadOwnedCreation(id: string, userId: string) {
-  const c = await prisma.creation.findFirst({ where: { id, userId, deletedAt: null }, include: { upload: { select: { id: true, status: true, expiresAt: true } }, currentVersion: true, currentJob: { select: { id: true, status: true, stage: true, progress: true, errorMessage: true } }, showcaseItem: true, versions: { orderBy: { version: "desc" }, take: 20 } } });
-  if (!c) throw new ApiFailure(ErrorCodes.NOT_FOUND, "Creation not found", 404);
-  return c;
-}
+import { loadOwnedCreation } from "@/server/creations";
 
 export const GET = apiRoute({ auth: "required" }, async ({ user, params }) => {
   const c = await loadOwnedCreation(params.id!, user!.id);

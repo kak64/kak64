@@ -2,7 +2,7 @@ import { prisma } from "@modsmith/db";
 import { ApiFailure, ErrorCodes } from "@modsmith/core";
 import { createServerToken, revokeServerToken } from "@modsmith/services";
 import { apiRoute, json } from "@/server/api";
-import { loadOwnedProject } from "../../../route";
+import { loadOwnedProject } from "@/server/server-hub";
 
 export const POST = apiRoute({ auth: "required" }, async ({ user, params }) => {
   const p = await loadOwnedProject(params.id!, user!.id);
