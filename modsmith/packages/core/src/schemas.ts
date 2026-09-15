@@ -80,6 +80,8 @@ export const jobCreateSchema = z.object({
   config: z.record(z.unknown()).default({}),
   externalRef: z.object({ provider: z.string(), id: z.string(), url: z.string().url().optional() }).optional(),
   rightsConfirmed: z.boolean().optional(),
+  /** "inspect" jobs convert uploads into editor previews (GLB/textures/UVs) and are always free; "export" builds the resource. */
+  purpose: z.enum(["export", "inspect"]).default("export"),
 });
 
 // ───────── Tool configs ─────────

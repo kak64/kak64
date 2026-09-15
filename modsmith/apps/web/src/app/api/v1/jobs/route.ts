@@ -7,11 +7,11 @@ import { apiRoute, json, paginationQuery } from "@/server/api";
 const RIGHTS_TOOLS = new Set(["car-importer", "vehicle-editor", "livery-mapper", "retexture", "clothing-textures"]);
 
 export const POST = apiRoute({ auth: "required", body: jobCreateSchema, rateLimit: RATE_LIMITS.jobs }, async ({ user, body, ip, userAgent }) => {
-  if (RIGHTS_TOOLS.has(body.toolSlug) && !body.rightsConfirmed) throw new ApiFailure(ErrorCodes.VALIDATION_ERROR, "Confirm you have the rights to use these files", 400, { rightsConfirmed: "Required" });
+  if (body.purpose !== "inspect" && RIGHTS_TOOLS.has(body.toolSlug) && !body.rightsConfirmed) throw new ApiFailure(ErrorCodes.VALIDATION_ERROR, "Confirm you have the rights to use these files", 400, { rightsConfirmed: "Required" });
   if (body.rightsConfirmed) {
     await prisma.rightsConfirmation.create({ data: { userId: user!.id, context: body.toolSlug, referenceId: body.uploadIds[0] ?? body.externalRef?.id ?? null, statement: "I confirm I own or have permission to use and modify the uploaded/imported files.", userAgent: userAgent?.slice(0, 255) ?? null } });
   }
-  const job = await createJob({ userId: user!.id, emailVerified: !!user!.emailVerifiedAt, toolSlug: body.toolSlug, uploadIds: body.uploadIds, config: body.config, name: body.name, creationId: body.creationId, externalRef: body.externalRef, ip, userAgent });
+  const job = await createJob({ userId: user!.id, emailVerified: !!user!.emailVerifiedAt, toolSlug: body.toolSlug, uploadIds: body.uploadIds, config: body.config, name: body.name, creationId: body.creationId, externalRef: body.externalRef, purpose: body.purpose, ip, userAgent });
   return json({ id: job.id, status: job.status, creationId: job.creationId, chargedCredits: job.chargedCredits, isFreeReexport: job.isFreeReexport }, { status: 201 });
 });
 

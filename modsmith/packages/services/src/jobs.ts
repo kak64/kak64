@@ -41,7 +41,7 @@ export function computeHashes(toolSlug: string, uploads: { sha256: string | null
 }
 
 /** Validate gating + compute the cost of a job before it is created. */
-export async function estimateJob(opts: { userId: string; emailVerified: boolean; toolSlug: string; uploadIds: string[]; config: Record<string, unknown>; externalRef?: { provider: string; id: string } }): Promise<JobEstimate & { uploads: { id: string; sha256: string | null; storageKey: string; originalName: string; sizeBytes: bigint; detectedMime: string | null }[] }> {
+export async function estimateJob(opts: { userId: string; emailVerified: boolean; toolSlug: string; uploadIds: string[]; config: Record<string, unknown>; externalRef?: { provider: string; id: string }; purpose?: "export" | "inspect" }): Promise<JobEstimate & { uploads: { id: string; sha256: string | null; storageKey: string; originalName: string; sizeBytes: bigint; detectedMime: string | null }[] }> {
   const tool = await getEffectiveTool(opts.toolSlug);
   if (!tool || !tool.enabled || tool.status === "coming_soon" || tool.status === "maintenance") throw new ApiFailure(ErrorCodes.TOOL_DISABLED, "This tool is not available right now", 403);
   if (tool.requiresVerification && !opts.emailVerified) throw new ApiFailure(ErrorCodes.EMAIL_NOT_VERIFIED, "Verify your email to use this tool", 403);
@@ -51,8 +51,9 @@ export async function estimateJob(opts: { userId: string; emailVerified: boolean
     // AI tools are available to everyone on credits unless the tool is flagged as subscription-only; keep gating configurable.
   }
 
+  const inspect = opts.purpose === "inspect";
   const schema = TOOL_CONFIG_SCHEMAS[opts.toolSlug];
-  const config = schema ? (schema.parse(opts.config) as Record<string, unknown>) : opts.config;
+  const config = schema && !inspect ? (schema.parse(opts.config) as Record<string, unknown>) : opts.config;
 
   const uploads = opts.uploadIds.length
     ? await prisma.assetUpload.findMany({ where: { id: { in: opts.uploadIds }, userId: opts.userId, status: { in: ["UPLOADED", "VALIDATED"] }, deletedAt: null }, select: { id: true, sha256: true, storageKey: true, originalName: true, sizeBytes: true, detectedMime: true, expiresAt: true } })
@@ -78,7 +79,7 @@ export async function estimateJob(opts: { userId: string; emailVerified: boolean
 
   const discountPct = sub?.plan.exportDiscountPct ?? 0;
   let credits = Math.max(0, Math.ceil(tool.creditCost * (1 - discountPct / 100)));
-  if (freeReexport || (freeDailyRemaining !== null && freeDailyRemaining > 0)) credits = 0;
+  if (inspect || freeReexport || (freeDailyRemaining !== null && freeDailyRemaining > 0)) credits = 0;
   const account = await prisma.creditAccount.findUnique({ where: { userId: opts.userId } });
   const balance = account?.balance ?? 0;
   return { toolSlug: tool.slug, baseCost: tool.creditCost, discountPct, credits, freeReexport, reexportUntil, freeDailyRemaining, sourceHash, configHash, balance, canAfford: balance >= credits, uploads: uploads.map(({ expiresAt: _e, ...u }) => u) };
@@ -93,15 +94,17 @@ export async function createJob(opts: {
   name?: string;
   creationId?: string;
   externalRef?: { provider: string; id: string; url?: string };
+  purpose?: "export" | "inspect";
   ip?: string | null;
   userAgent?: string | null;
 }) {
   const tool = getTool(opts.toolSlug);
   if (!tool) throw new ApiFailure(ErrorCodes.NOT_FOUND, "Unknown tool", 404);
+  const inspect = opts.purpose === "inspect";
   const est = await estimateJob(opts);
   if (!est.canAfford) throw new ApiFailure(ErrorCodes.INSUFFICIENT_CREDITS, `This export costs ${est.credits} credits; you have ${est.balance}.`, 402, { needed: est.credits, balance: est.balance });
   const schema = TOOL_CONFIG_SCHEMAS[opts.toolSlug];
-  const config = schema ? (schema.parse(opts.config) as Record<string, unknown>) : opts.config;
+  const config = schema && !inspect ? (schema.parse(opts.config) as Record<string, unknown>) : opts.config;
 
   const name = opts.name?.trim() || est.uploads[0]?.originalName?.replace(/\.[^.]+$/, "") || `${tool.name} ${new Date().toISOString().slice(0, 10)}`;
 
@@ -111,14 +114,14 @@ export async function createJob(opts: {
       const c = await tx.creation.findFirst({ where: { id: creationId, userId: opts.userId, deletedAt: null } });
       if (!c) throw new ApiFailure(ErrorCodes.NOT_FOUND, "Creation not found", 404);
     } else {
-      const c = await tx.creation.create({ data: { userId: opts.userId, toolSlug: tool.slug, name, originalFilename: est.uploads[0]?.originalName ?? null, status: "PROCESSING", uploadId: est.uploads[0]?.id ?? null, config: config as Prisma.InputJsonValue, sourceHash: est.sourceHash, configHash: est.configHash, isPublic: false } });
+      const c = await tx.creation.create({ data: { userId: opts.userId, toolSlug: tool.slug, name, originalFilename: est.uploads[0]?.originalName ?? null, status: inspect ? "DRAFT" : "PROCESSING", uploadId: est.uploads[0]?.id ?? null, config: config as Prisma.InputJsonValue, sourceHash: est.sourceHash, configHash: est.configHash, isPublic: false } });
       creationId = c.id;
     }
     const j = await tx.processingJob.create({
       data: {
         userId: opts.userId,
         toolSlug: tool.slug,
-        processor: tool.processor,
+        processor: inspect ? "inspect" : tool.processor,
         status: "PENDING",
         stage: "validation",
         uploadId: est.uploads[0]?.id ?? null,
@@ -137,19 +140,19 @@ export async function createJob(opts: {
       const { transaction } = await applyLedgerEntry({ userId: opts.userId, type: "EXPORT", amount: -est.credits, reason: `${tool.name} export`, referenceType: "job", referenceId: j.id, idempotencyKey: `job-charge:${j.id}` }, tx);
       transactionId = transaction.id;
     }
-    await tx.exportCharge.create({ data: { userId: opts.userId, jobId: j.id, toolSlug: tool.slug, credits: est.credits, wasFreeReexport: est.freeReexport, sourceHash: est.sourceHash, configHash: est.configHash, transactionId } });
-    if (est.freeDailyRemaining !== null && est.credits === 0 && !est.freeReexport) {
+    if (!inspect) await tx.exportCharge.create({ data: { userId: opts.userId, jobId: j.id, toolSlug: tool.slug, credits: est.credits, wasFreeReexport: est.freeReexport, sourceHash: est.sourceHash, configHash: est.configHash, transactionId } });
+    if (!inspect && est.freeDailyRemaining !== null && est.credits === 0 && !est.freeReexport) {
       const day = new Date().toISOString().slice(0, 10);
       await tx.dailyToolUsage.upsert({ where: { userId_toolSlug_day: { userId: opts.userId, toolSlug: tool.slug, day } }, create: { userId: opts.userId, toolSlug: tool.slug, day, count: 1 }, update: { count: { increment: 1 } } });
     }
     await tx.processingJob.update({ where: { id: j.id }, data: { chargedCredits: est.credits, status: "QUEUED" } });
-    await tx.creation.update({ where: { id: creationId! }, data: { currentJobId: j.id, status: "PROCESSING", lastCreditCost: est.credits } });
-    await tx.processingEvent.create({ data: { jobId: j.id, status: "QUEUED", stage: "validation", progress: 0, message: est.credits === 0 ? (est.freeReexport ? "Free re-export — no credits charged" : "Queued (free)") : `Queued — ${est.credits} credits held` } });
+    await tx.creation.update({ where: { id: creationId! }, data: { currentJobId: j.id, status: inspect ? "DRAFT" : "PROCESSING", lastCreditCost: inspect ? undefined : est.credits } });
+    await tx.processingEvent.create({ data: { jobId: j.id, status: "QUEUED", stage: "validation", progress: 0, message: inspect ? "Queued — preparing editor preview (free)" : est.credits === 0 ? (est.freeReexport ? "Free re-export — no credits charged" : "Queued (free)") : `Queued — ${est.credits} credits held` } });
     await audit({ actorId: opts.userId, action: "job.create", targetType: "job", targetId: j.id, after: { toolSlug: tool.slug, credits: est.credits, freeReexport: est.freeReexport }, ip: opts.ip, userAgent: opts.userAgent }, tx);
     return j;
   });
 
-  const queued = await enqueue(queueForProcessor(tool.processor), tool.processor, { jobId: job.id }, { jobId: job.id, priority: job.priority || undefined });
+  const queued = await enqueue(queueForProcessor(job.processor), job.processor, { jobId: job.id }, { jobId: job.id, priority: inspect ? 1 : job.priority || undefined });
   await prisma.processingJob.update({ where: { id: job.id }, data: { queueJobId: queued.id ?? job.id } });
   await publishJobEvent(job.id, { status: "QUEUED", stage: "validation", progress: 0 });
   return prisma.processingJob.findUniqueOrThrow({ where: { id: job.id } });
@@ -172,6 +175,20 @@ export async function completeJob(jobId: string, result: { resultKey: string; re
   const job = await prisma.processingJob.findUniqueOrThrow({ where: { id: jobId }, include: { creation: true } });
   if (job.status === "COMPLETED") return job;
   const tool = getTool(job.toolSlug);
+  if (job.processor === "inspect") {
+    // Editor preview: keep source uploads (they are needed for the real export), no version, no charge, no email.
+    await prisma.$transaction(async (tx) => {
+      await tx.processingJob.update({ where: { id: jobId }, data: { status: "COMPLETED", stage: "complete", progress: 100, finishedAt: new Date(), resultKey: result.resultKey, resultName: result.resultName, resultSize: BigInt(result.resultSize), resultManifest: result.manifest as Prisma.InputJsonValue } });
+      await tx.processingEvent.create({ data: { jobId, status: "COMPLETED", stage: "complete", progress: 100, message: "Preview ready" } });
+      if (job.creationId) {
+        const creation = await tx.creation.findUnique({ where: { id: job.creationId } });
+        const prev = (creation?.projectState ?? {}) as Record<string, unknown>;
+        await tx.creation.update({ where: { id: job.creationId }, data: { status: creation?.currentVersionId ? "READY" : "DRAFT", thumbnailKey: result.thumbnailKey ?? creation?.thumbnailKey ?? null, projectState: { ...prev, preview: { jobId, manifest: result.manifest, facts: result.facts ?? {} } } as Prisma.InputJsonValue } });
+      }
+    });
+    await publishJobEvent(jobId, { status: "COMPLETED", stage: "complete", progress: 100 });
+    return job;
+  }
   const windowDays = await getSetting<number>("credits.reexportWindowDays");
   await prisma.$transaction(async (tx) => {
     await tx.processingJob.update({ where: { id: jobId }, data: { status: "COMPLETED", stage: "complete", progress: 100, finishedAt: new Date(), resultKey: result.resultKey, resultName: result.resultName, resultSize: BigInt(result.resultSize), resultManifest: result.manifest as Prisma.InputJsonValue } });

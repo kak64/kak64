@@ -1,0 +1,10 @@
+node_modules
+**/node_modules
+.next
+**/.next
+.storage
+apps/worker/tmp
+.env
+*.log
+playwright-report
+test-results
