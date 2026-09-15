@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 /**
@@ -15,7 +15,6 @@ function preinstalledChromium(): string | undefined {
       if (existsSync(candidate)) return candidate;
     }
     try {
-      const { readdirSync } = require("node:fs") as typeof import("node:fs");
       const dir = readdirSync(root).find((d) => d.startsWith("chromium-"));
       if (dir && existsSync(`${root}/${dir}/chrome-linux/chrome`)) return `${root}/${dir}/chrome-linux/chrome`;
     } catch { /* root missing */ }
