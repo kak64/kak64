@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+coverage/
+.env
+.env.local
+.env.*.local
+*.log
+.turbo/
+playwright-report/
+test-results/
+apps/worker/tmp/
+packages/db/generated/
+.DS_Store
+.storage/

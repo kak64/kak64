@@ -1,0 +1,28 @@
+{
+  "name": "modsmith",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Modsmith — browser-based FiveM asset workshop with server-side processing, credits, Stripe billing, Discord and a Server Hub.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter ./apps/* dev",
+    "dev:web": "pnpm --filter @modsmith/web dev",
+    "dev:worker": "pnpm --filter @modsmith/worker dev",
+    "build": "pnpm --filter @modsmith/db generate && pnpm -r --filter ./packages/* --filter ./apps/* build",
+    "start:web": "pnpm --filter @modsmith/web start",
+    "start:worker": "pnpm --filter @modsmith/worker start",
+    "db:generate": "pnpm --filter @modsmith/db generate",
+    "db:migrate": "pnpm --filter @modsmith/db migrate:deploy",
+    "db:migrate:dev": "pnpm --filter @modsmith/db migrate:dev",
+    "db:seed": "pnpm --filter @modsmith/db seed",
+    "db:reset": "pnpm --filter @modsmith/db reset",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --filter ./packages/* --filter ./apps/* test",
+    "test:e2e": "pnpm --filter @modsmith/web test:e2e"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

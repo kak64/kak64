@@ -1,0 +1,1116 @@
+// Modsmith — PostgreSQL schema
+// All money-like values are stored as integers (credits) or minor currency units (cents).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Users & Auth ─────────────────────────────
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id                 String     @id @default(cuid())
+  email              String     @unique
+  emailNormalized    String     @unique
+  username           String     @unique
+  usernameNormalized String     @unique
+  passwordHash       String
+  role               UserRole   @default(USER)
+  status             UserStatus @default(ACTIVE)
+  emailVerifiedAt    DateTime?
+  avatarUrl          String?
+  bio                String?
+  profilePublic      Boolean    @default(true)
+  showcaseDefaultPublic Boolean @default(false)
+  notifyEmail        Boolean    @default(true)
+  notifyDiscord      Boolean    @default(true)
+  notifyJobComplete  Boolean    @default(true)
+  notifyMarketing    Boolean    @default(false)
+  referralCode       String     @unique
+  referredById       String?
+  referredBy         User?      @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals          User[]     @relation("UserReferrals")
+  partnerRefCode     String?
+  stripeCustomerId   String?    @unique
+  lastLoginAt        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  deletedAt          DateTime?
+
+  sessions                Session[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  discordConnection       DiscordConnection?
+  creditAccount           CreditAccount?
+  creditTransactions      CreditTransaction[]
+  creditPurchases         CreditPurchase[]
+  subscriptions           Subscription[]
+  uploads                 AssetUpload[]
+  creations               Creation[]
+  jobs                    ProcessingJob[]
+  showcaseItems           ShowcaseItem[]
+  showcaseLikes           ShowcaseLike[]
+  reviews                 Review[]
+  referralsOwned          Referral[]        @relation("ReferralOwner")
+  referralConversions     ReferralConversion[]
+  serverHubProjects       ServerHubProject[]
+  notifications           Notification[]
+  auditLogs               AuditLog[]        @relation("AuditActor")
+  adminUser               AdminUser?
+  rightsConfirmations     RightsConfirmation[]
+  abuseReports            AbuseReport[]
+  dailyUsage              DailyToolUsage[]
+  exportCharges           ExportCharge[]
+  guidesAuthored          Guide[]
+  storageQuota            StorageQuota?
+
+  @@index([referredById])
+  @@index([createdAt])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String   @unique
+  userAgent    String?
+  ipHash       String?
+  remember     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model DiscordConnection {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discordId      String   @unique
+  username       String
+  globalName     String?
+  avatarHash     String?
+  accessTokenEnc String?
+  refreshTokenEnc String?
+  tokenExpiresAt DateTime?
+  dmChannelId    String?
+  bonusGrantedAt DateTime?
+  connectedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ───────────────────────────── Credits ─────────────────────────────
+
+enum CreditTransactionType {
+  SIGNUP_BONUS
+  EMAIL_VERIFY_BONUS
+  DISCORD_BONUS
+  REFERRAL_REWARD
+  PARTNER_BONUS
+  PURCHASE
+  EXPORT
+  FAILED_JOB_REFUND
+  PROMOTIONAL_GRANT
+  SUBSCRIPTION_ALLOCATION
+  ADMIN_ADJUSTMENT
+  REFUND
+}
+
+model CreditAccount {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance      Int      @default(0)
+  lifetimeEarned Int    @default(0)
+  lifetimeSpent  Int    @default(0)
+  version      Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions CreditTransaction[]
+}
+
+model CreditTransaction {
+  id            String                @id @default(cuid())
+  accountId     String
+  account       CreditAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          CreditTransactionType
+  amount        Int
+  balanceBefore Int
+  balanceAfter  Int
+  reason        String
+  referenceType String?
+  referenceId   String?
+  idempotencyKey String?              @unique
+  metadata      Json?
+  createdById   String?
+  createdAt     DateTime              @default(now())
+
+  grant     CreditGrant?
+  purchase  CreditPurchase? @relation("PurchaseTransaction")
+  exportCharge ExportCharge? @relation("ChargeTransaction")
+  refund    CreditRefund?   @relation("RefundTransaction")
+
+  @@index([userId, createdAt])
+  @@index([accountId, createdAt])
+  @@index([referenceType, referenceId])
+}
+
+model CreditGrant {
+  id            String            @id @default(cuid())
+  transactionId String            @unique
+  transaction   CreditTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  grantKey      String            @unique // e.g. "signup:<userId>" ensures a promo is granted once
+  source        String
+  createdAt     DateTime          @default(now())
+}
+
+model CreditPack {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  credits         Int
+  bonusCredits    Int      @default(0)
+  priceCents      Int
+  currency        String   @default("usd")
+  stripePriceId   String?
+  isCustom        Boolean  @default(false) // custom quantity pack: priceCents = per-credit price
+  minCredits      Int?
+  maxCredits      Int?
+  badge           String?
+  sortOrder       Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchases CreditPurchase[]
+}
+
+enum PurchaseStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+model CreditPurchase {
+  id                    String         @id @default(cuid())
+  userId                String
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packId                String?
+  pack                  CreditPack?    @relation(fields: [packId], references: [id], onDelete: SetNull)
+  credits               Int
+  bonusCredits          Int            @default(0)
+  amountCents           Int
+  currency              String
+  status                PurchaseStatus @default(PENDING)
+  stripeCheckoutSessionId String?      @unique
+  stripePaymentIntentId String?        @unique
+  stripeInvoiceId       String?
+  receiptUrl            String?
+  transactionId         String?        @unique
+  transaction           CreditTransaction? @relation("PurchaseTransaction", fields: [transactionId], references: [id])
+  paidAt                DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model ExportCharge {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId          String   @unique
+  job            ProcessingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  toolSlug       String
+  credits        Int
+  wasFreeReexport Boolean @default(false)
+  sourceHash     String
+  configHash     String
+  transactionId  String?  @unique
+  transaction    CreditTransaction? @relation("ChargeTransaction", fields: [transactionId], references: [id])
+  createdAt      DateTime @default(now())
+
+  refunds CreditRefund[]
+
+  @@index([userId, toolSlug, sourceHash, configHash, createdAt])
+}
+
+model CreditRefund {
+  id            String   @id @default(cuid())
+  chargeId      String
+  charge        ExportCharge @relation(fields: [chargeId], references: [id], onDelete: Cascade)
+  credits       Int
+  reason        String
+  transactionId String   @unique
+  transaction   CreditTransaction @relation("RefundTransaction", fields: [transactionId], references: [id])
+  createdById   String?
+  createdAt     DateTime @default(now())
+}
+
+// ───────────────────────────── Subscriptions ─────────────────────────────
+
+enum SubscriptionKind {
+  CREATOR
+  SERVER_HUB
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  EXPIRED
+}
+
+model SubscriptionPlan {
+  id                   String           @id @default(cuid())
+  slug                 String           @unique
+  kind                 SubscriptionKind @default(CREATOR)
+  name                 String
+  description          String?
+  monthlyPriceCents    Int
+  yearlyPriceCents     Int
+  currency             String           @default("usd")
+  stripeMonthlyPriceId String?
+  stripeYearlyPriceId  String?
+  monthlyCredits       Int              @default(0)
+  exportDiscountPct    Int              @default(0)
+  premiumTools         Boolean          @default(false)
+  aiTools              Boolean          @default(false)
+  faceDailyExports     Int?
+  hubStorageBytes      BigInt?
+  hubRetentionDays     Int?
+  hubMaxServers        Int?
+  features             Json?
+  sortOrder            Int              @default(0)
+  active               Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 SubscriptionPlan   @relation(fields: [planId], references: [id])
+  interval             String // month | year
+  status               SubscriptionStatus @default(INCOMPLETE)
+  stripeSubscriptionId String?            @unique
+  stripeCheckoutSessionId String?         @unique
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  canceledAt           DateTime?
+  endedAt              DateTime?
+  graceUntil           DateTime?
+  lastAllocationPeriod String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  events SubscriptionEvent[]
+
+  @@index([userId, status])
+}
+
+model SubscriptionEvent {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  type           String
+  stripeEventId  String?
+  payload        Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([subscriptionId, createdAt])
+}
+
+model StripeWebhookEvent {
+  id          String   @id // stripe event id
+  type        String
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+}
+
+// ───────────────────────────── Tools & Pricing ─────────────────────────────
+
+model ToolConfig {
+  slug                 String   @id
+  name                 String
+  category             String
+  description          String
+  creditCost           Int
+  status               String   @default("live") // live | beta | new | coming_soon | maintenance
+  requiresAuth         Boolean  @default(true)
+  requiresSubscription Boolean  @default(false)
+  requiresVerification Boolean  @default(false)
+  freeDailyExports     Int      @default(0)
+  enabled              Boolean  @default(true)
+  sortOrder            Int      @default(0)
+  settings             Json?
+  updatedAt            DateTime @updatedAt
+}
+
+model DailyToolUsage {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolSlug String
+  day      String   // YYYY-MM-DD (UTC)
+  count    Int      @default(0)
+
+  @@unique([userId, toolSlug, day])
+}
+
+// ───────────────────────────── Uploads, Creations, Jobs ─────────────────────────────
+
+enum UploadStatus {
+  PENDING
+  UPLOADING
+  UPLOADED
+  VALIDATED
+  REJECTED
+  DELETED
+}
+
+model AssetUpload {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolSlug       String
+  originalName   String
+  storageKey     String       @unique
+  sizeBytes      BigInt
+  declaredMime   String?
+  detectedMime   String?
+  sha256         String?
+  status         UploadStatus @default(PENDING)
+  multipartUploadId String?
+  partCount      Int?
+  scanStatus     String?      // pending | clean | infected | skipped
+  rejectReason   String?
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  creations Creation[]
+  jobs      ProcessingJob[]
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+enum CreationStatus {
+  DRAFT
+  PROCESSING
+  READY
+  FAILED
+  ARCHIVED
+}
+
+model Creation {
+  id               String         @id @default(cuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolSlug         String
+  name             String
+  originalFilename String?
+  status           CreationStatus @default(DRAFT)
+  thumbnailKey     String?
+  uploadId         String?
+  upload           AssetUpload?   @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  currentJobId     String?        @unique
+  currentJob       ProcessingJob? @relation("CreationCurrentJob", fields: [currentJobId], references: [id], onDelete: SetNull)
+  currentVersionId String?        @unique
+  currentVersion   CreationVersion? @relation("CreationCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  exportVersion    Int            @default(0)
+  lastCreditCost   Int?
+  config           Json?
+  metadata         Json?
+  sourceHash       String?
+  configHash       String?
+  reexportUntil    DateTime?
+  isPublic         Boolean        @default(false)
+  projectState     Json?          // editor state for saved projects
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
+
+  versions     CreationVersion[]
+  jobs         ProcessingJob[]   @relation("CreationJobs")
+  showcaseItem ShowcaseItem?
+  reviews      Review[]
+
+  @@index([userId, createdAt])
+  @@index([userId, toolSlug])
+  @@index([userId, status])
+}
+
+model CreationVersion {
+  id            String   @id @default(cuid())
+  creationId    String
+  creation      Creation @relation(fields: [creationId], references: [id], onDelete: Cascade)
+  version       Int
+  jobId         String?  @unique
+  job           ProcessingJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  resourceKey   String   // ZIP object key (kept permanently)
+  resourceName  String
+  sizeBytes     BigInt
+  sha256        String?
+  manifest      Json?    // file list, stats
+  creditCost    Int
+  sourceHash    String?
+  configHash    String?
+  createdAt     DateTime @default(now())
+
+  currentOf Creation? @relation("CreationCurrentVersion")
+
+  @@unique([creationId, version])
+}
+
+enum JobStatus {
+  PENDING
+  QUEUED
+  PROCESSING
+  PACKAGING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+model ProcessingJob {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolSlug       String
+  processor      String
+  status         JobStatus @default(PENDING)
+  stage          String?   // upload|validation|importing|converting|optimizing|collision|lods|textures|packaging|complete
+  progress       Int       @default(0)
+  queueJobId     String?
+  uploadId       String?
+  upload         AssetUpload? @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  creationId     String?
+  creation       Creation? @relation("CreationJobs", fields: [creationId], references: [id], onDelete: SetNull)
+  input          Json
+  config         Json
+  sourceHash     String?
+  configHash     String?
+  estimatedCredits Int    @default(0)
+  chargedCredits Int?
+  isFreeReexport Boolean  @default(false)
+  resultKey      String?
+  resultName     String?
+  resultSize     BigInt?
+  resultManifest Json?
+  errorCode      String?
+  errorMessage   String?
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(2)
+  priority       Int       @default(0)
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  events        ProcessingEvent[]
+  version       CreationVersion?
+  currentOf     Creation?   @relation("CreationCurrentJob")
+  exportCharge  ExportCharge?
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([toolSlug, status])
+}
+
+model ProcessingEvent {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       ProcessingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status    JobStatus?
+  stage     String?
+  progress  Int?
+  message   String?
+  level     String   @default("info")
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([jobId, createdAt])
+}
+
+model RightsConfirmation {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  context    String   // car-importer | upload | sketchfab | ...
+  referenceId String?
+  statement  String
+  ipHash     String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model ExternalModelCache {
+  id          String   @id @default(cuid())
+  provider    String   // sketchfab
+  externalId  String
+  name        String
+  author      String
+  authorUrl   String?
+  license     String
+  licenseUrl  String?
+  sourceUrl   String
+  storageKey  String?
+  thumbnailUrl String?
+  metadata    Json?
+  fetchedAt   DateTime @default(now())
+
+  @@unique([provider, externalId])
+}
+
+// ───────────────────────────── Community ─────────────────────────────
+
+enum ShowcaseStatus {
+  PUBLISHED
+  HIDDEN
+  REMOVED
+}
+
+model ShowcaseItem {
+  id           String         @id @default(cuid())
+  creationId   String         @unique
+  creation     Creation       @relation(fields: [creationId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug         String         @unique
+  title        String
+  description  String?
+  category     String
+  toolSlug     String
+  tags         String[]
+  thumbnailKey String?
+  screenshotKeys String[]
+  allowDownload Boolean       @default(false)
+  allowRemix   Boolean        @default(false)
+  status       ShowcaseStatus @default(PUBLISHED)
+  likeCount    Int            @default(0)
+  viewCount    Int            @default(0)
+  featured     Boolean        @default(false)
+  publishedAt  DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  likes   ShowcaseLike[]
+  views   ShowcaseView[]
+  reports AbuseReport[]
+
+  @@index([status, publishedAt])
+  @@index([category, status])
+}
+
+model ShowcaseLike {
+  id        String       @id @default(cuid())
+  itemId    String
+  item      ShowcaseItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@unique([itemId, userId])
+}
+
+model ShowcaseView {
+  id         String       @id @default(cuid())
+  itemId     String
+  item       ShowcaseItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  viewerHash String
+  day        String
+  createdAt  DateTime     @default(now())
+
+  @@unique([itemId, viewerHash, day])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  HIDDEN
+}
+
+model Review {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating     Int
+  text       String
+  creationId String?
+  creation   Creation?    @relation(fields: [creationId], references: [id], onDelete: SetNull)
+  toolSlug   String?
+  status     ReviewStatus @default(PENDING)
+  moderatedById String?
+  moderatedAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model AbuseReport {
+  id         String   @id @default(cuid())
+  reporterId String?
+  reporter   User?    @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  targetType String   // showcase | review | user | creation
+  targetId   String
+  showcaseItemId String?
+  showcaseItem ShowcaseItem? @relation(fields: [showcaseItemId], references: [id], onDelete: Cascade)
+  reason     String
+  details    String?
+  status     String   @default("open") // open | resolved | dismissed
+  resolvedById String?
+  resolvedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
+// ───────────────────────────── Referrals & Partners ─────────────────────────────
+
+model Referral {
+  id          String   @id @default(cuid())
+  ownerId     String   @unique
+  owner       User     @relation("ReferralOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  code        String   @unique
+  clicks      Int      @default(0)
+  signups     Int      @default(0)
+  qualified   Int      @default(0)
+  creditsEarned Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  conversions ReferralConversion[]
+}
+
+enum ReferralConversionStatus {
+  SIGNED_UP
+  VERIFIED
+  QUALIFIED
+  REWARDED
+  REJECTED
+}
+
+model ReferralConversion {
+  id             String  @id @default(cuid())
+  referralId     String
+  referral       Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  referredUserId String  @unique
+  referredUser   User    @relation(fields: [referredUserId], references: [id], onDelete: Cascade)
+  status         ReferralConversionStatus @default(SIGNED_UP)
+  verifiedAt     DateTime?
+  qualifiedAt    DateTime?
+  qualifyingJobId String?
+  rewardedAt     DateTime?
+  rewardCredits  Int?
+  createdAt      DateTime @default(now())
+
+  @@index([referralId, status])
+}
+
+model Partner {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  logoKey      String?
+  logoUrl      String?
+  description  String
+  category     String
+  website      String?
+  discordUrl   String?
+  youtubeUrl   String?
+  twitterUrl   String?
+  priority     Int      @default(0)
+  active       Boolean  @default(true)
+  referralCode String   @unique
+  bonusCredits Int      @default(0)
+  pageContent  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  referrals PartnerReferral[]
+}
+
+model PartnerReferral {
+  id        String   @id @default(cuid())
+  partnerId String
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  userId    String?  @unique
+  event     String   // click | signup | bonus
+  createdAt DateTime @default(now())
+
+  @@index([partnerId, event, createdAt])
+}
+
+// ───────────────────────────── CMS ─────────────────────────────
+
+model GuideCategory {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String?
+  icon        String?
+  sortOrder   Int     @default(0)
+
+  guides Guide[]
+}
+
+enum PublishState {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Guide {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  categoryId     String
+  category       GuideCategory @relation(fields: [categoryId], references: [id])
+  title          String
+  intro          String
+  content        String        // Markdown
+  coverKey       String?
+  seoTitle       String?
+  seoDescription String?
+  faqs           Json?         // [{question, answer}]
+  relatedSlugs   String[]
+  toolSlug       String?
+  authorId       String?
+  author         User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  state          PublishState  @default(DRAFT)
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([state, publishedAt])
+  @@index([categoryId])
+}
+
+model ChangelogEntry {
+  id          String       @id @default(cuid())
+  version     String
+  title       String
+  category    String       // feature | improvement | fix | tool
+  description String       // Markdown
+  screenshotKeys String[]
+  toolSlug    String?
+  state       PublishState @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([state, publishedAt])
+}
+
+// ───────────────────────────── Server Hub ─────────────────────────────
+
+model StorageQuota {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  limitBytes   BigInt
+  usedBytes    BigInt   @default(0)
+  retentionDays Int     @default(14)
+  updatedAt    DateTime @updatedAt
+}
+
+model ServerHubProject {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  framework   String   @default("standalone")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  tokens       ServerHubToken[]
+  datasets     ServerHubDataset[]
+  logs         ServerHubLog[]
+  media        ServerHubMedia[]
+  reservations MediaReservation[]
+
+  @@unique([userId, slug])
+}
+
+model ServerHubToken {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     ServerHubProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  prefix      String   // first 8 chars for display
+  tokenHash   String   @unique
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+
+  @@index([projectId])
+}
+
+model ServerHubDataset {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    ServerHubProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name       String
+  eventCount Int      @default(0)
+  lastEventAt DateTime?
+  createdAt  DateTime @default(now())
+
+  logs ServerHubLog[]
+
+  @@unique([projectId, name])
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+}
+
+model ServerHubLog {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       ServerHubProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  datasetId     String
+  dataset       ServerHubDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  level         LogLevel
+  message       String
+  resource      String?
+  metadata      Json?
+  metadataText  String?  // serialized metadata for full-text search
+  playerSource  Int?
+  targetSource  Int?
+  playerLicense String?
+  playerDiscord String?
+  playerName    String?
+  eventId       String?  // client-provided idempotency id
+  occurredAt    DateTime
+  receivedAt    DateTime @default(now())
+  expiresAt     DateTime
+
+  @@unique([projectId, eventId])
+  @@index([projectId, occurredAt(sort: Desc)])
+  @@index([projectId, level, occurredAt(sort: Desc)])
+  @@index([projectId, datasetId, occurredAt(sort: Desc)])
+  @@index([projectId, resource])
+  @@index([projectId, playerLicense])
+  @@index([projectId, playerDiscord])
+  @@index([expiresAt])
+}
+
+enum MediaKind {
+  SCREENSHOT
+  PHONE_PHOTO
+  PHONE_VIDEO
+  OTHER
+}
+
+model ServerHubMedia {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       ServerHubProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind          MediaKind
+  storageKey    String   @unique
+  mime          String
+  sizeBytes     BigInt
+  width         Int?
+  height        Int?
+  sha256        String?
+  playerSource  Int?
+  playerLicense String?
+  playerDiscord String?
+  playerName    String?
+  reason        String?
+  reportId      String?
+  metadata      Json?
+  reservationId String?  @unique
+  reservation   MediaReservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime?
+  deletedAt     DateTime?
+
+  @@index([projectId, kind, createdAt(sort: Desc)])
+  @@index([projectId, reportId])
+}
+
+enum ReservationStatus {
+  PENDING
+  UPLOADED
+  COMPLETED
+  EXPIRED
+  REJECTED
+}
+
+model MediaReservation {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      ServerHubProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind         MediaKind
+  storageKey   String   @unique
+  uploadToken  String   @unique
+  maxBytes     Int
+  allowedMimes String[]
+  status       ReservationStatus @default(PENDING)
+  metadata     Json?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  media ServerHubMedia?
+
+  @@index([status, expiresAt])
+}
+
+// ───────────────────────────── Notifications, Admin, System ─────────────────────────────
+
+enum NotificationType {
+  JOB_COMPLETED
+  JOB_FAILED
+  CREDITS_PURCHASED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_PAYMENT_FAILED
+  SUBSCRIPTION_CANCELED
+  DISCORD_LINKED
+  REFERRAL_REWARD
+  SYSTEM_ANNOUNCEMENT
+  ACCOUNT
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  href      String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorType  String   @default("user") // user | admin | system | server-token
+  action     String
+  targetType String?
+  targetId   String?
+  before     Json?
+  after      Json?
+  ipHash     String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
+  @@index([action, createdAt])
+}
+
+model FeatureFlag {
+  key         String   @id
+  description String?
+  enabled     Boolean  @default(false)
+  rules       Json?
+  updatedAt   DateTime @updatedAt
+}
+
+model AdminUser {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissions String[]
+  createdAt   DateTime @default(now())
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model EmailOutbox {
+  id        String   @id @default(cuid())
+  to        String
+  template  String
+  subject   String
+  status    String   @default("queued") // queued | sent | failed
+  provider  String?
+  providerId String?
+  error     String?
+  createdAt DateTime @default(now())
+  sentAt    DateTime?
+
+  @@index([status, createdAt])
+}
