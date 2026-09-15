@@ -54,7 +54,7 @@ export const POST = apiRoute({ auth: "required", body: uploadCompleteSchema.omit
   if (head.size > INLINE_HASH_MAX_BYTES) {
     // Hashing is deferred; the upload cannot be used in a job until the worker finishes.
     await prisma.assetUpload.update({ where: { id: u.id }, data: { detectedMime, scanStatus: "finalizing" } });
-    await enqueue(QUEUE_NAMES.maintenance, "finalize-upload", { uploadId: u.id }, { jobId: `finalize:${u.id}` });
+    await enqueue(QUEUE_NAMES.maintenance, "finalize-upload", { uploadId: u.id }, { jobId: `finalize-${u.id}` });
     return json({ id: u.id, status: "UPLOADING", detectedMime, sha256: null, finalizing: true });
   }
 

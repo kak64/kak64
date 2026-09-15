@@ -247,7 +247,9 @@ export async function failJob(jobId: string, failure: { code: string; message: s
     await tx.processingEvent.create({ data: { jobId, status, message: failure.message.slice(0, 1000), level: "error", data: { code: failure.code, infrastructure: failure.infrastructure } } });
     if (job.creationId) await tx.creation.update({ where: { id: job.creationId }, data: { status: job.creation?.currentVersionId ? "READY" : "FAILED" } });
     if (shouldRefund) {
-      const { transaction, duplicate } = await applyLedgerEntry({ userId: job.userId, type: "FAILED_JOB_REFUND", amount: heldCredits, reason: failure.cancelled ? "Job cancelled — credits returned" : `Job failed — credits returned (${failure.code})`, referenceType: "job", referenceId: jobId, idempotencyKey: `job-refund:${jobId}` }, tx);
+      // The key is scoped to the attempt: a retried job holds credits again, so a later failure
+      // must be able to return them rather than being swallowed as a duplicate of the first refund.
+      const { transaction, duplicate } = await applyLedgerEntry({ userId: job.userId, type: "FAILED_JOB_REFUND", amount: heldCredits, reason: failure.cancelled ? "Job cancelled — credits returned" : `Job failed — credits returned (${failure.code})`, referenceType: "job", referenceId: jobId, idempotencyKey: `job-refund:${jobId}:${job.attempts}` }, tx);
       // The charge row is the audit trail for the refund; inspect jobs have none because they are free.
       if (!duplicate && job.exportCharge) await tx.creditRefund.create({ data: { chargeId: job.exportCharge.id, credits: heldCredits, reason: failure.code, transactionId: transaction.id } });
       await tx.processingJob.update({ where: { id: jobId }, data: { status: "REFUNDED" } });
@@ -289,6 +291,7 @@ export async function retryJob(jobId: string, actorId: string | null) {
     if (job.creationId) await tx.creation.update({ where: { id: job.creationId }, data: { status: "PROCESSING", currentJobId: jobId } });
     await audit({ actorId, actorType: actorId ? "admin" : "system", action: "job.retry", targetType: "job", targetId: jobId }, tx);
   });
-  await enqueue(queueForProcessor(job.processor), job.processor, { jobId }, { jobId: `${jobId}:r${job.attempts + 1}` });
+  // BullMQ rejects custom ids containing ":", so retries are suffixed with a dash.
+  await enqueue(queueForProcessor(job.processor), job.processor, { jobId }, { jobId: `${jobId}-r${job.attempts + 1}` });
   await publishJobEvent(jobId, { status: "QUEUED", stage: "validation", progress: 0 });
 }
