@@ -14,6 +14,7 @@
 import { createHmac, createHash, randomBytes } from "node:crypto";
 import { readFileSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import os from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { inflateRawSync } from "node:zlib";
@@ -125,7 +126,7 @@ function unzip(buf) {
 
 // ── the test ─────────────────────────────────────────────────────────────────
 console.log(`\nModsmith acceptance test against ${c.dim}${BASE}${c.off}\n`);
-let db, uploadId, jobId, creationId, projectId, hubToken, cubePath = "/tmp/modsmith-smoke-cube.glb";
+let db, uploadId, jobId, creationId, projectId, hubToken, cubePath = join(os.tmpdir(), "modsmith-smoke-cube.glb");
 
 await step("the site is reachable and reports healthy dependencies", async () => {
   const res = await call("GET", "/api/health");
@@ -227,8 +228,8 @@ await step("the downloaded ZIP contains a real FiveM resource", async () => {
   const ytd = names.find((n) => n.endsWith(".ytd"));
   assert(ytd, `no .ytd texture dictionary in ${names.join(", ")}`);
   eq(files.get(ytd).subarray(0, 4).toString("ascii"), "RSC7", "the .ytd should be a real RAGE resource");
-  if (!KEEP) writeFileSync("/tmp/modsmith-smoke-resource.zip", zip);
-  return `${names.length} files, ${(zip.length / 1024).toFixed(1)} KB, saved to /tmp/modsmith-smoke-resource.zip`;
+  if (!KEEP) writeFileSync(join(os.tmpdir(), "modsmith-smoke-resource.zip"), zip);
+  return `${names.length} files, ${(zip.length / 1024).toFixed(1)} KB, saved to ${join(os.tmpdir(), "modsmith-smoke-resource.zip")}`;
 });
 
 await step("re-exporting the same file with the same settings is free", async () => {

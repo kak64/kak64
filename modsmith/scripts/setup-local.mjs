@@ -47,7 +47,7 @@ function run(cmd, cmdArgs, opts = {}) {
 const version = (cmd, cmdArgs = ["--version"]) => { const r = run(cmd, cmdArgs, { quiet: true }); return r.ok ? r.out.trim().split("\n")[0] : null; };
 
 // ── prerequisites ────────────────────────────────────────────────────────────
-step("Checking prerequisites");
+step("Checking the toolchain");
 const nodeMajor = Number(process.versions.node.split(".")[0]);
 if (nodeMajor < 22) die(`Node ${process.versions.node} is too old; Modsmith needs Node 22 or newer.`, "Install it from https://nodejs.org");
 info(`node ${process.version}`);
@@ -146,6 +146,5 @@ Then open  ${C.y}http://localhost:${port}${C.o}
   Admin login     ${adminUser} / ${adminPassword}
   Verify emails   no mail is sent; the link is printed in Terminal 1
   Check it works  node scripts/smoke-test.mjs
-
-To stop the databases later:  docker compose down
+${useDocker ? "\nTo stop the databases later:  docker compose down" : ""}
 `);
