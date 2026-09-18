@@ -1,0 +1,53 @@
+Modsmith — start here (Windows Server)
+===========================================
+
+Runs natively on Windows. No WSL and no Docker required.
+
+1. Copy this folder somewhere simple, for example C:\modsmith
+
+2. Open PowerShell AS ADMINISTRATOR and run:
+
+       cd C:\modsmith
+       Set-ExecutionPolicy -Scope Process Bypass -Force
+       .\scripts\setup-windows.ps1
+
+   It installs what is missing (Node 22, pnpm, PostgreSQL 16, Memurai),
+   creates the database, generates secrets, and seeds your admin account.
+   It prints your admin username and password at the end.
+
+   On Windows Server 2019 and 2022 there is no winget, so the script installs
+   Chocolatey automatically and uses that instead. Nothing extra for you to do.
+
+   Add -InstallServices to also register it as Windows services that keep
+   running after you log out, and to open the firewall:
+
+       .\scripts\setup-windows.ps1 -InstallServices
+
+3. If you did NOT use -InstallServices, start it in two PowerShell windows:
+
+       pnpm dev:web        (the site, http://localhost:3000)
+       pnpm dev:worker     (builds exports; without it jobs stay queued)
+
+4. Open http://localhost:3000 in your browser.
+
+5. Check that everything really works:
+
+       node scripts\smoke-test.mjs
+
+
+ONE THING TO KNOW BEFORE PRODUCTION
+-----------------------------------
+Redis has no official Windows build. The setup installs Memurai, which is
+Redis-compatible and runs as a Windows service. The free Developer edition is
+NOT licensed for production and stops after 10 days of uptime. For real use you
+need Memurai Enterprise (paid), or the WSL2 route in docs\WINDOWS.md which
+gives you genuine Redis for free on the same server.
+
+No email is sent. Verification links are printed in the web output.
+
+
+MORE
+----
+docs\WINDOWS.md        full Windows guide, services, HTTPS, troubleshooting
+docs\SELF_HOSTING.md   deploying on Linux
+docs\LIMITATIONS.md    what is verified and what is not

@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_SECRET: ci-secret-ci-secret-ci-secret-ci-secret-00
+  ENCRYPTION_KEY: Y2ktZW5jcnlwdGlvbi1rZXktY2ktZW5jcnlwdGlvbi0wMQ==
+  DATABASE_URL: postgresql://modsmith:modsmith@localhost:5432/modsmith?schema=public
+  TEST_DATABASE_URL: postgresql://modsmith:modsmith@localhost:5432/modsmith_test?schema=public
+  REDIS_URL: redis://localhost:6379
+  STORAGE_PROVIDER: local
+  LOCAL_STORAGE_DIR: /tmp/modsmith-ci-storage
+  EMAIL_PROVIDER: console
+  APP_URL: http://localhost:3000
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modsmith
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: modsmith
+          POSTGRES_PASSWORD: modsmith
+          POSTGRES_DB: modsmith
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U modsmith" --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: modsmith/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - name: Create the test database
+        run: PGPASSWORD=modsmith psql -h localhost -U modsmith -d modsmith -c 'CREATE DATABASE modsmith_test' || true
+      - run: pnpm db:migrate
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: verify
+    defaults:
+      run:
+        working-directory: modsmith
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: modsmith
+          POSTGRES_PASSWORD: modsmith
+          POSTGRES_DB: modsmith
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U modsmith" --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: modsmith/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate && pnpm db:migrate && pnpm db:seed
+      - run: pnpm --filter @modsmith/web exec playwright install --with-deps chromium
+      - name: Start the worker
+        run: pnpm --filter @modsmith/worker start &
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: modsmith/apps/web/playwright-report
+          retention-days: 7
