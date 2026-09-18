@@ -26,12 +26,11 @@ const STATIC: { path: string; changeFrequency: MetadataRoute.Sitemap[number]["ch
  * succeeds with the static routes, and the first revalidation after deploy fills in the rest.
  */
 async function dynamicEntries(base: string): Promise<MetadataRoute.Sitemap> {
-  const [guides, categories, showcase, partners, latestChangelog] = await Promise.all([
+  const [guides, categories, showcase, partners] = await Promise.all([
     prisma.guide.findMany({ where: { state: "PUBLISHED" }, select: { slug: true, updatedAt: true, publishedAt: true, category: { select: { slug: true } } } }),
     prisma.guideCategory.findMany({ select: { slug: true } }),
     prisma.showcaseItem.findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true }, orderBy: { publishedAt: "desc" }, take: 5000 }),
     prisma.partner.findMany({ where: { active: true }, select: { slug: true, updatedAt: true } }),
-    prisma.changelogEntry.findFirst({ where: { state: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, select: { updatedAt: true } }),
   ]);
 
   const now = new Date();
