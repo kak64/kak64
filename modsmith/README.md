@@ -35,6 +35,16 @@ modsmith/
   docs/               Architecture, deployment, setup guides, processing contract
 ```
 
+## Install on your own server
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kak64/kak64/claude/fivem-creator-saas-fzdabu/modsmith/scripts/install.sh \
+  | sudo bash -s -- --domain modsmith.example.com
+cd /opt/modsmith/modsmith && node scripts/smoke-test.mjs
+```
+
+See [`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md) for what it does and how to do it by hand.
+
 ## Quick start (local)
 
 ```bash

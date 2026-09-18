@@ -6,6 +6,36 @@ Local-disk storage means uploads and finished resources are written to a directo
 
 ---
 
+## The short version
+
+On a fresh Ubuntu or Debian server, one command does everything in this guide:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kak64/kak64/claude/fivem-creator-saas-fzdabu/modsmith/scripts/install.sh \
+  | sudo bash -s -- --domain modsmith.example.com
+```
+
+It installs Node, pnpm and Docker, clones the repository, generates real secrets, starts PostgreSQL
+and Redis, migrates and seeds the database, builds the app, installs `modsmith-web` and
+`modsmith-worker` as systemd services, configures Caddy with an automatic certificate, and prints
+your admin password. Re-running it updates the code and leaves your secrets, database and files
+alone. Use `--no-tls` instead of `--domain` to try it on `http://SERVER_IP:3000` first.
+
+Then check the install actually works:
+
+```bash
+cd /opt/modsmith/modsmith && node scripts/smoke-test.mjs
+```
+
+That drives the real API end to end: registration, email verification, a model upload with
+server-side content checks, a spoofed-file rejection, credit pricing and holding, a real export
+through the worker, the ZIP contents, the free re-export window, Server Hub ingestion and search,
+and the authorization boundaries. Thirteen checks, and it cleans up after itself.
+
+The rest of this guide is the same thing done by hand, plus the reference material.
+
+---
+
 ## 1. What the server needs
 
 | | Minimum | Comfortable |
@@ -194,6 +224,15 @@ server {
 Then `certbot --nginx -d modsmith.example.com`. Set `APP_URL` to the `https://` address and restart both services.
 
 ## 8. Test it, end to end
+
+The fastest check is the script, which does all of the following automatically:
+
+```bash
+node scripts/smoke-test.mjs                          # against APP_URL from .env
+node scripts/smoke-test.mjs --url http://1.2.3.4:3000 --keep
+```
+
+To do it by hand instead:
 
 1. **Sign up.** Open `APP_URL`, click Create free account. You should land in the workshop with 150 credits.
 2. **Verify the email.** No mail provider is configured, so the link is printed to the log:
