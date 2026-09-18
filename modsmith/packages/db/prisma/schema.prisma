@@ -3,6 +3,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Generated into the workspace rather than the pnpm virtual store so that Next.js file tracing
+  // copies it into the standalone build, and so Docker images get the engine without path guessing.
+  output   = "../generated/client"
+  // "native" covers local development; the Debian target matches the node:22-bookworm-slim images.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

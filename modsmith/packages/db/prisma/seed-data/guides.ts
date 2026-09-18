@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../../generated/client";
 
 const categories = [
   { slug: "props", name: "Props", description: "Turning models into streamable FiveM props.", icon: "Box", sortOrder: 0 },

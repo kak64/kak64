@@ -66,6 +66,7 @@ Without Docker you can point `DATABASE_URL`/`REDIS_URL` at local services and se
 ## Documentation
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system design, data model, job lifecycle, credit ledger, security model
+- [`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md) — step-by-step deployment on your own server, with a full export test
 - [`docs/SETUP.md`](docs/SETUP.md) — Postgres, Redis, object storage, Stripe, Discord, email, AI provider, Sketchfab
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — production deployment (Docker, scaling workers, backups, disaster recovery)
 - [`docs/TESTING.md`](docs/TESTING.md) — unit, integration and E2E test instructions

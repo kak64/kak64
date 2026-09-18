@@ -19,15 +19,19 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @modsmith/db generate && pnpm --filter @modsmith/web build
 
 FROM node:22-bookworm-slim AS runner
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 WORKDIR /app
 RUN groupadd -r app && useradd -r -g app app
+# The standalone bundle already contains the traced Prisma client and engine, because the client is
+# generated into packages/db/generated rather than the pnpm virtual store.
 COPY --from=build /repo/apps/web/.next/standalone ./
 COPY --from=build /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build /repo/apps/web/public ./apps/web/public
+# Served as a download by /api/v1/server-hub/resource.
 COPY --from=build /repo/packages/hub-resource ./packages/hub-resource
 COPY --from=build /repo/packages/db/prisma ./packages/db/prisma
-COPY --from=build /repo/node_modules/.pnpm/@prisma+client*/node_modules/.prisma ./node_modules/.prisma
+# Shared object storage when STORAGE_PROVIDER=local (a volume is mounted here by compose).
+RUN mkdir -p /data/storage && chown -R app:app /data/storage
 USER app
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]

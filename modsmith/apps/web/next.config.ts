@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
@@ -37,6 +38,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
+  // The app lives in a pnpm workspace, so file tracing must start at the repo root or the
+  // standalone bundle misses linked packages such as @modsmith/services and the Prisma client.
+  outputFileTracingRoot: path.join(process.cwd(), "../../"),
   transpilePackages: ["@modsmith/core", "@modsmith/db", "@modsmith/services", "three"],
   serverExternalPackages: ["argon2", "bullmq", "ioredis", "pino", "@prisma/client"],
   experimental: { serverActions: { bodySizeLimit: "2mb" } },

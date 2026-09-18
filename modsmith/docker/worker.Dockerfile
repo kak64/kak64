@@ -19,6 +19,8 @@ ENV NODE_ENV=production
 COPY . .
 RUN pnpm --filter @modsmith/db generate
 # Optional heavy tooling (Blender / CodeWalker CLI) can be layered in a derived image and pointed to via BLENDER_BIN / CODEWALKER_CLI.
-RUN groupadd -r app && useradd -r -g app app && mkdir -p /repo/apps/worker/tmp && chown -R app:app /repo/apps/worker/tmp
+RUN groupadd -r app && useradd -r -g app app \
+  && mkdir -p /repo/apps/worker/tmp /data/storage /data/tmp \
+  && chown -R app:app /repo/apps/worker/tmp /data/storage /data/tmp
 USER app
 CMD ["pnpm", "--filter", "@modsmith/worker", "start"]

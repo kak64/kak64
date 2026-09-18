@@ -20,8 +20,12 @@ const STATIC: { path: string; changeFrequency: MetadataRoute.Sitemap[number]["ch
   { path: "/register", changeFrequency: "yearly", priority: 0.5 },
 ];
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = siteUrl();
+/**
+ * Next prerenders the sitemap at build time, but a container image is built without a database.
+ * The dynamic entries are therefore best-effort: if the database is unreachable the build still
+ * succeeds with the static routes, and the first revalidation after deploy fills in the rest.
+ */
+async function dynamicEntries(base: string): Promise<MetadataRoute.Sitemap> {
   const [guides, categories, showcase, partners, latestChangelog] = await Promise.all([
     prisma.guide.findMany({ where: { state: "PUBLISHED" }, select: { slug: true, updatedAt: true, publishedAt: true, category: { select: { slug: true } } } }),
     prisma.guideCategory.findMany({ select: { slug: true } }),
@@ -32,15 +36,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const now = new Date();
   return [
-    ...STATIC.map((s) => ({
-      url: `${base}${s.path}`,
-      lastModified: s.path === "/changelog" ? latestChangelog?.updatedAt ?? now : now,
-      changeFrequency: s.changeFrequency,
-      priority: s.priority,
-    })),
     ...categories.map((c) => ({ url: `${base}/guides/${c.slug}`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.6 })),
     ...guides.map((g) => ({ url: `${base}/guides/${g.category.slug}/${g.slug}`, lastModified: g.updatedAt ?? g.publishedAt ?? now, changeFrequency: "monthly" as const, priority: 0.7 })),
     ...showcase.map((s) => ({ url: `${base}/showcase/${s.slug}`, lastModified: s.updatedAt, changeFrequency: "weekly" as const, priority: 0.5 })),
     ...partners.map((p) => ({ url: `${base}/partners/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "monthly" as const, priority: 0.4 })),
   ];
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const base = siteUrl();
+  const staticEntries: MetadataRoute.Sitemap = STATIC.map((e) => ({
+    url: `${base}${e.path}`,
+    lastModified: new Date(),
+    changeFrequency: e.changeFrequency,
+    priority: e.priority,
+  }));
+  try {
+    return [...staticEntries, ...(await dynamicEntries(base))];
+  } catch (err) {
+    console.warn("sitemap: database unavailable, emitting static routes only", err instanceof Error ? err.message : err);
+    return staticEntries;
+  }
 }

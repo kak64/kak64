@@ -1,5 +1,5 @@
 import { expect, type Page, type APIRequestContext } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@modsmith/db";
 
 /**
  * E2E helpers. The suite talks to the real app and the real database:
