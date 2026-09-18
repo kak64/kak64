@@ -15,6 +15,9 @@ Runs natively on Windows. No WSL and no Docker required.
    creates the database, generates secrets, and seeds your admin account.
    It prints your admin username and password at the end.
 
+   On Windows Server 2019 and 2022 there is no winget, so the script installs
+   Chocolatey automatically and uses that instead. Nothing extra for you to do.
+
    Add -InstallServices to also register it as Windows services that keep
    running after you log out, and to open the firewall:
 

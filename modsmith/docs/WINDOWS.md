@@ -45,7 +45,18 @@ Useful switches:
 | `-Port` | Port the site listens on, default 3000 |
 | `-NoSeed` | Skip creating reference data and the admin account |
 
-`winget` is required for the automatic installs and ships with Windows Server 2025. On Windows Server 2019 or 2022, install the four prerequisites by hand and then run with `-SkipPrereqs`:
+### How it installs things
+
+It picks whichever package manager your Windows version has, so you do not need to care:
+
+| Windows version | What it uses |
+| --- | --- |
+| Server 2025 and later | `winget`, which ships with the OS |
+| Server 2019 and 2022 | installs [Chocolatey](https://chocolatey.org) automatically, then uses that |
+
+Node is the exception: it is downloaded straight from nodejs.org as the current 22.x MSI, so the version matches the one the project is tested against rather than whatever an LTS alias points at today.
+
+If you would rather install everything yourself, do that and then run with `-SkipPrereqs`:
 
 - Node 22: <https://nodejs.org/en/download>
 - PostgreSQL 16: <https://www.postgresql.org/download/windows/>
@@ -136,7 +147,9 @@ EOF
 
 | Symptom | Cause |
 | --- | --- |
-| `setup-windows.ps1` cannot be run | PowerShell execution policy. Run `Set-ExecutionPolicy -Scope Process Bypass` first |
+| `setup-windows.ps1` cannot be run | PowerShell execution policy. Run `Set-ExecutionPolicy -Scope Process Bypass -Force` first |
+| "could not create SSL/TLS secure channel" | Old TLS default in Windows PowerShell 5.1. The script forces TLS 1.2 itself; if you see this from your own commands, run `[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12` first |
+| "cannot continue without winget" | You are on an older build than the script expected. Update to the current package and it installs Chocolatey instead |
 | Node or pnpm "not found" right after install | PATH is stale. Close PowerShell, open a new Administrator window, re-run |
 | Redis check fails | The Memurai service is not running. `Get-Service Memurai`, then `Start-Service Memurai` |
 | Memurai stopped after ten days | Developer edition uptime limit. Restart the service, or move to Enterprise or WSL2 |
