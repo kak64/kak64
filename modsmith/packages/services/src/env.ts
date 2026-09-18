@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { z } from "zod";
 
 const schema = z.object({
@@ -45,9 +47,46 @@ const schema = z.object({
 
 export type Env = z.infer<typeof schema>;
 
+let envFileLoaded = false;
+
+/**
+ * Loads the repository's .env when the process was not started with one already exported.
+ *
+ * Next.js only reads .env from the app directory and the worker reads none at all, so without this
+ * a service started by systemd, NSSM or a bare `pnpm start` from the repo root would come up with
+ * no DATABASE_URL. Values already present in the environment always win, so tests and container
+ * orchestration keep full control.
+ */
+function loadEnvFileOnce() {
+  if (envFileLoaded) return;
+  envFileLoaded = true;
+  let dir = process.cwd();
+  for (let depth = 0; depth < 5; depth++) {
+    const candidate = path.join(dir, ".env");
+    if (existsSync(candidate)) {
+      try {
+        for (const line of readFileSync(candidate, "utf8").split(/\r?\n/)) {
+          const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(line);
+          if (!match) continue;
+          const key = match[1]!;
+          if (process.env[key] !== undefined) continue;
+          process.env[key] = match[2]!.trim().replace(/^["']|["']$/g, "");
+        }
+      } catch {
+        // An unreadable .env is not fatal; validation below reports what is actually missing.
+      }
+      return;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return;
+    dir = parent;
+  }
+}
+
 let cached: Env | null = null;
 export function env(): Env {
   if (cached) return cached;
+  loadEnvFileOnce();
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
     const msg = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");

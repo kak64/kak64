@@ -151,7 +151,10 @@ function Find-Psql {
     return (Have psql)
 }
 if (-not (Find-Psql) -and -not $SkipPrereqs) {
-    if (-not $PostgresPassword) { $PostgresPassword = "Pg_" + [Convert]::ToBase64String([Guid]::NewGuid().ToByteArray()).Substring(0, 16).Replace("/", "x").Replace("+", "y") }
+    if (-not $PostgresPassword) {
+        $PostgresPassword = "Pg_" + [Convert]::ToBase64String([Guid]::NewGuid().ToByteArray()).Substring(0, 16).Replace("/", "x").Replace("+", "y")
+        $script:GeneratedPgPassword = $PostgresPassword
+    }
     Info "installing PostgreSQL 16"
     if (-not (Install-Package "PostgreSQL.PostgreSQL.16" "postgresql16" "/Password:$PostgresPassword")) {
         Die "PostgreSQL could not be installed automatically." "Install it from https://www.postgresql.org/download/windows/ then re-run with -SkipPrereqs"
@@ -204,6 +207,13 @@ if (-not $DatabaseUrl) {
     Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
     $DatabaseUrl = "postgresql://modsmith:modsmith@localhost:5432/modsmith?schema=public"
     Info "role modsmith and databases modsmith / modsmith_test are ready"
+    if ($script:GeneratedPgPassword) {
+        Write-Host ""
+        Write-Host "    Write this down: the PostgreSQL superuser password this script generated is" -ForegroundColor Yellow
+        Write-Host "      postgres / $script:GeneratedPgPassword" -ForegroundColor Yellow
+        Write-Host "    Modsmith itself does not need it, but you will be asked for it if you re-run this script." -ForegroundColor Yellow
+        Write-Host ""
+    }
 } else {
     Info "using the database URL you supplied"
 }
@@ -227,7 +237,18 @@ if ($InstallServices) {
     }
     if (-not (Have nssm)) { Die "NSSM is not on PATH." "Install it from https://nssm.cc and re-run." }
 
+    # NSSM launches a process directly, so it needs pnpm.cmd or pnpm.exe. Corepack and npm both
+    # install a .ps1 shim alongside, and pointing NSSM at that would fail to start the service.
     $pnpmCmd = (Get-Command pnpm).Source
+    if ($pnpmCmd -match '\.ps1$') {
+        $sibling = [IO.Path]::ChangeExtension($pnpmCmd, "cmd")
+        if (Test-Path $sibling) { $pnpmCmd = $sibling }
+        else {
+            $found = Get-Command pnpm.cmd -ErrorAction SilentlyContinue
+            if ($found) { $pnpmCmd = $found.Source } else { Die "Could not find pnpm.cmd, which NSSM needs." "Run: npm install -g pnpm@10.33.0" }
+        }
+    }
+    Info "services will run $pnpmCmd"
     foreach ($svc in @(@{ Name = "modsmith-web"; Filter = "@modsmith/web" }, @{ Name = "modsmith-worker"; Filter = "@modsmith/worker" })) {
         if (Get-Service $svc.Name -ErrorAction SilentlyContinue) {
             nssm stop $svc.Name 2>&1 | Out-Null
