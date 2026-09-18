@@ -1,0 +1,41 @@
+Modsmith — start here (Windows Server)
+===========================================
+
+Recommended: run it inside WSL2. Everything here was written and tested on Linux.
+
+1. Open PowerShell as Administrator and install WSL:
+
+       wsl --install -d Ubuntu-22.04
+
+   Reboot if asked, then open "Ubuntu" from the Start menu and create your Linux user.
+
+2. Copy this folder somewhere simple, for example C:\modsmith
+
+3. In the Ubuntu window:
+
+       cd /mnt/c/modsmith
+       node scripts/setup-local.mjs
+
+   If Node is missing inside Ubuntu, install it first:
+
+       curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+       sudo apt install -y nodejs
+
+4. Start it, in two Ubuntu windows:
+
+       pnpm dev:web        (the site, http://localhost:3000)
+       pnpm dev:worker     (builds exports; without it jobs stay queued)
+
+5. Open http://localhost:3000 in your browser.
+   The setup script prints your admin username and password.
+
+6. Check everything works:
+
+       node scripts/smoke-test.mjs
+
+No email is sent. Verification links are printed in the "pnpm dev:web" window.
+
+Full instructions, including the native Windows route without WSL and how to
+reach the site from outside the machine:  docs\WINDOWS.md
+Deploying properly on a server:           docs\SELF_HOSTING.md
+What is verified and what is not:         docs\LIMITATIONS.md
