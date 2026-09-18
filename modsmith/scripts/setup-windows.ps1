@@ -219,7 +219,9 @@ if (-not $DatabaseUrl) {
 }
 
 # ── project setup ────────────────────────────────────────────────────────────
-Step "Configuring and building the project"
+Step "Configuring the project and installing packages"
+Info "the first package install downloads about 1 GB and can take 5 to 15 minutes on Windows"
+Info "Windows Defender scanning node_modules is the usual reason; excluding $root speeds it up a lot"
 Push-Location $root
 try {
     $setupArgs = @("scripts/setup-local.mjs", "--no-docker", "--database-url", $DatabaseUrl, "--redis-url", $RedisUrl, "--port", "$Port")
@@ -227,6 +229,19 @@ try {
     & node @setupArgs
     if ($LASTEXITCODE -ne 0) { Die "project setup failed (see the output above)." }
 } finally { Pop-Location }
+
+# ── production build ─────────────────────────────────────────────────────────
+if ($InstallServices) {
+    Step "Building for production"
+    Info "this compiles 200+ routes and usually takes 2 to 6 minutes; the screen stays quiet"
+    Push-Location $root
+    try {
+        $buildStart = Get-Date
+        & pnpm build
+        if ($LASTEXITCODE -ne 0) { Die "the production build failed (see the output above)." }
+        Info ("built in {0:n0} seconds" -f ((Get-Date) - $buildStart).TotalSeconds)
+    } finally { Pop-Location }
+}
 
 # ── services ─────────────────────────────────────────────────────────────────
 if ($InstallServices) {
@@ -260,6 +275,8 @@ if ($InstallServices) {
         nssm set $svc.Name AppStderr (Join-Path $root "logs\$($svc.Name).log") | Out-Null
         nssm set $svc.Name AppRotateFiles 1 | Out-Null
         nssm set $svc.Name Start SERVICE_AUTO_START | Out-Null
+        # next start reads PORT from the environment, and the worker needs NODE_ENV set explicitly.
+        nssm set $svc.Name AppEnvironmentExtra "PORT=$Port" "NODE_ENV=production" | Out-Null
     }
     New-Item -ItemType Directory -Force -Path (Join-Path $root "logs") | Out-Null
     nssm start modsmith-web | Out-Null

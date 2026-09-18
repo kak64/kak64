@@ -181,6 +181,7 @@ Type=simple
 WorkingDirectory=$APP
 EnvironmentFile=$APP/.env
 Environment=NODE_ENV=production
+Environment=PORT=$PORT
 ExecStart=$(command -v pnpm) --filter @modsmith/$1 start
 Restart=always
 RestartSec=5
